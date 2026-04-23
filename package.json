@@ -24,6 +24,8 @@
     "example:hello": "node --loader ts-node/esm examples/hello.ts",
     "example:form": "node --loader ts-node/esm examples/form.ts",
     "example:showcase": "node --loader ts-node/esm examples/showcase.ts",
+    "example:todo": "node --loader ts-node/esm examples/todo.ts",
+    "example:explorer": "node --loader ts-node/esm examples/explorer.ts",
     "test": "node --test --loader ts-node/esm test/*.test.ts"
   },
   "engines": {

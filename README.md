@@ -34,13 +34,37 @@ app.run();
 Run the bundled examples:
 
 ```
-npm run example:hello       # minimal window + label
+npm run example:explorer    # file browser — the flagship demo app
+npm run example:todo        # working todo app (split pane, modal, shortcuts)
+npm run example:showcase    # widget gallery — every widget in one screen
 npm run example:form        # text fields, list, submit button
-npm run example:showcase    # every widget + modal dialog + theme toggle
+npm run example:hello       # minimal window + label
 ```
 
-Ctrl+C exits. Tab / Shift+Tab cycles focus. In `showcase`, F2 toggles
-between the default and dark themes.
+Ctrl+C exits. Tab / Shift+Tab cycles focus. F2 toggles between the
+default and dark themes in the larger examples.
+
+### explorer
+
+A two-pane file browser that shows the framework in real use — async
+`fs` I/O driving a live-updated preview from list selection, breadcrumb
+navigation, focus shuttled between panes on enter/escape. Start from
+any directory:
+
+```
+npm run example:explorer
+# or point it at somewhere else:
+cd ~/projects && node --loader ts-node/esm /path/to/zenterm/examples/explorer.ts
+```
+
+Keys: `enter` opens a directory or focuses the preview · `backspace`
+goes up · `tab` cycles panes · `F5` reloads · `F2` switches theme.
+
+### todo
+
+Multi-pane task manager with a modal confirmation before clearing done
+tasks. `n` focuses the input, `d` deletes the focused task, `enter` on
+the list toggles done.
 
 ## Architecture
 
