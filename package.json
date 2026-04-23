@@ -1,0 +1,46 @@
+{
+  "name": "zenterm",
+  "version": "0.0.1",
+  "description": "Cross-platform retained-mode TUI framework for Node.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "example:hello": "node --loader ts-node/esm examples/hello.ts",
+    "example:form": "node --loader ts-node/esm examples/form.ts",
+    "example:showcase": "node --loader ts-node/esm examples/showcase.ts",
+    "test": "node --test --loader ts-node/esm test/*.test.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "tui",
+    "terminal",
+    "ui",
+    "ansi",
+    "console",
+    "cli"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}
