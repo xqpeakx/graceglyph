@@ -9,6 +9,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/jsx-dev-runtime.d.ts",
+      "import": "./dist/jsx-dev-runtime.js"
     }
   },
   "files": [
@@ -21,11 +29,14 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",
-    "example:hello": "node --loader ts-node/esm examples/hello.ts",
-    "example:form": "node --loader ts-node/esm examples/form.ts",
-    "example:showcase": "node --loader ts-node/esm examples/showcase.ts",
-    "example:todo": "node --loader ts-node/esm examples/todo.ts",
-    "example:explorer": "node --loader ts-node/esm examples/explorer.ts",
+    "dev:hello": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
+    "dev:todo": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
+    "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
+    "example:hello": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
+    "example:form": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/form.tsx",
+    "example:showcase": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/showcase.tsx",
+    "example:todo": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
+    "example:explorer": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
     "test": "node --test --loader ts-node/esm test/*.test.ts"
   },
   "engines": {

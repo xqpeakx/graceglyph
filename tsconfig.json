@@ -16,8 +16,21 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "examples", "test"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "examples",
+    "test",
+    "src/widgets",
+    "src/core/application.ts",
+    "src/core/events.ts",
+    "src/input/focus.ts",
+    "src/theme"
+  ]
 }
