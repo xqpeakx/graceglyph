@@ -296,7 +296,7 @@ function handleInputKey(
 
 function decorateFatalError(phase: string, error: unknown): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
-  const wrapped = new Error(`zenterm fatal error during ${phase}: ${cause.message}`);
+  const wrapped = new Error(`graceglyph fatal error during ${phase}: ${cause.message}`);
   if (cause.stack) {
     const [, ...rest] = cause.stack.split("\n");
     wrapped.stack = [wrapped.message, ...rest].join("\n");

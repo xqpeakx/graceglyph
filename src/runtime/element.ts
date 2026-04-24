@@ -1,7 +1,7 @@
 import type { KeyEvent, MouseEvent } from "../input/keys.js";
 import type { Color } from "../render/style.js";
 
-export const Fragment = Symbol.for("zenterm.fragment");
+export const Fragment = Symbol.for("graceglyph.fragment");
 export type FragmentType = typeof Fragment;
 
 export type ComponentFn<P = Record<string, unknown>> = (

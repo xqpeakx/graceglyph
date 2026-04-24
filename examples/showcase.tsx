@@ -106,7 +106,7 @@ function ShowcaseApp() {
           </Panel>
 
           {aboutOpen && (
-            <Modal title="About zenterm" width={48} height={9}>
+            <Modal title="About graceglyph" width={48} height={9}>
               <Column gap={1}>
                 <Text>Terminal UI primitives with row/column layout and an inspector.</Text>
                 <Row gap={1}>

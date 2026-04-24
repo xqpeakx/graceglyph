@@ -147,5 +147,5 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
 
 function reportEffectError(err: unknown): void {
   // eslint-disable-next-line no-console
-  console.error("zenterm: effect error:", err);
+  console.error("graceglyph: effect error:", err);
 }

@@ -1,8 +1,8 @@
-# zenterm
+# graceglyph
 
 Terminal UI toolkit for TypeScript.
 
-Zenterm is a TUI framework for Node. It uses declarative components, row/column
+Graceglyph is a TUI framework for Node. It uses declarative components, row/column
 layout, typed props and events, and a small built-in inspector. The main focus
 is avoiding manual coordinates for common layouts.
 
@@ -19,13 +19,13 @@ Early, but usable. Current focus:
 ## Install
 
 ```
-npm install zenterm
+npm install graceglyph
 ```
 
 ## Hello world
 
 ```tsx
-import { App, Button, Column, Text, Window, render, useState } from "zenterm";
+import { App, Button, Column, Text, Window, render, useState } from "graceglyph";
 
 function Counter() {
   const [count, setCount] = useState(0);
@@ -54,7 +54,7 @@ For automatic JSX without `h(...)` boilerplate, use:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "zenterm"
+    "jsxImportSource": "graceglyph"
   }
 }
 ```

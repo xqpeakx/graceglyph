@@ -9,9 +9,9 @@ export interface RenderHandle {
 }
 
 /**
- * Boot a zenterm app. Takes a root element and a handful of terminal options.
+ * Boot a graceglyph app. Takes a root element and a handful of terminal options.
  *
- *   import { render } from "zenterm";
+ *   import { render } from "graceglyph";
  *   render(<App />);
  */
 export function render(

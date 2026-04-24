@@ -1,7 +1,7 @@
 {
-  "name": "zenterm",
+  "name": "graceglyph",
   "version": "0.0.1",
-  "description": "Cross-platform retained-mode TUI framework for Node.",
+  "description": "Terminal UI toolkit for TypeScript.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

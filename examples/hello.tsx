@@ -16,9 +16,9 @@ function HelloApp() {
 
   return (
     <App>
-      <Window title="Hello zenterm" width={44} height={10}>
+      <Window title="Hello graceglyph" width={44} height={10}>
         <Column gap={1}>
-          <Text>Hello from zenterm.</Text>
+          <Text>Hello from graceglyph.</Text>
           <Text style={{ dim: true }}>
             Tab moves focus. F12 toggles the inspector.
           </Text>
