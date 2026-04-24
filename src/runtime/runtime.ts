@@ -3,6 +3,11 @@ import { InputParser } from "../input/parser.js";
 import type { InputEvent, KeyEvent, MouseEvent } from "../input/keys.js";
 import { Rect } from "../layout/rect.js";
 import { Renderer } from "../render/renderer.js";
+import {
+  applyEditableKey,
+  getCursorOffset,
+  moveCursorToPoint,
+} from "./editable.js";
 import type { BoxProps, InputProps, ZenElement } from "./element.js";
 import { Fiber, createFiber } from "./fiber.js";
 import { FocusManager } from "./focus.js";
@@ -131,13 +136,25 @@ export class Runtime {
         paintInspector(buffer, this.hostRoot, focused);
         this.renderer.setCursor(null);
       } else {
-        // Input cursor: if focused is an input, position cursor at end of value
-        if (focused && focused.type === "input") {
+        if (focused && isEditableHost(focused)) {
           const props = focused.props as unknown as InputProps;
           const value = String(props.value ?? "");
-          const maxW = Math.max(0, focused.layout.width - 1);
-          const cx = focused.layout.x + Math.min(value.length, maxW);
-          this.renderer.setCursor({ x: cx, y: focused.layout.y });
+          const offset = getCursorOffset(
+            focused.editableState ?? {
+              cursor: value.length,
+              scrollX: 0,
+              scrollY: 0,
+              preferredColumn: null,
+            },
+            value,
+            focused.layout.width,
+            focused.layout.height,
+            focused.type === "textarea" ? "multi-line" : "single-line",
+          );
+          this.renderer.setCursor({
+            x: focused.layout.x + Math.min(offset.x, Math.max(0, focused.layout.width - 1)),
+            y: focused.layout.y + Math.min(offset.y, Math.max(0, focused.layout.height - 1)),
+          });
         } else {
           this.renderer.setCursor(null);
         }
@@ -178,8 +195,8 @@ export class Runtime {
     if (!focused) return;
 
     // Input host handles its own editing; anything unhandled bubbles.
-    if (focused.type === "input") {
-      if (handleInputKey(focused, ev, () => this.scheduleCommit())) return;
+    if (isEditableHost(focused)) {
+      if (handleEditableKey(focused, ev, () => this.scheduleCommit())) return;
     }
 
     // Bubble up fiber chain, invoking onKey props / onClick shortcuts.
@@ -206,6 +223,24 @@ export class Runtime {
 
     if (ev.action === "press" && ev.button === "left") {
       this.focus.focus(hit);
+      if (isEditableHost(hit)) {
+        const state = hit.editableState ?? {
+          cursor: String(hit.props.value ?? "").length,
+          scrollX: 0,
+          scrollY: 0,
+          preferredColumn: null,
+        };
+        hit.editableState = state;
+        moveCursorToPoint(
+          state,
+          String(hit.props.value ?? ""),
+          ev.x - hit.layout.x,
+          ev.y - hit.layout.y,
+          hit.layout.width,
+          hit.layout.height,
+          hit.type === "textarea" ? "multi-line" : "single-line",
+        );
+      }
       this.scheduleCommit();
     }
 
@@ -261,37 +296,36 @@ function hitTest(node: HostNode, x: number, y: number): HostNode | null {
   return node;
 }
 
-function handleInputKey(
+function handleEditableKey(
   host: HostNode,
   ev: KeyEvent,
   commit: () => void,
 ): boolean {
   const props = host.props as unknown as InputProps;
   const value = String(props.value ?? "");
-  let next: string | null = null;
-  switch (ev.name) {
-    case "backspace":
-      next = value.slice(0, -1);
-      break;
-    case "enter":
-      props.onSubmit?.(value);
-      return true;
-    case "space":
-      next = value + " ";
-      break;
-    case "char":
-      if (ev.ctrl || ev.alt) return false;
-      if (ev.char && ev.char.length === 1) next = value + ev.char;
-      break;
-    default:
-      return false;
+  const state = host.editableState ?? {
+    cursor: value.length,
+    scrollX: 0,
+    scrollY: 0,
+    preferredColumn: null,
+  };
+  host.editableState = state;
+  const result = applyEditableKey(state, value, ev, {
+    mode: host.type === "textarea" ? "multi-line" : "single-line",
+    width: host.layout.width,
+    height: host.layout.height,
+    onSubmit: host.type === "input" ? props.onSubmit : undefined,
+  });
+  if (!result.handled) return false;
+  if (result.nextValue !== value) {
+    props.onChange(result.nextValue);
   }
-  if (next !== null) {
-    props.onChange(next);
-    commit();
-    return true;
-  }
-  return false;
+  commit();
+  return true;
+}
+
+function isEditableHost(host: HostNode): boolean {
+  return host.type === "input" || host.type === "textarea";
 }
 
 function decorateFatalError(phase: string, error: unknown): Error {

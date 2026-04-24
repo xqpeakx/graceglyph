@@ -1,4 +1,13 @@
-# graceglyph
+                                            ___                    __         
+                                           /\_ \                  /\ \        
+*  ___ __       ___       ___     __    __ \//\ \    __  __  _____\ \ \___    
+* /'_ `\/\`'__\/'__`\   /'___\ /'__`\ /'_ `\ \ \ \  /\ \/\ \/\ '__`\ \  _ `\  
+*/\ \L\ \ \ \//\ \L\.\_/\ \__//\  __//\ \L\ \ \_\ \_\ \ \_\ \ \ \L\ \ \ \ \ \ 
+*\ \____ \ \_\\ \__/.\_\ \____\ \____\ \____ \/\____\\/`____ \ \ ,__/\ \_\ \_\
+* \/___L\ \/_/ \/__/\/_/\/____/\/____/\/___L\ \/____/ `/___/> \ \ \/  \/_/\/_/
+*   /\____/                             /\____/          /\___/\ \_\          
+*   \_/__/                              \_/__/           \/__/  \/_/          
+*
 
 Terminal UI toolkit for TypeScript.
 
@@ -13,6 +22,7 @@ Early, but usable. Current focus:
 - Declarative components
 - Row/column layout
 - Typed props and events
+- Multiline `TextArea`
 - Tree inspector (`F12`)
 - Watch-mode examples
 
@@ -69,10 +79,15 @@ npm run example:todo
 npm run example:explorer
 ```
 
+`example:showcase` is the best demo right now. It exercises list navigation,
+single-line input, multiline editing, live preview, and modal presentation in
+one screen.
+
 Use watch mode while iterating:
 
 ```bash
 npm run dev:hello
+npm run dev:showcase
 npm run dev:todo
 npm run dev:explorer
 ```
@@ -90,11 +105,52 @@ Current built-ins:
 - `Column`
 - `Text`
 - `TextInput`
+- `TextArea`
 - `Button`
 - `List`
 - `Modal`
 
-Everything composes down to three host primitives: `box`, `text`, and `input`.
+Everything composes down to four host primitives: `box`, `text`, `input`, and `textarea`.
+
+## Editing
+
+`TextInput` is a single-line controlled input.
+
+`TextArea` is a multiline controlled input with:
+
+- arrow-key cursor movement
+- horizontal and vertical scrolling
+- click-to-position cursor placement
+- `Home` / `End`
+- `PageUp` / `PageDown`
+- `Enter` inserting a newline
+
+```tsx
+import { App, Column, TextArea, TextInput, Window, render, useState } from "graceglyph";
+
+function Composer() {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+
+  return (
+    <App>
+      <Window title="Composer" width={60} height={16}>
+        <Column gap={1} grow={1}>
+          <TextInput value={subject} onChange={setSubject} placeholder="Subject" />
+          <TextArea
+            value={body}
+            onChange={setBody}
+            grow={1}
+            placeholder={"Write a few lines\\nwith real structure."}
+          />
+        </Column>
+      </Window>
+    </App>
+  );
+}
+
+render(<Composer />);
+```
 
 ## Layout
 

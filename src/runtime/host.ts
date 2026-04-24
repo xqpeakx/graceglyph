@@ -2,7 +2,14 @@ import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { DefaultStyle, Style } from "../render/style.js";
 import { stringWidth } from "../render/unicode.js";
-import type { BoxProps, Edges, HostType, TextProps, InputProps } from "./element.js";
+import {
+  createEditableState,
+  ensureEditableViewport,
+  getVisibleLines,
+  syncEditableState,
+  type EditableState,
+} from "./editable.js";
+import type { BoxProps, Edges, HostType, TextProps, InputProps, TextAreaProps } from "./element.js";
 import type { Fiber } from "./fiber.js";
 
 export interface HostNode {
@@ -12,6 +19,7 @@ export interface HostNode {
   children: HostNode[];
   parent: HostNode | null;
   layout: Rect;
+  editableState: EditableState | null;
   /** Back-pointer so event dispatch can walk fiber ancestry. */
   fiber: Fiber;
 }
@@ -23,6 +31,9 @@ export function createHostNode(fiber: Fiber): HostNode {
     children: [],
     parent: null,
     layout: Rect.empty(),
+    editableState: fiber.type === "input" || fiber.type === "textarea"
+      ? createEditableState(String(fiber.props.value ?? ""))
+      : null,
     fiber,
   };
 }
@@ -44,7 +55,7 @@ function edges(p: Edges | undefined): Edge {
  * remaining space to growing ones.
  */
 function measure(node: HostNode, axis: "main" | "cross", direction: "row" | "column"): number {
-  const props = node.props as unknown as BoxProps & TextProps & InputProps;
+  const props = node.props as unknown as BoxProps & TextProps & InputProps & TextAreaProps;
   const mainIsWidth = direction === "row";
 
   if (node.type === "text") {
@@ -57,6 +68,12 @@ function measure(node: HostNode, axis: "main" | "cross", direction: "row" | "col
       return mainIsWidth ? (props.width ?? 20) : 1;
     }
     return mainIsWidth ? 1 : (props.width ?? 20);
+  }
+  if (node.type === "textarea") {
+    const width = props.width ?? 24;
+    const height = props.height ?? 6;
+    if (axis === "main") return mainIsWidth ? width : height;
+    return mainIsWidth ? height : width;
   }
 
   // box — recursive
@@ -101,7 +118,7 @@ export function layoutTree(root: HostNode, container: Rect): void {
 }
 
 function layoutNode(node: HostNode, container: Rect): void {
-  const props = node.props as unknown as BoxProps & TextProps & InputProps;
+  const props = node.props as unknown as BoxProps & TextProps & InputProps & TextAreaProps;
 
   if (node.type === "text") {
     const text = textOf(props.children);
@@ -113,6 +130,14 @@ function layoutNode(node: HostNode, container: Rect): void {
   if (node.type === "input") {
     const w = Math.min(props.width ?? container.width, container.width);
     node.layout = new Rect(container.x, container.y, w, Math.min(1, container.height));
+    syncEditable(node, "single-line");
+    return;
+  }
+  if (node.type === "textarea") {
+    const w = Math.min(props.width ?? container.width, container.width);
+    const h = Math.min(props.height ?? container.height, container.height);
+    node.layout = new Rect(container.x, container.y, w, h);
+    syncEditable(node, "multi-line");
     return;
   }
 
@@ -223,7 +248,7 @@ export function paintTree(root: HostNode, ctx: PaintContext): void {
 }
 
 function paintNode(node: HostNode, ctx: PaintContext): void {
-  const props = node.props as unknown as BoxProps & TextProps & InputProps;
+  const props = node.props as unknown as BoxProps & TextProps & InputProps & TextAreaProps;
   const { buffer } = ctx;
   const { layout } = node;
   if (layout.width === 0 || layout.height === 0) return;
@@ -247,8 +272,35 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
       const phStyle: Style = { ...base, dim: true };
       buffer.writeText(layout.x, layout.y, truncate(props.placeholder, layout.width, "truncate"), phStyle, layout);
     } else {
-      const visible = value.slice(Math.max(0, value.length - layout.width));
+      const state = ensureEditableState(node, value);
+      const visible = getVisibleLines(state, value, layout.width, layout.height, "single-line")[0] ?? "";
       buffer.writeText(layout.x, layout.y, visible, base, layout);
+    }
+    return;
+  }
+
+  if (node.type === "textarea") {
+    const base: Style = { ...style, bg: style.bg ?? DefaultStyle.bg };
+    buffer.fill(layout, " ", base);
+    const value = String(props.value ?? "");
+    if (value.length === 0 && props.placeholder) {
+      const phStyle: Style = { ...base, dim: true };
+      const placeholderLines = props.placeholder.split("\n");
+      for (let row = 0; row < Math.min(layout.height, placeholderLines.length); row++) {
+        buffer.writeText(
+          layout.x,
+          layout.y + row,
+          placeholderLines[row]!.slice(0, layout.width),
+          phStyle,
+          layout,
+        );
+      }
+    } else {
+      const state = ensureEditableState(node, value);
+      const visible = getVisibleLines(state, value, layout.width, layout.height, "multi-line");
+      for (let row = 0; row < Math.min(layout.height, visible.length); row++) {
+        buffer.writeText(layout.x, layout.y + row, visible[row]!, base, layout);
+      }
     }
     return;
   }
@@ -338,4 +390,16 @@ function toStyle(s: TextProps["style"]): Style {
     underline: s?.underline ?? false,
     inverse: s?.inverse ?? false,
   };
+}
+
+function ensureEditableState(node: HostNode, value: string): EditableState {
+  if (!node.editableState) node.editableState = createEditableState(value);
+  syncEditableState(node.editableState, value);
+  return node.editableState;
+}
+
+function syncEditable(node: HostNode, mode: "single-line" | "multi-line"): void {
+  const value = String(node.props.value ?? "");
+  const state = ensureEditableState(node, value);
+  ensureEditableViewport(state, value, node.layout.width, node.layout.height, mode);
 }

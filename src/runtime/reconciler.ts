@@ -10,7 +10,7 @@ import { Fiber, createFiber } from "./fiber.js";
 import { cleanupEffects, flushEffects, withFiber } from "./hooks.js";
 import { HostNode, createHostNode } from "./host.js";
 
-const HOST_TYPES = new Set<string>(["box", "text", "input"] satisfies HostType[]);
+const HOST_TYPES = new Set<string>(["box", "text", "input", "textarea"] satisfies HostType[]);
 
 function isHostType(t: unknown): t is HostType {
   return typeof t === "string" && HOST_TYPES.has(t);
@@ -39,7 +39,7 @@ export function reconcile(fiber: Fiber): void {
   } else if (fiber.type === "box") {
     const kids = normalizeChildren(fiber.props.children);
     reconcileChildren(fiber, kids);
-  } else if (fiber.type === "text" || fiber.type === "input") {
+  } else if (fiber.type === "text" || fiber.type === "input" || fiber.type === "textarea") {
     clearChildren(fiber);
   } else if (isHostType(fiber.type)) {
     clearChildren(fiber);

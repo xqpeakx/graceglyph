@@ -12,6 +12,7 @@ export type {
   FlexJustify,
   HostType,
   InputProps,
+  TextAreaProps,
   TextProps,
   ZenElement,
   ZenNode,
@@ -35,6 +36,7 @@ export {
   Row,
   Spacer,
   Text,
+  TextArea,
   TextInput,
   Window,
 } from "./components.js";

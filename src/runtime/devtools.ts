@@ -2,7 +2,7 @@ import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { ansi, DefaultStyle, Style } from "../render/style.js";
 import { stringWidth } from "../render/unicode.js";
-import type { BoxProps, InputProps, TextProps } from "./element.js";
+import type { BoxProps, InputProps, TextAreaProps, TextProps } from "./element.js";
 import { textOf, type HostNode } from "./host.js";
 
 interface InspectorLine {
@@ -121,7 +121,7 @@ function collectTree(
 }
 
 function describeNode(node: HostNode): string {
-  const props = node.props as Partial<BoxProps & TextProps & InputProps>;
+  const props = node.props as Partial<BoxProps & TextProps & InputProps & TextAreaProps>;
   const parts = [node.type, `@${node.layout.x},${node.layout.y}`, `${node.layout.width}x${node.layout.height}`];
 
   if (node.type === "box") {
@@ -132,7 +132,7 @@ function describeNode(node: HostNode): string {
   } else if (node.type === "text") {
     const text = preview(textOf(props.children));
     if (text) parts.push(quote(text));
-  } else if (node.type === "input") {
+  } else if (node.type === "input" || node.type === "textarea") {
     parts.push(`value=${quote(preview(String(props.value ?? "")))}`);
   }
 
@@ -164,6 +164,7 @@ function quote(value: string): string {
 }
 
 function preview(value: string): string {
+  value = value.replace(/\n/g, "↵");
   if (value.length === 0) return "";
   if (stringWidth(value) <= 20) return value;
   let out = "";

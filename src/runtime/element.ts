@@ -10,7 +10,7 @@ export type ComponentFn<P = Record<string, unknown>> = (
 
 export type ElementType = HostType | FragmentType | ComponentFn<any>;
 
-export type HostType = "box" | "text" | "input";
+export type HostType = "box" | "text" | "input" | "textarea";
 
 export interface ZenElement<P = Record<string, unknown>> {
   $$type: "element";
@@ -154,5 +154,16 @@ export interface InputProps {
   onChange: (value: string) => void;
   onSubmit?: (value: string) => void;
   width?: number;
+  grow?: number;
+  style?: BoxStyle;
+}
+
+export interface TextAreaProps {
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+  width?: number;
+  height?: number;
+  grow?: number;
   style?: BoxStyle;
 }

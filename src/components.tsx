@@ -1,5 +1,11 @@
 import { Fragment, h } from "./runtime/element.js";
-import type { BoxProps, BoxStyle, TextProps, ZenElement } from "./runtime/element.js";
+import type {
+  BoxProps,
+  BoxStyle,
+  TextAreaProps as HostTextAreaProps,
+  TextProps,
+  ZenElement,
+} from "./runtime/element.js";
 import type { KeyEvent } from "./input/keys.js";
 
 /**
@@ -93,11 +99,19 @@ export interface TextInputProps {
   onSubmit?: (v: string) => void;
   placeholder?: string;
   width?: number;
+  grow?: number;
   style?: BoxStyle;
 }
 
 export function TextInput(props: TextInputProps): ZenElement {
   return h("input", props as unknown as Record<string, unknown>);
+}
+
+// -- <TextArea> --------------------------------------------------------------
+export interface TextAreaProps extends HostTextAreaProps {}
+
+export function TextArea(props: TextAreaProps): ZenElement {
+  return h("textarea", props as unknown as Record<string, unknown>);
 }
 
 // -- <Spacer> -----------------------------------------------------------------
