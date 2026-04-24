@@ -51,6 +51,27 @@ test("textarea mouse positioning maps viewport coordinates back to the document"
   assert.equal(state.cursor, 13);
 });
 
+test("textarea editing moves and deletes by grapheme clusters", () => {
+  const value = "a👍🏽b";
+  const state = createEditableState(value);
+
+  const moved = applyEditableKey(state, value, key("left"), {
+    mode: "single-line",
+    width: 10,
+    height: 1,
+  });
+  assert.equal(moved.nextValue, value);
+  assert.equal(state.cursor, 5);
+
+  const deleted = applyEditableKey(state, value, key("backspace"), {
+    mode: "single-line",
+    width: 10,
+    height: 1,
+  });
+  assert.equal(deleted.nextValue, "ab");
+  assert.equal(state.cursor, 1);
+});
+
 test("inspector describes textarea nodes", () => {
   const tree = h(
     "box",
@@ -71,7 +92,7 @@ test("inspector describes textarea nodes", () => {
   assert.match(output, /> textarea @0,0 20x3 value="alpha↵beta"/);
 });
 
-function key(name: "enter") {
+function key(name: "enter" | "left" | "backspace") {
   return {
     type: "key" as const,
     name,

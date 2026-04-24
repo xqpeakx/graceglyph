@@ -1,7 +1,7 @@
 import { Rect } from "../layout/rect.js";
 import { blankCell, Cell, cellsEqual } from "./cell.js";
 import { DefaultStyle, Style } from "./style.js";
-import { charWidth } from "./unicode.js";
+import { splitGraphemes } from "./unicode.js";
 
 /**
  * Fixed-size cell grid. The renderer holds two buffers (front/back) and
@@ -45,13 +45,13 @@ export class ScreenBuffer {
   writeText(x: number, y: number, text: string, style: Style, clip: Rect): void {
     if (y < clip.y || y >= clip.bottom) return;
     let cx = x;
-    for (const ch of text) {
+    for (const grapheme of splitGraphemes(text)) {
       if (cx >= clip.right) break;
-      const cp = ch.codePointAt(0) ?? 0x20;
-      const w = charWidth(cp);
+      const w = grapheme.width;
       if (w === 0) continue;
+      if (cx + w > clip.right) break;
       if (cx >= clip.x) {
-        this.set(cx, y, { char: ch, style, width: w });
+        this.set(cx, y, { char: grapheme.text, style, width: w as 1 | 2 });
         if (w === 2 && cx + 1 < clip.right) {
           this.set(cx + 1, y, { char: "", style, width: 0 });
         }

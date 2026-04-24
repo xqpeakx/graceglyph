@@ -1,13 +1,4 @@
-                                            ___                    __         
-                                           /\_ \                  /\ \        
-*  ___ __       ___       ___     __    __ \//\ \    __  __  _____\ \ \___    
-* /'_ `\/\`'__\/'__`\   /'___\ /'__`\ /'_ `\ \ \ \  /\ \/\ \/\ '__`\ \  _ `\  
-*/\ \L\ \ \ \//\ \L\.\_/\ \__//\  __//\ \L\ \ \_\ \_\ \ \_\ \ \ \L\ \ \ \ \ \ 
-*\ \____ \ \_\\ \__/.\_\ \____\ \____\ \____ \/\____\\/`____ \ \ ,__/\ \_\ \_\
-* \/___L\ \/_/ \/__/\/_/\/____/\/____/\/___L\ \/____/ `/___/> \ \ \/  \/_/\/_/
-*   /\____/                             /\____/          /\___/\ \_\          
-*   \_/__/                              \_/__/           \/__/  \/_/          
-*
+* graceglyph
 
 Terminal UI toolkit for TypeScript.
 
@@ -35,27 +26,42 @@ npm install graceglyph
 ## Hello world
 
 ```tsx
-import { App, Button, Column, Text, Window, render, useState } from "graceglyph";
+import {
+  App,
+  Button,
+  Column,
+  Row,
+  Text,
+  TextArea,
+  TextInput,
+  Window,
+  render,
+  useState,
+} from "graceglyph";
 
-function Counter() {
-  const [count, setCount] = useState(0);
+function QuickNote() {
+  const [subject, setSubject] = useState("Hello graceglyph");
+  const [body, setBody] = useState("Write a few lines here.");
+  const [status, setStatus] = useState("draft");
 
   return (
     <App>
-      <Window title="Hello" width={40} height={10}>
-        <Column gap={1}>
-          <Text>Hello world</Text>
-          <Text>{count} clicks</Text>
-          <Button onClick={() => setCount((value) => value + 1)}>
-            Increment
-          </Button>
+      <Window title="Quick note" width={60} height={16}>
+        <Column gap={1} grow={1}>
+          <Text>{subject}</Text>
+          <TextInput value={subject} onChange={setSubject} placeholder="Subject" />
+          <TextArea value={body} onChange={setBody} grow={1} />
+          <Row gap={1}>
+            <Button onClick={() => setStatus("saved")}>Save</Button>
+            <Text>{status}</Text>
+          </Row>
         </Column>
       </Window>
     </App>
   );
 }
 
-render(<Counter />);
+render(<QuickNote />);
 ```
 
 For automatic JSX without `h(...)` boilerplate, use:
@@ -74,12 +80,11 @@ Run the bundled examples:
 ```bash
 npm run example:hello
 npm run example:form
-npm run example:showcase
 npm run example:todo
 npm run example:explorer
 ```
 
-`example:showcase` is the best demo right now. It exercises list navigation,
+`example:hello` is the best demo right now. It exercises list navigation,
 single-line input, multiline editing, live preview, and modal presentation in
 one screen.
 
@@ -87,7 +92,6 @@ Use watch mode while iterating:
 
 ```bash
 npm run dev:hello
-npm run dev:showcase
 npm run dev:todo
 npm run dev:explorer
 ```

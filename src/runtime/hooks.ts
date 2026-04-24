@@ -1,14 +1,7 @@
 import type { Fiber, Hook } from "./fiber.js";
 
-type Scheduler = (fiber: Fiber) => void;
-
 let currentFiber: Fiber | null = null;
 let hookIndex = 0;
-let scheduler: Scheduler = () => {};
-
-export function setScheduler(fn: Scheduler): void {
-  scheduler = fn;
-}
 
 export function withFiber<T>(fiber: Fiber, fn: () => T): T {
   const prevFiber = currentFiber;
@@ -49,7 +42,7 @@ export function useState<T>(
     const nextValue = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
     if (Object.is(prev, nextValue)) return;
     hook.value = nextValue;
-    scheduler(fiber);
+    fiber.scheduler(fiber);
   };
   return [hook.value as T, setState];
 }

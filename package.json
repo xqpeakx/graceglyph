@@ -30,12 +30,10 @@
     "watch": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",
     "dev:hello": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
-    "dev:showcase": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/showcase.tsx",
     "dev:todo": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
     "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
     "example:hello": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
     "example:form": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/form.tsx",
-    "example:showcase": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/showcase.tsx",
     "example:todo": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
     "example:explorer": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
     "test": "node --test --loader ts-node/esm test/*.test.ts"

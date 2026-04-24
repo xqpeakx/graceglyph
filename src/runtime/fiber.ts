@@ -1,6 +1,8 @@
 import type { HostNode } from "./host.js";
 import type { ElementType } from "./element.js";
 
+export type FiberScheduler = (fiber: Fiber) => void;
+
 export type Hook =
   | { kind: "state"; value: unknown }
   | {
@@ -21,6 +23,7 @@ export interface Fiber {
   hooks: Hook[];
   /** Set only on host fibers (type is a string). */
   hostNode: HostNode | null;
+  scheduler: FiberScheduler;
   /** Flagged by setState; reconciler re-runs this fiber on next commit. */
   dirty: boolean;
   /** True once the fiber has produced output at least once. */
@@ -41,6 +44,7 @@ export function createFiber(
     children: [],
     hooks: [],
     hostNode: null,
+    scheduler: parent?.scheduler ?? (() => {}),
     dirty: true,
     mounted: false,
   };

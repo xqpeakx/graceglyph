@@ -32,6 +32,10 @@ export class Application {
   private dirty = true;
   private renderScheduled = false;
   private onData?: (buf: Buffer | string) => void;
+  private sigintHandler?: () => void;
+  private sigtermHandler?: () => void;
+  private resizeCleanup?: () => void;
+  private parserFlushTimer?: NodeJS.Timeout;
 
   constructor(opts: ApplicationOptions = {}) {
     this.terminal = new Terminal(opts);
@@ -56,20 +60,24 @@ export class Application {
     this.terminal.start();
 
     this.onData = (buf) => {
+      this.cancelParserFlush();
       const chunk = typeof buf === "string" ? buf : buf.toString("utf8");
       for (const ev of this.parser.feed(chunk)) this.dispatch(ev);
+      this.scheduleParserFlush();
     };
     this.terminal.input.on("data", this.onData);
 
-    this.terminal.onResize(({ width, height }) => {
+    this.resizeCleanup = this.terminal.onResize(({ width, height }) => {
       this.renderer.resize(width, height);
       this.renderer.invalidate();
       this.dispatch({ type: "resize", width, height });
       this.invalidate();
     });
 
-    process.on("SIGINT", () => this.quit());
-    process.on("SIGTERM", () => this.quit());
+    this.sigintHandler = () => this.quit();
+    this.sigtermHandler = () => this.quit();
+    process.on("SIGINT", this.sigintHandler);
+    process.on("SIGTERM", this.sigtermHandler);
 
     this.invalidate();
   }
@@ -78,6 +86,9 @@ export class Application {
     if (!this.running) return;
     this.running = false;
     if (this.onData) this.terminal.input.off("data", this.onData);
+    this.cancelParserFlush();
+    this.detachResizeListener();
+    this.detachSignalHandlers();
     this.root?._unmount(this);
     this.terminal.stop();
   }
@@ -142,6 +153,40 @@ export class Application {
       bubbleMouse(hit, ev);
     }
     this.bus.emit("mouse", ev);
+  }
+
+  private detachSignalHandlers(): void {
+    if (this.sigintHandler) {
+      process.off("SIGINT", this.sigintHandler);
+      this.sigintHandler = undefined;
+    }
+    if (this.sigtermHandler) {
+      process.off("SIGTERM", this.sigtermHandler);
+      this.sigtermHandler = undefined;
+    }
+  }
+
+  private detachResizeListener(): void {
+    if (this.resizeCleanup) {
+      this.resizeCleanup();
+      this.resizeCleanup = undefined;
+    }
+  }
+
+  private scheduleParserFlush(): void {
+    if (!this.parser.hasPendingInput()) return;
+    this.parserFlushTimer = setTimeout(() => {
+      this.parserFlushTimer = undefined;
+      if (!this.running) return;
+      for (const ev of this.parser.flushPending()) this.dispatch(ev);
+    }, 20);
+  }
+
+  private cancelParserFlush(): void {
+    if (this.parserFlushTimer) {
+      clearTimeout(this.parserFlushTimer);
+      this.parserFlushTimer = undefined;
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { ansi, DefaultStyle, Style } from "../render/style.js";
-import { stringWidth } from "../render/unicode.js";
+import { clipColumns, stringWidth, truncateColumns } from "../render/unicode.js";
 import type { BoxProps, InputProps, TextAreaProps, TextProps } from "./element.js";
 import { textOf, type HostNode } from "./host.js";
 
@@ -166,29 +166,11 @@ function quote(value: string): string {
 function preview(value: string): string {
   value = value.replace(/\n/g, "↵");
   if (value.length === 0) return "";
-  if (stringWidth(value) <= 20) return value;
-  let out = "";
-  let width = 0;
-  for (const ch of value) {
-    const next = stringWidth(ch);
-    if (width + next > 19) break;
-    out += ch;
-    width += next;
-  }
-  return `${out}…`;
+  return truncateColumns(value, 20);
 }
 
 function truncate(value: string, width: number): string {
-  if (width <= 0) return "";
   if (stringWidth(value) <= width) return value;
-  if (width === 1) return "…";
-  let out = "";
-  let used = 0;
-  for (const ch of value) {
-    const next = stringWidth(ch);
-    if (used + next > width - 1) break;
-    out += ch;
-    used += next;
-  }
-  return `${out}…`;
+  if (width <= 1) return clipColumns("…", width);
+  return truncateColumns(value, width);
 }

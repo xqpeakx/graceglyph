@@ -19,7 +19,6 @@ import {
   reconcile,
   unmount,
 } from "./reconciler.js";
-import { setScheduler } from "./hooks.js";
 
 export interface RuntimeOptions extends TerminalOptions {
   devtools?: boolean;
@@ -38,6 +37,10 @@ export class Runtime {
   private onData?: (chunk: Buffer | string) => void;
   private readonly devtoolsEnabled: boolean;
   private devtoolsVisible = false;
+  private sigintHandler?: () => void;
+  private sigtermHandler?: () => void;
+  private resizeCleanup?: () => void;
+  private parserFlushTimer?: NodeJS.Timeout;
 
   constructor(opts: RuntimeOptions = {}) {
     this.terminal = new Terminal(opts);
@@ -45,8 +48,6 @@ export class Runtime {
     this.parser = new InputParser();
     this.focus = new FocusManager();
     this.devtoolsEnabled = opts.devtools ?? true;
-    // Any setState — from any fiber — triggers a single coalesced commit.
-    setScheduler(() => this.scheduleCommit());
   }
 
   mount(element: ZenElement): void {
@@ -57,6 +58,7 @@ export class Runtime {
         element.key,
         null,
       );
+      root.scheduler = () => this.scheduleCommit();
       this.rootFiber = root;
       reconcile(root);
       this.rebuildAndPaint();
@@ -71,13 +73,15 @@ export class Runtime {
 
       this.onData = (chunk) => {
         this.withFatalBoundary("input", () => {
+          this.cancelParserFlush();
           const s = typeof chunk === "string" ? chunk : chunk.toString("utf8");
           for (const ev of this.parser.feed(s)) this.dispatch(ev);
+          this.scheduleParserFlush();
         });
       };
       this.terminal.input.on("data", this.onData);
 
-      this.terminal.onResize(({ width, height }) => {
+      this.resizeCleanup = this.terminal.onResize(({ width, height }) => {
         this.withFatalBoundary("resize", () => {
           this.renderer.resize(width, height);
           this.renderer.invalidate();
@@ -85,8 +89,10 @@ export class Runtime {
         });
       });
 
-      process.on("SIGINT", () => this.stop());
-      process.on("SIGTERM", () => this.stop());
+      this.sigintHandler = () => this.stop();
+      this.sigtermHandler = () => this.stop();
+      process.on("SIGINT", this.sigintHandler);
+      process.on("SIGTERM", this.sigtermHandler);
 
       this.scheduleCommit();
     });
@@ -96,6 +102,9 @@ export class Runtime {
     if (!this.running) return;
     this.running = false;
     if (this.onData) this.terminal.input.off("data", this.onData);
+    this.cancelParserFlush();
+    this.detachResizeListener();
+    this.detachSignalHandlers();
     if (this.rootFiber) unmount(this.rootFiber);
     this.terminal.stop();
   }
@@ -277,12 +286,51 @@ export class Runtime {
       this.terminal.input.off("data", this.onData);
       this.onData = undefined;
     }
+    this.cancelParserFlush();
+    this.detachResizeListener();
+    this.detachSignalHandlers();
     this.hostRoot = null;
     this.rootFiber = null;
     try {
       this.terminal.stop();
     } catch {
       // Best-effort terminal recovery after a fatal user-land exception.
+    }
+  }
+
+  private detachSignalHandlers(): void {
+    if (this.sigintHandler) {
+      process.off("SIGINT", this.sigintHandler);
+      this.sigintHandler = undefined;
+    }
+    if (this.sigtermHandler) {
+      process.off("SIGTERM", this.sigtermHandler);
+      this.sigtermHandler = undefined;
+    }
+  }
+
+  private detachResizeListener(): void {
+    if (this.resizeCleanup) {
+      this.resizeCleanup();
+      this.resizeCleanup = undefined;
+    }
+  }
+
+  private scheduleParserFlush(): void {
+    if (!this.parser.hasPendingInput()) return;
+    this.parserFlushTimer = setTimeout(() => {
+      this.parserFlushTimer = undefined;
+      if (!this.running) return;
+      this.withFatalBoundary("input", () => {
+        for (const ev of this.parser.flushPending()) this.dispatch(ev);
+      });
+    }, 20);
+  }
+
+  private cancelParserFlush(): void {
+    if (this.parserFlushTimer) {
+      clearTimeout(this.parserFlushTimer);
+      this.parserFlushTimer = undefined;
     }
   }
 }

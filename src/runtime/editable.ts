@@ -1,4 +1,12 @@
 import type { KeyEvent } from "../input/keys.js";
+import {
+  columnForIndex,
+  indexForColumn,
+  nextGraphemeEnd,
+  previousGraphemeStart,
+  sliceColumns,
+  snapIndexToGraphemeBoundary,
+} from "../render/unicode.js";
 
 export type EditableMode = "single-line" | "multi-line";
 
@@ -30,7 +38,7 @@ export function createEditableState(value = ""): EditableState {
 }
 
 export function syncEditableState(state: EditableState, value: string): void {
-  state.cursor = clamp(state.cursor, 0, value.length);
+  state.cursor = snapIndexToGraphemeBoundary(value, clamp(state.cursor, 0, value.length));
   state.scrollX = Math.max(0, state.scrollX);
   state.scrollY = Math.max(0, state.scrollY);
 }
@@ -108,7 +116,7 @@ export function moveCursorToPoint(
   syncEditableState(state, value);
 
   if (mode === "single-line") {
-    state.cursor = clamp(state.scrollX + Math.max(0, x), 0, value.length);
+    state.cursor = indexForColumn(value, state.scrollX + Math.max(0, x));
     state.preferredColumn = null;
     ensureEditableViewport(state, value, width, height, mode);
     return;
@@ -139,11 +147,11 @@ export function applyEditableKey(
 
   switch (ev.name) {
     case "left":
-      state.cursor = Math.max(0, state.cursor - 1);
+      state.cursor = previousGraphemeStart(value, state.cursor);
       state.preferredColumn = null;
       break;
     case "right":
-      state.cursor = Math.min(value.length, state.cursor + 1);
+      state.cursor = nextGraphemeEnd(value, state.cursor);
       state.preferredColumn = null;
       break;
     case "home":
@@ -182,14 +190,16 @@ export function applyEditableKey(
       break;
     case "backspace":
       if (state.cursor > 0) {
-        nextValue = value.slice(0, state.cursor - 1) + value.slice(state.cursor);
-        state.cursor -= 1;
+        const start = previousGraphemeStart(value, state.cursor);
+        nextValue = value.slice(0, start) + value.slice(state.cursor);
+        state.cursor = start;
       }
       state.preferredColumn = null;
       break;
     case "delete":
       if (state.cursor < value.length) {
-        nextValue = value.slice(0, state.cursor) + value.slice(state.cursor + 1);
+        const end = nextGraphemeEnd(value, state.cursor);
+        nextValue = value.slice(0, state.cursor) + value.slice(end);
       }
       state.preferredColumn = null;
       break;
@@ -254,7 +264,7 @@ function locateCursor(value: string, cursor: number): {
     if (clamped <= info.end) {
       return {
         line: i,
-        column: clamped - info.start,
+        column: columnForIndex(info.text, clamped - info.start),
         info,
         lines,
       };
@@ -264,7 +274,7 @@ function locateCursor(value: string, cursor: number): {
   const info = lines[lines.length - 1]!;
   return {
     line: lines.length - 1,
-    column: info.end - info.start,
+    column: columnForIndex(info.text, info.end - info.start),
     info,
     lines,
   };
@@ -290,12 +300,7 @@ function getLines(value: string): LineInfo[] {
 
 function indexForLineColumn(lines: LineInfo[], line: number, column: number): number {
   const info = lines[clamp(line, 0, lines.length - 1)]!;
-  return info.start + Math.min(Math.max(0, column), info.text.length);
-}
-
-function sliceColumns(value: string, start: number, width: number): string {
-  if (width <= 0) return "";
-  return value.slice(Math.max(0, start), Math.max(0, start) + width);
+  return info.start + indexForColumn(info.text, column);
 }
 
 function clampScroll(scroll: number, cursor: number, size: number): number {

@@ -1,7 +1,7 @@
 import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { DefaultStyle, Style } from "../render/style.js";
-import { stringWidth } from "../render/unicode.js";
+import { clipColumns, stringWidth, truncateColumns } from "../render/unicode.js";
 import {
   createEditableState,
   ensureEditableViewport,
@@ -290,7 +290,7 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
         buffer.writeText(
           layout.x,
           layout.y + row,
-          placeholderLines[row]!.slice(0, layout.width),
+          clipColumns(placeholderLines[row]!, layout.width),
           phStyle,
           layout,
         );
@@ -354,30 +354,8 @@ export function textOf(children: unknown): string {
 }
 
 function truncate(s: string, width: number, mode: "truncate" | "clip"): string {
-  if (width <= 0) return "";
-  if (stringWidth(s) <= width) return s;
-  if (mode === "clip") {
-    let out = "";
-    let w = 0;
-    for (const ch of s) {
-      const cw = stringWidth(ch);
-      if (w + cw > width) break;
-      out += ch;
-      w += cw;
-    }
-    return out;
-  }
-  // truncate with ellipsis if room
-  const ellipsis = "…";
-  let out = "";
-  let w = 0;
-  for (const ch of s) {
-    const cw = stringWidth(ch);
-    if (w + cw > width - 1) break;
-    out += ch;
-    w += cw;
-  }
-  return out + ellipsis;
+  if (mode === "clip") return clipColumns(s, width);
+  return truncateColumns(s, width);
 }
 
 function toStyle(s: TextProps["style"]): Style {

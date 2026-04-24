@@ -23,32 +23,63 @@ export class InputParser {
     return events;
   }
 
-  private parseOne(): InputEvent | null {
+  hasPendingInput(): boolean {
+    return this.buffer.length > 0;
+  }
+
+  flushPending(): InputEvent[] {
+    const events: InputEvent[] = [];
+
+    while (this.buffer.length > 0) {
+      const ev = this.parseOne(true);
+      if (ev) {
+        events.push(ev);
+        continue;
+      }
+
+      const ch = this.buffer[0]!;
+      this.buffer = this.buffer.slice(1);
+      if (ch === "\x1b") {
+        events.push(keyEvent("escape", { raw: ch }));
+      } else {
+        events.push(this.parseControlChar(ch));
+      }
+    }
+
+    return events;
+  }
+
+  private parseOne(flush = false): InputEvent | null {
     const s = this.buffer;
     const ch = s[0]!;
 
     // CSI sequences: ESC [ ...
     if (ch === "\x1b" && s[1] === "[") {
-      return this.parseCsi();
+      return this.parseCsi(flush);
     }
 
     // SS3 sequences: ESC O X — some terminals use these for F1-F4/arrows.
-    if (ch === "\x1b" && s[1] === "O" && s.length >= 3) {
-      const code = s[2]!;
-      this.buffer = s.slice(3);
-      const map: Record<string, KeyName> = {
-        A: "up", B: "down", C: "right", D: "left",
-        H: "home", F: "end",
-        P: "f1", Q: "f2", R: "f3", S: "f4",
-      };
-      const name = map[code];
-      if (name) return keyEvent(name, { raw: s.slice(0, 3) });
-      return keyEvent("char", { char: code, raw: s.slice(0, 3) });
+    if (ch === "\x1b" && s[1] === "O") {
+      if (s.length < 3) {
+        if (!flush) return null;
+      } else {
+        const code = s[2]!;
+        this.buffer = s.slice(3);
+        const map: Record<string, KeyName> = {
+          A: "up", B: "down", C: "right", D: "left",
+          H: "home", F: "end",
+          P: "f1", Q: "f2", R: "f3", S: "f4",
+        };
+        const name = map[code];
+        if (name) return keyEvent(name, { raw: s.slice(0, 3) });
+        return keyEvent("char", { char: code, raw: s.slice(0, 3) });
+      }
     }
 
     // Lone ESC or Alt+key
     if (ch === "\x1b") {
       if (s.length === 1) {
+        if (!flush) return null;
         this.buffer = "";
         return keyEvent("escape", { raw: ch });
       }
@@ -63,7 +94,7 @@ export class InputParser {
     return this.parseControlChar(ch);
   }
 
-  private parseCsi(): InputEvent | null {
+  private parseCsi(flush: boolean): InputEvent | null {
     const s = this.buffer;
     // Find final byte: 0x40-0x7E
     let i = 2;
@@ -72,7 +103,11 @@ export class InputParser {
       if (code >= 0x40 && code <= 0x7e) break;
       i++;
     }
-    if (i >= s.length) return null; // incomplete
+    if (i >= s.length) {
+      if (!flush) return null; // incomplete
+      this.buffer = s.slice(1);
+      return keyEvent("escape", { raw: "\x1b" });
+    }
     const seq = s.slice(0, i + 1);
     const params = s.slice(2, i);
     const final = s[i]!;
