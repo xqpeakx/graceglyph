@@ -5,6 +5,7 @@ import {
   nextGraphemeEnd,
   previousGraphemeStart,
   sliceColumns,
+  snapColumnToBoundary,
   snapIndexToGraphemeBoundary,
 } from "../render/unicode.js";
 
@@ -53,13 +54,19 @@ export function ensureEditableViewport(
   syncEditableState(state, value);
 
   if (mode === "single-line") {
-    state.scrollX = clampScroll(state.scrollX, state.cursor, width);
+    state.scrollX = snapColumnToBoundary(
+      value,
+      clampScroll(state.scrollX, columnForIndex(value, state.cursor), width),
+    );
     state.scrollY = 0;
     return;
   }
 
   const position = locateCursor(value, state.cursor);
-  state.scrollX = clampScroll(state.scrollX, position.column, width);
+  state.scrollX = snapColumnToBoundary(
+    position.info.text,
+    clampScroll(state.scrollX, position.column, width),
+  );
   state.scrollY = clampScroll(state.scrollY, position.line, height);
 }
 
@@ -72,13 +79,16 @@ export function getCursorOffset(
 ): { x: number; y: number } {
   ensureEditableViewport(state, value, width, height, mode);
   if (mode === "single-line") {
-    return { x: Math.max(0, state.cursor - state.scrollX), y: 0 };
+    return {
+      x: clampCursorOffset(Math.max(0, columnForIndex(value, state.cursor) - state.scrollX), width),
+      y: 0,
+    };
   }
 
   const position = locateCursor(value, state.cursor);
   return {
-    x: Math.max(0, position.column - state.scrollX),
-    y: Math.max(0, position.line - state.scrollY),
+    x: clampCursorOffset(Math.max(0, position.column - state.scrollX), width),
+    y: clampCursorOffset(Math.max(0, position.line - state.scrollY), height),
   };
 }
 
@@ -312,4 +322,9 @@ function clampScroll(scroll: number, cursor: number, size: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function clampCursorOffset(offset: number, size: number): number {
+  if (size <= 0) return 0;
+  return Math.min(offset, size - 1);
 }

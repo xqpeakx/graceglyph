@@ -14,8 +14,8 @@ and zero framework-level weirdness under normal use.
 - [x] Grapheme-safe cursor movement and editing
 - [x] Grapheme-safe clipping and truncation helpers
 - [x] Wide-glyph buffer clipping behavior covered by tests
-- [ ] Generated UAX #11 width table
-- [ ] Broader emoji / CJK / combining-mark integration coverage
+- [x] Generated UAX #11 width table
+- [x] Broader emoji / CJK / combining-mark integration coverage
 
 ## 2. Runtime Integration Coverage
 

@@ -2,12 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  charWidth,
   clipColumns,
   columnForIndex,
   indexForColumn,
   nextGraphemeEnd,
   previousGraphemeStart,
   sliceColumns,
+  snapColumnToBoundary,
   stringWidth,
   truncateColumns,
 } from "../src/render/unicode.js";
@@ -19,6 +21,12 @@ test("stringWidth treats combining marks as part of a single cell", () => {
 test("stringWidth treats joined emoji clusters as a single wide grapheme", () => {
   assert.equal(stringWidth("👨‍👩‍👧‍👦"), 2);
   assert.equal(stringWidth("👍🏽"), 2);
+  assert.equal(stringWidth("❤️"), 2);
+  assert.equal(stringWidth("🇺🇸"), 2);
+});
+
+test("charWidth does not classify unassigned code points as wide", () => {
+  assert.equal(charWidth(0x378), 1);
 });
 
 test("column and index helpers snap to grapheme boundaries", () => {
@@ -28,6 +36,7 @@ test("column and index helpers snap to grapheme boundaries", () => {
   assert.equal(previousGraphemeStart(value, 5), 1);
   assert.equal(columnForIndex(value, 5), 3);
   assert.equal(indexForColumn(value, 2), 5);
+  assert.equal(snapColumnToBoundary(value, 2), 1);
 });
 
 test("column clipping and truncation preserve grapheme integrity", () => {

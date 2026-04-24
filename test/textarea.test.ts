@@ -72,6 +72,35 @@ test("textarea editing moves and deletes by grapheme clusters", () => {
   assert.equal(state.cursor, 1);
 });
 
+test("single-line viewport scroll snaps to grapheme boundaries", () => {
+  const value = "a👍🏽b";
+  const state = createEditableState(value);
+
+  const right = applyEditableKey(state, value, key("right"), {
+    mode: "single-line",
+    width: 3,
+    height: 1,
+  });
+  assert.equal(right.nextValue, value);
+
+  const toEmoji = applyEditableKey(state, value, key("right"), {
+    mode: "single-line",
+    width: 3,
+    height: 1,
+  });
+  assert.equal(toEmoji.nextValue, value);
+
+  const toEnd = applyEditableKey(state, value, key("right"), {
+    mode: "single-line",
+    width: 3,
+    height: 1,
+  });
+  assert.equal(toEnd.nextValue, value);
+
+  assert.deepEqual(getVisibleLines(state, value, 3, 1, "single-line"), ["👍🏽b"]);
+  assert.deepEqual(getCursorOffset(state, value, 3, 1, "single-line"), { x: 2, y: 0 });
+});
+
 test("inspector describes textarea nodes", () => {
   const tree = h(
     "box",
@@ -92,7 +121,7 @@ test("inspector describes textarea nodes", () => {
   assert.match(output, /> textarea @0,0 20x3 value="alpha↵beta"/);
 });
 
-function key(name: "enter" | "left" | "backspace") {
+function key(name: "enter" | "left" | "right" | "backspace") {
   return {
     type: "key" as const,
     name,

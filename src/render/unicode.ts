@@ -1,28 +1,18 @@
-// East Asian Wide ranges — conservative subset sufficient for common CJK + emoji.
-// Full-fidelity width (UAX #11) is still a follow-up, but grapheme-aware
-// measurement keeps cursoring and clipping coherent for combined emoji and marks.
-const WIDE_RANGES: ReadonlyArray<readonly [number, number]> = [
-  [0x1100, 0x115f],
-  [0x2e80, 0x303e],
-  [0x3041, 0x33ff],
-  [0x3400, 0x4dbf],
-  [0x4e00, 0x9fff],
-  [0xa000, 0xa4cf],
-  [0xac00, 0xd7a3],
-  [0xf900, 0xfaff],
-  [0xfe30, 0xfe4f],
-  [0xff00, 0xff60],
-  [0xffe0, 0xffe6],
-  [0x1f300, 0x1f64f],
-  [0x1f900, 0x1f9ff],
-  [0x20000, 0x2fffd],
-  [0x30000, 0x3fffd],
-];
+import { COMBINING_RANGES, WIDE_RANGES } from "./unicode-width.generated.js";
 
-const MARK_REGEX = /\p{Mark}/u;
 const SEGMENTER = typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
   ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
   : null;
+const ZERO_WIDTH_NON_JOINER = 0x200c;
+const ZERO_WIDTH_JOINER = 0x200d;
+const VARIATION_SELECTOR_16 = 0xfe0f;
+const REGIONAL_INDICATOR_START = 0x1f1e6;
+const REGIONAL_INDICATOR_END = 0x1f1ff;
+const EMOJI_MODIFIER_START = 0x1f3fb;
+const EMOJI_MODIFIER_END = 0x1f3ff;
+const LANGUAGE_TAG = 0xe0001;
+const TAG_START = 0xe0020;
+const TAG_END = 0xe007f;
 
 export interface Grapheme {
   text: string;
@@ -31,29 +21,142 @@ export interface Grapheme {
   width: number;
 }
 
+function inRanges(ranges: ReadonlyArray<readonly [number, number]>, codePoint: number): boolean {
+  let lo = 0;
+  let hi = ranges.length - 1;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const [start, end] = ranges[mid]!;
+    if (codePoint < start) {
+      hi = mid - 1;
+      continue;
+    }
+    if (codePoint > end) {
+      lo = mid + 1;
+      continue;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function codePointLength(codePoint: number): number {
+  return codePoint > 0xffff ? 2 : 1;
+}
+
+function isRegionalIndicator(codePoint: number): boolean {
+  return codePoint >= REGIONAL_INDICATOR_START && codePoint <= REGIONAL_INDICATOR_END;
+}
+
+function isEmojiModifier(codePoint: number): boolean {
+  return codePoint >= EMOJI_MODIFIER_START && codePoint <= EMOJI_MODIFIER_END;
+}
+
+function isTagCodePoint(codePoint: number): boolean {
+  return codePoint === LANGUAGE_TAG || (codePoint >= TAG_START && codePoint <= TAG_END);
+}
+
+function isCombiningCodePoint(codePoint: number): boolean {
+  return inRanges(COMBINING_RANGES, codePoint);
+}
+
+function isWideCodePoint(codePoint: number): boolean {
+  return inRanges(WIDE_RANGES, codePoint);
+}
+
+function isZeroWidthCodePoint(codePoint: number): boolean {
+  if (codePoint < 0x20) return true;
+  if (codePoint >= 0x7f && codePoint < 0xa0) return true;
+  if (codePoint === ZERO_WIDTH_NON_JOINER || codePoint === ZERO_WIDTH_JOINER) return true;
+  if (isTagCodePoint(codePoint)) return true;
+  return isCombiningCodePoint(codePoint);
+}
+
+function isGraphemeExtendCodePoint(codePoint: number): boolean {
+  if (codePoint === ZERO_WIDTH_NON_JOINER) return true;
+  if (isTagCodePoint(codePoint)) return true;
+  if (isEmojiModifier(codePoint)) return true;
+  return isCombiningCodePoint(codePoint);
+}
+
+function splitGraphemesFallback(value: string): Grapheme[] {
+  const out: Grapheme[] = [];
+  let index = 0;
+
+  while (index < value.length) {
+    const start = index;
+    const first = value.codePointAt(index)!;
+    index += codePointLength(first);
+
+    if (isRegionalIndicator(first)) {
+      const next = value.codePointAt(index);
+      if (next !== undefined && isRegionalIndicator(next)) {
+        index += codePointLength(next);
+      }
+    }
+
+    while (index < value.length) {
+      const next = value.codePointAt(index)!;
+      if (!isGraphemeExtendCodePoint(next)) break;
+      index += codePointLength(next);
+    }
+
+    while (index < value.length) {
+      const next = value.codePointAt(index)!;
+      if (next !== ZERO_WIDTH_JOINER) break;
+      index += codePointLength(next);
+      if (index >= value.length) break;
+
+      const joined = value.codePointAt(index)!;
+      index += codePointLength(joined);
+
+      while (index < value.length) {
+        const extend = value.codePointAt(index)!;
+        if (!isGraphemeExtendCodePoint(extend)) break;
+        index += codePointLength(extend);
+      }
+    }
+
+    const text = value.slice(start, index);
+    out.push({
+      text,
+      start,
+      end: index,
+      width: graphemeWidth(text),
+    });
+  }
+
+  return out;
+}
+
 export function charWidth(codePoint: number): 0 | 1 | 2 {
   // Control characters render as zero-width here; callers should filter/replace.
-  if (codePoint < 0x20) return 0;
-  if (codePoint === 0x7f) return 0;
-  if (codePoint === 0x200c || codePoint === 0x200d) return 0;
-  if ((codePoint >= 0xfe00 && codePoint <= 0xfe0f) || (codePoint >= 0xe0100 && codePoint <= 0xe01ef)) {
-    return 0;
-  }
-  if (MARK_REGEX.test(String.fromCodePoint(codePoint))) return 0;
-  for (const [lo, hi] of WIDE_RANGES) {
-    if (codePoint < lo) return 1;
-    if (codePoint <= hi) return 2;
-  }
+  if (isZeroWidthCodePoint(codePoint)) return 0;
+  if (isWideCodePoint(codePoint)) return 2;
   return 1;
 }
 
 export function graphemeWidth(value: string): number {
   let width = 0;
+  let hasEmojiPresentationOverride = false;
+  let regionalIndicators = 0;
+
   for (const ch of value) {
     const cp = ch.codePointAt(0);
     if (cp === undefined) continue;
+    if (cp === VARIATION_SELECTOR_16 || cp === ZERO_WIDTH_JOINER) {
+      hasEmojiPresentationOverride = true;
+    }
+    if (isRegionalIndicator(cp)) regionalIndicators += 1;
     width = Math.max(width, charWidth(cp));
   }
+
+  if (hasEmojiPresentationOverride || regionalIndicators >= 2) {
+    return Math.max(width, 2);
+  }
+
   return width;
 }
 
@@ -69,18 +172,7 @@ export function splitGraphemes(value: string): Grapheme[] {
     }));
   }
 
-  const out: Grapheme[] = [];
-  let index = 0;
-  for (const ch of value) {
-    out.push({
-      text: ch,
-      start: index,
-      end: index + ch.length,
-      width: graphemeWidth(ch),
-    });
-    index += ch.length;
-  }
-  return out;
+  return splitGraphemesFallback(value);
 }
 
 export function stringWidth(value: string): number {
@@ -186,4 +278,18 @@ export function indexForColumn(value: string, column: number): number {
   }
 
   return value.length;
+}
+
+export function snapColumnToBoundary(value: string, column: number): number {
+  const target = Math.max(0, column);
+  let used = 0;
+
+  for (const grapheme of splitGraphemes(value)) {
+    const next = used + grapheme.width;
+    if (target < next) return used;
+    if (target === next) return next;
+    used = next;
+  }
+
+  return used;
 }

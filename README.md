@@ -1,6 +1,6 @@
 * graceglyph
 
-Terminal UI toolkit for TypeScript.
+Terminal UI toolkit for TypeScript. -- Do not rely on this yet, it is still very broken. very very not working right at all. feel free to do pull requests if you can help in any way.
 
 Graceglyph is a TUI framework for Node. It uses declarative components, row/column
 layout, typed props and events, and a small built-in inspector. The main focus
