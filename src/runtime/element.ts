@@ -127,8 +127,18 @@ export interface BoxProps {
   title?: string;
   /** Background + foreground style for the box chrome. */
   style?: BoxStyle;
+  /** Style applied on top of `style` when the box is focused. */
+  focusedStyle?: BoxStyle;
+  /** Border/frame override used when `border` is true. */
+  borderStyle?: BoxStyle;
+  /** Title override used when `title` is present. */
+  titleStyle?: BoxStyle;
   /** Make the box keyboard-focusable (Tab reaches it). */
   focusable?: boolean;
+  /** Paint and focus on top of siblings without consuming layout flow space. */
+  overlay?: boolean;
+  /** Keep Tab navigation scoped to this subtree while mounted. */
+  focusScope?: "contain";
   /** Fires when box has focus and a key is pressed. Return true to stop bubble. */
   onKey?: (ev: KeyEvent) => boolean | void;
   /** Fires on any mouse event inside the box. */
@@ -153,17 +163,25 @@ export interface InputProps {
   placeholder?: string;
   onChange: (value: string) => void;
   onSubmit?: (value: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   width?: number;
   grow?: number;
   style?: BoxStyle;
+  focusedStyle?: BoxStyle;
+  placeholderStyle?: BoxStyle;
 }
 
 export interface TextAreaProps {
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   width?: number;
   height?: number;
   grow?: number;
   style?: BoxStyle;
+  focusedStyle?: BoxStyle;
+  placeholderStyle?: BoxStyle;
 }

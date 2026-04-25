@@ -1,5 +1,7 @@
 import type { HostNode } from "./host.js";
 import type { ElementType } from "./element.js";
+import type { Theme } from "../theme/theme.js";
+import type { Size } from "../layout/rect.js";
 
 export type FiberScheduler = (fiber: Fiber) => void;
 
@@ -14,6 +16,12 @@ export type Hook =
   | { kind: "ref"; value: { current: unknown } }
   | { kind: "memo"; value: unknown; deps: unknown[] | null };
 
+export interface FiberEnvironment {
+  theme: Theme;
+  size: () => Size;
+  onResize: (listener: (size: Size) => void) => () => void;
+}
+
 export interface Fiber {
   type: ElementType;
   props: Record<string, unknown> & { children?: unknown };
@@ -23,6 +31,7 @@ export interface Fiber {
   hooks: Hook[];
   /** Set only on host fibers (type is a string). */
   hostNode: HostNode | null;
+  environment: FiberEnvironment | null;
   scheduler: FiberScheduler;
   /** Flagged by setState; reconciler re-runs this fiber on next commit. */
   dirty: boolean;
@@ -44,6 +53,7 @@ export function createFiber(
     children: [],
     hooks: [],
     hostNode: null,
+    environment: parent?.environment ?? null,
     scheduler: parent?.scheduler ?? (() => {}),
     dirty: true,
     mounted: false,

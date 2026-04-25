@@ -6,6 +6,7 @@ import {
   isElement,
   normalizeChildren,
 } from "./element.js";
+import { validateHostFiberProps } from "./diagnostics.js";
 import { Fiber, createFiber } from "./fiber.js";
 import { cleanupEffects, cleanupPendingEffects, flushEffects, withFiber } from "./hooks.js";
 import { HostNode, createHostNode } from "./host.js";
@@ -26,6 +27,10 @@ function isHostType(t: unknown): t is HostType {
  */
 export function reconcile(fiber: Fiber): void {
   fiber.dirty = false;
+
+  if (isHostType(fiber.type)) {
+    validateHostFiberProps(fiber);
+  }
 
   if (fiber.type === Fragment) {
     const kids = normalizeChildren(fiber.props.children);

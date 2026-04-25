@@ -1,4 +1,7 @@
-import type { Fiber, Hook } from "./fiber.js";
+import type { Fiber, FiberEnvironment, Hook } from "./fiber.js";
+import { attachFiberToError, formatComponentStack } from "./diagnostics.js";
+import type { Theme } from "../theme/theme.js";
+import type { Size } from "../layout/rect.js";
 
 let currentFiber: Fiber | null = null;
 let hookIndex = 0;
@@ -10,6 +13,9 @@ export function withFiber<T>(fiber: Fiber, fn: () => T): T {
   hookIndex = 0;
   try {
     return fn();
+  } catch (error) {
+    attachFiberToError(error, fiber);
+    throw error;
   } finally {
     currentFiber = prevFiber;
     hookIndex = prevIndex;
@@ -27,6 +33,13 @@ function getHook<T extends Hook>(factory: () => T): T {
     currentFiber.hooks[i] = hook;
   }
   return hook;
+}
+
+function getEnvironment(): FiberEnvironment {
+  if (!currentFiber?.environment) {
+    throw new Error("runtime hooks require a mounted graceglyph runtime");
+  }
+  return currentFiber.environment;
 }
 
 export function useState<T>(
@@ -72,6 +85,25 @@ export function useCallback<T extends (...args: any[]) => any>(fn: T, deps: unkn
   return useMemo(() => fn, deps);
 }
 
+export function useTheme(): Theme {
+  return getEnvironment().theme;
+}
+
+export function useTerminalSize(): Size {
+  const environment = getEnvironment();
+  const [size, setSize] = useState<Size>(() => environment.size());
+
+  useEffect(() => (
+    environment.onResize((next) => {
+      setSize((prev) => (
+        prev.width === next.width && prev.height === next.height ? prev : next
+      ));
+    })
+  ), [environment]);
+
+  return size;
+}
+
 export function useEffect(
   effect: () => void | (() => void),
   deps?: unknown[],
@@ -102,7 +134,7 @@ export function cleanupPendingEffects(fiber: Fiber): void {
         try {
           hook.cleanup();
         } catch (err) {
-          reportEffectError(err);
+          reportEffectError(err, fiber);
         }
         hook.cleanup = null;
       }
@@ -119,7 +151,7 @@ export function flushEffects(fiber: Fiber): void {
         const result = hook.pending();
         hook.cleanup = typeof result === "function" ? result : null;
       } catch (err) {
-        reportEffectError(err);
+        reportEffectError(err, fiber);
       }
       hook.pending = null;
     }
@@ -133,7 +165,7 @@ export function cleanupEffects(fiber: Fiber): void {
       try {
         hook.cleanup();
       } catch (err) {
-        reportEffectError(err);
+        reportEffectError(err, fiber);
       }
       hook.cleanup = null;
     }
@@ -148,7 +180,13 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
   return true;
 }
 
-function reportEffectError(err: unknown): void {
+function reportEffectError(err: unknown, fiber: Fiber): void {
+  const details = err instanceof Error ? err.message : String(err);
+  const stack = formatComponentStack(fiber);
   // eslint-disable-next-line no-console
-  console.error("graceglyph: effect error:", err);
+  console.error(
+    stack.length > 0
+      ? `graceglyph: effect error: ${details}\n${stack}`
+      : `graceglyph: effect error: ${details}`,
+  );
 }

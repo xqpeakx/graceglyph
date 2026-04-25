@@ -2,6 +2,7 @@ import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { ansi, DefaultStyle, Style } from "../render/style.js";
 import { clipColumns, stringWidth, truncateColumns } from "../render/unicode.js";
+import { collectInspectorWarnings } from "./diagnostics.js";
 import type { BoxProps, InputProps, TextAreaProps, TextProps } from "./element.js";
 import { textOf, type HostNode } from "./host.js";
 
@@ -43,6 +44,12 @@ const detailStyle: Style = {
   fg: ansi(151),
 };
 
+const warningStyle: Style = {
+  ...panelStyle,
+  fg: ansi(216),
+  bold: true,
+};
+
 const treeStyle: Style = {
   ...panelStyle,
   fg: ansi(252),
@@ -54,10 +61,13 @@ export function inspectTree(
   maxLines = Number.MAX_SAFE_INTEGER,
 ): string[] {
   const lines: string[] = [];
+  const warnings = collectInspectorWarnings(root);
   lines.push("Inspector");
   lines.push("F12 toggle");
   if (focused) lines.push(`focus: ${describeNode(focused)}`);
   else lines.push("focus: (none)");
+  lines.push(`warnings: ${warnings.length}`);
+  for (const warning of warnings) lines.push(`! ${warning}`);
   lines.push("");
   collectTree(root, focused, 0, lines, maxLines);
   return lines.slice(0, maxLines);
@@ -97,7 +107,9 @@ function buildLines(
   return raw.map((text, index) => {
     if (index === 0) return { text, style: headerStyle };
     if (index === 1) return { text, style: hintStyle };
-    if (index === 2) return { text, style: detailStyle };
+    if (text.startsWith("focus:")) return { text, style: detailStyle };
+    if (text.startsWith("warnings:")) return { text, style: detailStyle };
+    if (text.startsWith("!")) return { text, style: warningStyle };
     if (text.length === 0) return { text, style: panelStyle };
     if (text.startsWith(">")) return { text, style: focusStyle };
     return { text, style: treeStyle };

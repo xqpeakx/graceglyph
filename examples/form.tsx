@@ -1,5 +1,4 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource ../src */
+/** @jsx h */
 
 import {
   App,
@@ -7,22 +6,26 @@ import {
   Button,
   Column,
   List,
-  Panel,
   Row,
   Text,
   TextInput,
   Window,
-  render,
+  h,
   useState,
+  useTerminalSize,
 } from "../src/index.js";
+import { runExample } from "./_entry.js";
 
 const ROLES = ["engineer", "designer", "product", "operations"] as const;
 
-function FormApp() {
+export function FormApp() {
+  const size = useTerminalSize();
+  const stacked = size.width < 58;
+  const compact = size.height < 20;
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState(0);
   const [message, setMessage] = useState(
-    "Tab through the form, then press Enter on Submit.",
+    "Type a name, pick a role, then press Enter.",
   );
 
   function submit(): void {
@@ -33,50 +36,63 @@ function FormApp() {
 
   return (
     <App>
-      <Window title="Signup form" width={62} height={19}>
+      <Window title="Signup form" grow={1} padding={compact ? 0 : 1}>
         <Column gap={1} grow={1}>
-          <Panel title="Profile" grow={1}>
-            <Column gap={1}>
-              <Row gap={1} align="center">
-                <Box width={10}>
-                  <Text>Name</Text>
-                </Box>
-                <TextInput
-                  value={name}
-                  onChange={setName}
-                  onSubmit={submit}
-                  placeholder="your name"
-                  width={34}
-                />
-              </Row>
+          {!compact && (
+            <Text style={{ dim: true }}>
+              A small controlled form: one input, one list, one clear submit path.
+            </Text>
+          )}
 
-              <Text style={{ dim: true }}>
-                Use arrows in the role list. Enter submits from either control.
-              </Text>
-
-              <List
-                items={ROLES}
-                selected={selectedRole}
-                onChange={setSelectedRole}
-                onSelect={submit}
-                height={4}
-                render={(role) => role}
+          {stacked ? (
+            <Column gap={compact ? 0 : 1}>
+              {!compact && <Text>Name</Text>}
+              <TextInput
+                value={name}
+                onChange={setName}
+                onSubmit={submit}
+                placeholder="your name"
               />
             </Column>
-          </Panel>
+          ) : (
+            <Row gap={1} align="center">
+              <Box width={10}>
+                <Text>Name</Text>
+              </Box>
+              <TextInput
+                value={name}
+                onChange={setName}
+                onSubmit={submit}
+                placeholder="your name"
+                grow={1}
+              />
+            </Row>
+          )}
 
-          <Row gap={1} align="center">
+          <Text>Role</Text>
+          <List
+            items={ROLES}
+            selected={selectedRole}
+            onChange={setSelectedRole}
+            onSelect={submit}
+            height={compact ? 3 : 4}
+            render={(role) => role}
+          />
+
+          {compact ? (
             <Button onClick={submit}>Submit</Button>
-            <Text style={{ dim: true }}>F12: inspector</Text>
-          </Row>
+          ) : (
+            <Row gap={1} align="center">
+              <Button onClick={submit}>Submit</Button>
+              <Text style={{ dim: true }}>F12: inspector</Text>
+            </Row>
+          )}
 
-          <Panel title="Status" height={4}>
-            <Text>{message}</Text>
-          </Panel>
+          <Text>{message}</Text>
         </Column>
       </Window>
     </App>
   );
 }
 
-render(<FormApp />);
+runExample(<FormApp />, import.meta.url);

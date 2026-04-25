@@ -16,6 +16,7 @@ export interface EditableState {
   scrollX: number;
   scrollY: number;
   preferredColumn: number | null;
+  pendingValue: string | null;
 }
 
 interface LineInfo {
@@ -35,6 +36,7 @@ export function createEditableState(value = ""): EditableState {
     scrollX: 0,
     scrollY: 0,
     preferredColumn: null,
+    pendingValue: null,
   };
 }
 
@@ -42,6 +44,11 @@ export function syncEditableState(state: EditableState, value: string): void {
   state.cursor = snapIndexToGraphemeBoundary(value, clamp(state.cursor, 0, value.length));
   state.scrollX = Math.max(0, state.scrollX);
   state.scrollY = Math.max(0, state.scrollY);
+}
+
+export function commitEditableState(state: EditableState, value: string): void {
+  state.pendingValue = null;
+  syncEditableState(state, value);
 }
 
 export function ensureEditableViewport(

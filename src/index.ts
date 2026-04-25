@@ -22,7 +22,15 @@ export { render } from "./runtime/render.js";
 export type { RenderHandle } from "./runtime/render.js";
 export type { RuntimeOptions } from "./runtime/runtime.js";
 
-export { useState, useEffect, useRef, useMemo, useCallback } from "./runtime/hooks.js";
+export {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  useTerminalSize,
+  useTheme,
+} from "./runtime/hooks.js";
 
 // Built-in components
 export {
@@ -69,3 +77,5 @@ export { Rect } from "./layout/rect.js";
 export type { Point, Size } from "./layout/rect.js";
 export * from "./render/style.js";
 export { stringWidth } from "./render/unicode.js";
+export type { Theme } from "./theme/theme.js";
+export { defaultTheme, darkTheme } from "./theme/theme.js";

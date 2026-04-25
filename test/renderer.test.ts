@@ -28,6 +28,42 @@ test("renderer clears the terminal before repainting after resize", () => {
   assert.match(output, /xy/);
 });
 
+test("renderer flush only emits changed cells on stable-sized frames", () => {
+  const terminal = new FakeTerminal(3, 1);
+  const renderer = new Renderer(terminal as never);
+
+  draw(renderer.beginFrame(), "qqq", 3, 1);
+  renderer.flush();
+  terminal.clearWrites();
+
+  draw(renderer.beginFrame(), "qrq", 3, 1);
+  renderer.flush();
+
+  const output = terminal.output();
+  assert.doesNotMatch(output, new RegExp(escapeRegex(AnsiSeq.clearScreen)));
+  assert.match(output, new RegExp(escapeRegex(cursorTo(1, 0))));
+  assert.match(output, /r/);
+  assert.doesNotMatch(output, /q/);
+});
+
+test("renderer can update cursor position without repainting unchanged cells", () => {
+  const terminal = new FakeTerminal(3, 1);
+  const renderer = new Renderer(terminal as never);
+
+  draw(renderer.beginFrame(), "abc", 3, 1);
+  renderer.setCursor({ x: 0, y: 0 });
+  renderer.flush();
+  terminal.clearWrites();
+
+  draw(renderer.beginFrame(), "abc", 3, 1);
+  renderer.setCursor({ x: 2, y: 0 });
+  renderer.flush();
+
+  const output = terminal.output();
+  assert.match(output, new RegExp(escapeRegex(cursorTo(2, 0))));
+  assert.doesNotMatch(output, /a|b|c/);
+});
+
 class FakeTerminal {
   private chunks: string[] = [];
 

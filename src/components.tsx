@@ -2,11 +2,13 @@ import { Fragment, h } from "./runtime/element.js";
 import type {
   BoxProps,
   BoxStyle,
+  Edges,
   TextAreaProps as HostTextAreaProps,
   TextProps,
   ZenElement,
 } from "./runtime/element.js";
 import type { KeyEvent } from "./input/keys.js";
+import { useTheme } from "./runtime/hooks.js";
 
 /**
  * Built-in components. Deliberately thin — each one is a handful of lines
@@ -32,10 +34,31 @@ export interface PanelProps extends Omit<BoxProps, "border"> {
 }
 
 export function Panel(props: PanelProps): ZenElement {
-  const { title, padding = 1, children, ...rest } = props;
+  const theme = useTheme();
+  const {
+    title,
+    padding = 1,
+    width,
+    height,
+    style,
+    borderStyle,
+    titleStyle,
+    children,
+    ...rest
+  } = props;
   return h(
     "box",
-    { border: true, title, padding, ...rest } as BoxProps,
+    {
+      border: true,
+      title,
+      padding,
+      width: chromeSize(width, padding, true, "width"),
+      height: chromeSize(height, padding, true, "height"),
+      style: mergeBoxStyle(theme.window.body, style),
+      borderStyle: mergeBoxStyle(theme.window.frame, borderStyle),
+      titleStyle: mergeBoxStyle(theme.window.title, titleStyle),
+      ...rest,
+    } as BoxProps,
     children,
   );
 }
@@ -44,7 +67,12 @@ export function Panel(props: PanelProps): ZenElement {
 // Passthrough root that fills the terminal. Provides a sensible default
 // container so <Window>s inside it sit on a clean background.
 export function App(props: { children?: unknown }): ZenElement {
-  return h("box", { width: undefined, height: undefined, grow: 1 } as BoxProps, props.children);
+  const theme = useTheme();
+  return h(
+    "box",
+    { width: undefined, height: undefined, grow: 1, style: theme.base } as BoxProps,
+    props.children,
+  );
 }
 
 // -- <Window> -----------------------------------------------------------------
@@ -54,10 +82,33 @@ export interface WindowProps extends Omit<BoxProps, "border" | "direction"> {
 }
 
 export function Window(props: WindowProps): ZenElement {
-  const { title, padding = 1, direction = "column", children, ...rest } = props;
+  const theme = useTheme();
+  const {
+    title,
+    padding = 1,
+    direction = "column",
+    width,
+    height,
+    style,
+    borderStyle,
+    titleStyle,
+    children,
+    ...rest
+  } = props;
   return h(
     "box",
-    { border: true, title, padding, direction, ...rest } as BoxProps,
+    {
+      border: true,
+      title,
+      padding,
+      direction,
+      width: chromeSize(width, padding, true, "width"),
+      height: chromeSize(height, padding, true, "height"),
+      style: mergeBoxStyle(theme.window.body, style),
+      borderStyle: mergeBoxStyle(theme.window.frame, borderStyle),
+      titleStyle: mergeBoxStyle(theme.window.title, titleStyle),
+      ...rest,
+    } as BoxProps,
     children,
   );
 }
@@ -76,6 +127,7 @@ export interface ButtonProps {
 }
 
 export function Button(props: ButtonProps): ZenElement {
+  const theme = useTheme();
   const { onClick, children, style, focusedStyle } = props;
   // The box becomes focusable; the runtime translates Enter/Space into onClick.
   return h(
@@ -86,7 +138,8 @@ export function Button(props: ButtonProps): ZenElement {
       padding: [0, 1],
       direction: "row",
       onClick,
-      style: style ?? { bg: { kind: "ansi", code: 7 }, fg: { kind: "ansi", code: 0 } },
+      style: mergeBoxStyle(theme.button.normal, style),
+      focusedStyle: mergeBoxStyle(theme.button.focused, focusedStyle),
     } as BoxProps,
     h("text", {}, children),
   );
@@ -97,21 +150,37 @@ export interface TextInputProps {
   value: string;
   onChange: (v: string) => void;
   onSubmit?: (v: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   placeholder?: string;
   width?: number;
   grow?: number;
   style?: BoxStyle;
+  focusedStyle?: BoxStyle;
+  placeholderStyle?: BoxStyle;
 }
 
 export function TextInput(props: TextInputProps): ZenElement {
-  return h("input", props as unknown as Record<string, unknown>);
+  const theme = useTheme();
+  return h("input", {
+    ...props,
+    style: mergeBoxStyle(theme.input.normal, props.style),
+    focusedStyle: mergeBoxStyle(theme.input.focused, props.focusedStyle),
+    placeholderStyle: mergeBoxStyle(theme.input.placeholder, props.placeholderStyle),
+  } as unknown as Record<string, unknown>);
 }
 
 // -- <TextArea> --------------------------------------------------------------
 export interface TextAreaProps extends HostTextAreaProps {}
 
 export function TextArea(props: TextAreaProps): ZenElement {
-  return h("textarea", props as unknown as Record<string, unknown>);
+  const theme = useTheme();
+  return h("textarea", {
+    ...props,
+    style: mergeBoxStyle(theme.input.normal, props.style),
+    focusedStyle: mergeBoxStyle(theme.input.focused, props.focusedStyle),
+    placeholderStyle: mergeBoxStyle(theme.input.placeholder, props.placeholderStyle),
+  } as unknown as Record<string, unknown>);
 }
 
 // -- <Spacer> -----------------------------------------------------------------
@@ -131,6 +200,7 @@ export interface ListProps<T> {
 }
 
 export function List<T>(props: ListProps<T>): ZenElement {
+  const theme = useTheme();
   const onKey = (ev: KeyEvent): boolean | void => {
     if (ev.name === "up") {
       if (props.selected > 0) props.onChange(props.selected - 1);
@@ -157,18 +227,27 @@ export function List<T>(props: ListProps<T>): ZenElement {
     return false;
   };
 
-  const rows = props.items.map((item, i) => {
+  const windowSize = props.height == null ? props.items.length : Math.max(1, props.height);
+  const maxStart = Math.max(0, props.items.length - windowSize);
+  const start = props.height == null
+    ? 0
+    : clamp(props.selected - Math.floor(windowSize / 2), 0, maxStart);
+  const visibleItems = props.items.slice(start, start + windowSize);
+
+  const rows = visibleItems.map((item, offset) => {
+    const i = start + offset;
     const isSel = i === props.selected;
     const rendered = props.render(item, i, isSel);
+    const rowStyle = isSel ? theme.list.selected : theme.list.normal;
     const content = typeof rendered === "string"
-      ? h("text", { style: isSel ? { inverse: true } : undefined } as TextProps, rendered)
+      ? h("text", { style: rowStyle } as TextProps, rendered.length > 0 ? rendered : " ")
       : rendered;
     return h(
       "box",
       {
         direction: "row",
         height: 1,
-        style: isSel ? { inverse: true } : undefined,
+        style: rowStyle,
       } as BoxProps,
       content,
     );
@@ -194,18 +273,31 @@ export interface ModalProps {
   title?: string;
   width?: number;
   height?: number;
+  onDismiss?: () => void;
   children?: unknown;
 }
 
 export function Modal(props: ModalProps): ZenElement {
+  const theme = useTheme();
   return h(
     "box",
     {
       width: undefined,
       height: undefined,
       grow: 1,
+      overlay: true,
       align: "center",
       justify: "center",
+      focusScope: "contain",
+      onKey: props.onDismiss
+        ? ((event: KeyEvent) => {
+          if (event.name === "escape") {
+            props.onDismiss?.();
+            return true;
+          }
+          return false;
+        })
+        : undefined,
     } as BoxProps,
     h(
       "box",
@@ -213,8 +305,11 @@ export function Modal(props: ModalProps): ZenElement {
         border: true,
         title: props.title,
         padding: 1,
-        width: props.width ?? 40,
-        height: props.height ?? 10,
+        width: chromeSize(props.width ?? 40, 1, true, "width"),
+        height: chromeSize(props.height ?? 10, 1, true, "height"),
+        style: theme.window.body,
+        borderStyle: theme.window.frame,
+        titleStyle: theme.window.title,
       } as BoxProps,
       props.children,
     ),
@@ -222,3 +317,32 @@ export function Modal(props: ModalProps): ZenElement {
 }
 
 export { Fragment };
+
+function mergeBoxStyle(base: BoxStyle, override?: BoxStyle): BoxStyle {
+  return { ...base, ...(override ?? {}) };
+}
+
+function chromeSize(
+  value: number | undefined,
+  padding: Edges | undefined,
+  border: boolean,
+  axis: "width" | "height",
+): number | undefined {
+  if (value === undefined) return undefined;
+  const edge = expandEdges(padding);
+  const chrome = axis === "width"
+    ? edge.left + edge.right + (border ? 2 : 0)
+    : edge.top + edge.bottom + (border ? 2 : 0);
+  return value + chrome;
+}
+
+function expandEdges(value: Edges | undefined): { top: number; right: number; bottom: number; left: number } {
+  if (value === undefined) return { top: 0, right: 0, bottom: 0, left: 0 };
+  if (typeof value === "number") return { top: value, right: value, bottom: value, left: value };
+  if (value.length === 2) return { top: value[0], right: value[1], bottom: value[0], left: value[1] };
+  return { top: value[0], right: value[1], bottom: value[2], left: value[3] };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}

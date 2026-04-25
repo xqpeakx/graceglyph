@@ -1,5 +1,4 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource ../src */
+/** @jsx h */
 
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
@@ -7,15 +6,16 @@ import {
   App,
   Column,
   List,
-  Panel,
   Row,
   Text,
   Window,
-  render,
+  h,
   useEffect,
   useState,
+  useTerminalSize,
 } from "../src/index.js";
 import type { KeyEvent } from "../src/index.js";
+import { runExample } from "./_entry.js";
 
 interface Entry {
   name: string;
@@ -23,7 +23,9 @@ interface Entry {
   size: number;
 }
 
-function ExplorerApp() {
+export function ExplorerApp() {
+  const size = useTerminalSize();
+  const stacked = size.width < 76;
   const [cwd, setCwd] = useState(process.cwd());
   const [refreshToken, setRefreshToken] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -164,51 +166,81 @@ function ExplorerApp() {
     setCwd(path.resolve(cwd, entry.name));
   }
 
+  const listHeight = stacked
+    ? Math.max(3, Math.min(7, Math.floor((size.height - 14) / 2)))
+    : Math.max(6, Math.min(14, size.height - 12));
+
   return (
     <App>
-      <Window title="Explorer" width={92} height={26} onKey={onWindowKey}>
+      <Window title="Explorer" grow={1} onKey={onWindowKey}>
         <Column gap={1} grow={1}>
-          <Panel title="Path" height={3}>
-            <Text>{cwd}</Text>
-          </Panel>
+          <Text>{cwd}</Text>
+          <Text style={{ dim: true }}>
+            {entries.length} entries · {status} · Backspace: up · F5: reload · F12: inspector
+          </Text>
 
-          <Row gap={1} grow={1}>
-            <Panel title="Entries" width={38}>
+          {stacked ? (
+            <Column gap={1} grow={1}>
+              <Text>Entries</Text>
               <List
                 items={entries}
                 selected={selected}
                 onChange={setSelected}
                 onSelect={openEntry}
-                height={14}
+                height={listHeight}
                 render={(entry) => (
                   entry.isDir
                     ? `${entry.name}/`
                     : `${entry.name} · ${formatSize(entry.size)}`
                 )}
               />
-            </Panel>
 
-            <Panel title="Preview" grow={1}>
+              <Text>Preview</Text>
               <List
                 items={previewLines}
                 selected={previewSelected}
                 onChange={setPreviewSelected}
-                height={14}
+                height={listHeight}
                 render={(line) => line}
               />
-            </Panel>
-          </Row>
+            </Column>
+          ) : (
+            <Row gap={2} grow={1}>
+              <Column width={38} gap={1}>
+                <Text>Entries</Text>
+                <List
+                  items={entries}
+                  selected={selected}
+                  onChange={setSelected}
+                  onSelect={openEntry}
+                  height={listHeight}
+                  render={(entry) => (
+                    entry.isDir
+                      ? `${entry.name}/`
+                      : `${entry.name} · ${formatSize(entry.size)}`
+                  )}
+                />
+              </Column>
 
-          <Text style={{ dim: true }}>
-            {entries.length} entries · {status} · Backspace: up · F5: reload · F12: inspector
-          </Text>
+              <Column grow={1} gap={1}>
+                <Text>Preview</Text>
+                <List
+                  items={previewLines}
+                  selected={previewSelected}
+                  onChange={setPreviewSelected}
+                  height={listHeight}
+                  render={(line) => line}
+                />
+              </Column>
+            </Row>
+          )}
         </Column>
       </Window>
     </App>
   );
 }
 
-render(<ExplorerApp />);
+runExample(<ExplorerApp />, import.meta.url);
 
 function clamp(index: number, length: number): number {
   if (length === 0) return 0;

@@ -3,13 +3,16 @@ import { InputParser } from "../input/parser.js";
 import type { InputEvent, KeyEvent, MouseEvent } from "../input/keys.js";
 import { Rect } from "../layout/rect.js";
 import { Renderer } from "../render/renderer.js";
+import type { Theme } from "../theme/theme.js";
+import { defaultTheme } from "../theme/theme.js";
 import {
   applyEditableKey,
+  commitEditableState,
   getCursorOffset,
   moveCursorToPoint,
 } from "./editable.js";
 import type { BoxProps, InputProps, ZenElement } from "./element.js";
-import { Fiber, createFiber } from "./fiber.js";
+import { Fiber, createFiber, type FiberEnvironment } from "./fiber.js";
 import { FocusManager } from "./focus.js";
 import { HostNode, layoutTree, paintTree } from "./host.js";
 import { paintInspector } from "./devtools.js";
@@ -19,9 +22,11 @@ import {
   reconcile,
   unmount,
 } from "./reconciler.js";
+import { fiberForError, formatComponentStack } from "./diagnostics.js";
 
 export interface RuntimeOptions extends TerminalOptions {
   devtools?: boolean;
+  theme?: Theme;
 }
 
 export class Runtime {
@@ -29,11 +34,18 @@ export class Runtime {
   readonly renderer: Renderer;
   readonly parser: InputParser;
   readonly focus: FocusManager;
+  readonly theme: Theme;
 
   private rootFiber: Fiber | null = null;
   private hostRoot: HostNode | null = null;
   private running = false;
   private commitScheduled = false;
+  private readonly environment: FiberEnvironment;
+  private readonly dirtyFibers = new Set<Fiber>();
+  private fullReconcile = false;
+  private hostTreeDirty = true;
+  private layoutDirty = true;
+  private notifiedFocus: HostNode | null = null;
   private onData?: (chunk: Buffer | string) => void;
   private readonly devtoolsEnabled: boolean;
   private devtoolsVisible = false;
@@ -48,6 +60,12 @@ export class Runtime {
     this.parser = new InputParser();
     this.focus = new FocusManager();
     this.devtoolsEnabled = opts.devtools ?? true;
+    this.theme = opts.theme ?? defaultTheme();
+    this.environment = {
+      theme: this.theme,
+      size: () => this.terminal.size(),
+      onResize: (listener) => this.terminal.onResize(listener),
+    };
   }
 
   mount(element: ZenElement): void {
@@ -58,9 +76,13 @@ export class Runtime {
         element.key,
         null,
       );
-      root.scheduler = () => this.scheduleCommit();
+      root.environment = this.environment;
+      root.scheduler = (fiber) => this.scheduleCommit(fiber);
       this.rootFiber = root;
       reconcile(root);
+      this.fullReconcile = true;
+      this.hostTreeDirty = true;
+      this.layoutDirty = true;
       this.rebuildAndPaint();
     });
   }
@@ -75,7 +97,10 @@ export class Runtime {
         this.withFatalBoundary("input", () => {
           this.cancelParserFlush();
           const s = typeof chunk === "string" ? chunk : chunk.toString("utf8");
-          for (const ev of this.parser.feed(s)) this.dispatch(ev);
+          for (const ev of this.parser.feed(s)) {
+            this.dispatch(ev);
+            this.flushScheduledCommit();
+          }
           this.scheduleParserFlush();
         });
       };
@@ -85,6 +110,7 @@ export class Runtime {
         this.withFatalBoundary("resize", () => {
           this.renderer.resize(width, height);
           this.renderer.invalidate();
+          this.layoutDirty = true;
           this.scheduleCommit();
         });
       });
@@ -100,6 +126,7 @@ export class Runtime {
 
   stop(): void {
     if (!this.running) return;
+    this.notifyFocusTransition(null);
     this.running = false;
     if (this.onData) this.terminal.input.off("data", this.onData);
     this.cancelParserFlush();
@@ -111,34 +138,61 @@ export class Runtime {
 
   // -- Commit pipeline --------------------------------------------------------
 
-  private scheduleCommit(): void {
+  private scheduleCommit(fiber?: Fiber): void {
+    if (fiber) this.markDirtyFiber(fiber);
     if (this.commitScheduled) return;
     this.commitScheduled = true;
     queueMicrotask(() => {
+      if (!this.commitScheduled) return;
       this.commitScheduled = false;
       if (!this.running && !this.rootFiber) return;
       this.withFatalBoundary("commit", () => this.commit());
     });
   }
 
+  private flushScheduledCommit(): void {
+    if (!this.commitScheduled) return;
+    this.commitScheduled = false;
+    if (!this.running && !this.rootFiber) return;
+    this.withFatalBoundary("commit", () => this.commit());
+  }
+
   private commit(): void {
     if (!this.rootFiber) return;
-    reconcile(this.rootFiber);
+    const needsReconcile = this.fullReconcile || this.dirtyFibers.size > 0;
+    if (needsReconcile) {
+      const targets = this.fullReconcile ? [this.rootFiber] : Array.from(this.dirtyFibers);
+      for (const fiber of targets) {
+        reconcile(fiber);
+      }
+      this.dirtyFibers.clear();
+      this.fullReconcile = false;
+      this.hostTreeDirty = true;
+      this.layoutDirty = true;
+    }
     this.rebuildAndPaint();
-    flushAllEffects(this.rootFiber);
+    if (needsReconcile) flushAllEffects(this.rootFiber);
   }
 
   private rebuildAndPaint(): void {
     if (!this.rootFiber) return;
-    this.hostRoot = buildHostTree(this.rootFiber);
+    if (this.hostTreeDirty || !this.hostRoot) {
+      this.hostRoot = buildHostTree(this.rootFiber);
+      this.hostTreeDirty = false;
+      this.layoutDirty = true;
+    }
     this.focus.collect(this.hostRoot);
     if (!this.running) return;
+    this.notifyFocusTransition(this.focus.current());
 
     const { width, height } = this.terminal.size();
-      const bounds = new Rect(0, 0, width, height);
-      const buffer = this.renderer.beginFrame();
+    const bounds = new Rect(0, 0, width, height);
+    const buffer = this.renderer.beginFrame();
     if (this.hostRoot) {
-      layoutTree(this.hostRoot, bounds);
+      if (this.layoutDirty) {
+        layoutTree(this.hostRoot, bounds);
+        this.layoutDirty = false;
+      }
       const focused = this.focus.current();
       paintTree(this.hostRoot, { buffer, focusedFiber: focused?.fiber ?? null });
       if (this.devtoolsEnabled && this.devtoolsVisible) {
@@ -154,6 +208,7 @@ export class Runtime {
               scrollX: 0,
               scrollY: 0,
               preferredColumn: null,
+              pendingValue: null,
             },
             value,
             focused.layout.width,
@@ -227,7 +282,10 @@ export class Runtime {
 
   private dispatchMouse(ev: MouseEvent): void {
     if (!this.hostRoot) return;
-    const hit = hitTest(this.hostRoot, ev.x, ev.y);
+    const scope = this.focus.scope();
+    const hit = scope
+      ? hitTest(scope, ev.x, ev.y)
+      : hitTest(this.hostRoot, ev.x, ev.y);
     if (!hit) return;
 
     if (ev.action === "press" && ev.button === "left") {
@@ -238,8 +296,10 @@ export class Runtime {
           scrollX: 0,
           scrollY: 0,
           preferredColumn: null,
+          pendingValue: null,
         };
         hit.editableState = state;
+        commitEditableState(state, String(hit.props.value ?? ""));
         moveCursorToPoint(
           state,
           String(hit.props.value ?? ""),
@@ -281,6 +341,7 @@ export class Runtime {
   }
 
   private emergencyStop(): void {
+    this.notifyFocusTransition(null);
     this.running = false;
     if (this.onData) {
       this.terminal.input.off("data", this.onData);
@@ -289,6 +350,10 @@ export class Runtime {
     this.cancelParserFlush();
     this.detachResizeListener();
     this.detachSignalHandlers();
+    this.dirtyFibers.clear();
+    this.fullReconcile = false;
+    this.hostTreeDirty = true;
+    this.layoutDirty = true;
     this.hostRoot = null;
     this.rootFiber = null;
     try {
@@ -322,7 +387,10 @@ export class Runtime {
       this.parserFlushTimer = undefined;
       if (!this.running) return;
       this.withFatalBoundary("input", () => {
-        for (const ev of this.parser.flushPending()) this.dispatch(ev);
+        for (const ev of this.parser.flushPending()) {
+          this.dispatch(ev);
+          this.flushScheduledCommit();
+        }
       });
     }, 20);
   }
@@ -332,6 +400,28 @@ export class Runtime {
       clearTimeout(this.parserFlushTimer);
       this.parserFlushTimer = undefined;
     }
+  }
+
+  private markDirtyFiber(fiber: Fiber): void {
+    if (this.fullReconcile) return;
+
+    for (const existing of Array.from(this.dirtyFibers)) {
+      if (isAncestor(existing, fiber)) return;
+      if (isAncestor(fiber, existing)) this.dirtyFibers.delete(existing);
+    }
+
+    this.dirtyFibers.add(fiber);
+  }
+
+  private notifyFocusTransition(next: HostNode | null): void {
+    if (this.notifiedFocus?.fiber === next?.fiber) {
+      this.notifiedFocus = next;
+      return;
+    }
+
+    if (this.notifiedFocus) callLifecycleHandler(this.notifiedFocus, "onBlur");
+    if (next) callLifecycleHandler(next, "onFocus");
+    this.notifiedFocus = next;
   }
 }
 
@@ -350,14 +440,16 @@ function handleEditableKey(
   commit: () => void,
 ): boolean {
   const props = host.props as unknown as InputProps;
-  const value = String(props.value ?? "");
+  const committedValue = String(props.value ?? "");
   const state = host.editableState ?? {
-    cursor: value.length,
+    cursor: committedValue.length,
     scrollX: 0,
     scrollY: 0,
     preferredColumn: null,
+    pendingValue: null,
   };
   host.editableState = state;
+  const value = state.pendingValue ?? committedValue;
   const result = applyEditableKey(state, value, ev, {
     mode: host.type === "textarea" ? "multi-line" : "single-line",
     width: host.layout.width,
@@ -365,7 +457,12 @@ function handleEditableKey(
     onSubmit: host.type === "input" ? props.onSubmit : undefined,
   });
   if (!result.handled) return false;
-  if (result.nextValue !== value) {
+  if (result.nextValue !== committedValue) {
+    state.pendingValue = result.nextValue;
+  } else if (state.pendingValue !== null) {
+    state.pendingValue = null;
+  }
+  if (result.nextValue !== committedValue) {
     props.onChange(result.nextValue);
   }
   commit();
@@ -376,9 +473,25 @@ function isEditableHost(host: HostNode): boolean {
   return host.type === "input" || host.type === "textarea";
 }
 
+function isAncestor(parent: Fiber, child: Fiber): boolean {
+  for (let current: Fiber | null = child.parent; current; current = current.parent) {
+    if (current === parent) return true;
+  }
+  return false;
+}
+
+function callLifecycleHandler(host: HostNode, name: "onFocus" | "onBlur"): void {
+  const handler = (host.props as unknown as (BoxProps & Partial<InputProps>))[name];
+  if (typeof handler === "function") handler();
+}
+
 function decorateFatalError(phase: string, error: unknown): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
-  const wrapped = new Error(`graceglyph fatal error during ${phase}: ${cause.message}`);
+  const componentStack = formatComponentStack(fiberForError(error));
+  const message = componentStack.length > 0
+    ? `graceglyph fatal error during ${phase}: ${cause.message}\n${componentStack}`
+    : `graceglyph fatal error during ${phase}: ${cause.message}`;
+  const wrapped = new Error(message);
   if (cause.stack) {
     const [, ...rest] = cause.stack.split("\n");
     wrapped.stack = [wrapped.message, ...rest].join("\n");

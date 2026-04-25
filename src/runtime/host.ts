@@ -1,12 +1,12 @@
 import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
-import { DefaultStyle, Style } from "../render/style.js";
+import { DefaultStyle, Style, mergeStyle } from "../render/style.js";
 import { clipColumns, stringWidth, truncateColumns } from "../render/unicode.js";
 import {
+  commitEditableState,
   createEditableState,
   ensureEditableViewport,
   getVisibleLines,
-  syncEditableState,
   type EditableState,
 } from "./editable.js";
 import type { BoxProps, Edges, HostType, TextProps, InputProps, TextAreaProps } from "./element.js";
@@ -92,7 +92,8 @@ function measure(node: HostNode, axis: "main" | "cross", direction: "row" | "col
 
   const childDir = (props.direction ?? "column") as "row" | "column";
   const gap = props.gap ?? 0;
-  const n = node.children.length;
+  const flowChildren = node.children.filter((child) => !(child.props as BoxProps).overlay);
+  const n = flowChildren.length;
   if (n === 0) return innerExtra;
 
   // If the parent's axis matches the children's main axis, sum; else max.
@@ -104,11 +105,11 @@ function measure(node: HostNode, axis: "main" | "cross", direction: "row" | "col
 
   if (childAxis === "main") {
     let total = gap * (n - 1);
-    for (const c of node.children) total += measure(c, "main", childDir);
+    for (const c of flowChildren) total += measure(c, "main", childDir);
     return innerExtra + total;
   } else {
     let maxV = 0;
-    for (const c of node.children) maxV = Math.max(maxV, measure(c, "cross", childDir));
+    for (const c of flowChildren) maxV = Math.max(maxV, measure(c, "cross", childDir));
     return innerExtra + maxV;
   }
 }
@@ -159,8 +160,13 @@ function layoutNode(node: HostNode, container: Rect): void {
   const gap = props.gap ?? 0;
   const align: BoxProps["align"] = props.align ?? "stretch";
   const justify: BoxProps["justify"] = props.justify ?? "start";
-  const n = node.children.length;
-  if (n === 0) return;
+  const flowChildren = node.children.filter((child) => !(child.props as BoxProps).overlay);
+  const overlayChildren = node.children.filter((child) => (child.props as BoxProps).overlay);
+  const n = flowChildren.length;
+  if (n === 0) {
+    for (const child of overlayChildren) layoutNode(child, inner);
+    return;
+  }
 
   const mainIsWidth = direction === "row";
   const innerMain = mainIsWidth ? inner.width : inner.height;
@@ -171,7 +177,7 @@ function layoutNode(node: HostNode, container: Rect): void {
   let totalFixed = gap * Math.max(0, n - 1);
   let growSum = 0;
   for (let i = 0; i < n; i++) {
-    const child = node.children[i]!;
+    const child = flowChildren[i]!;
     const cp = child.props as unknown as BoxProps;
     const grow = cp.grow ?? 0;
     if (grow > 0) {
@@ -186,7 +192,7 @@ function layoutNode(node: HostNode, container: Rect): void {
   if (growSum > 0 && remaining > 0) {
     let used = 0;
     for (let i = 0; i < n; i++) {
-      const cp = node.children[i]!.props as unknown as BoxProps;
+      const cp = flowChildren[i]!.props as unknown as BoxProps;
       const grow = cp.grow ?? 0;
       if (grow > 0) {
         const take = i === n - 1 ? remaining - used : Math.floor((grow / growSum) * remaining);
@@ -215,7 +221,7 @@ function layoutNode(node: HostNode, container: Rect): void {
   // Position children
   let pos = (mainIsWidth ? inner.x : inner.y) + offset;
   for (let i = 0; i < n; i++) {
-    const child = node.children[i]!;
+    const child = flowChildren[i]!;
     const cp = child.props as unknown as BoxProps;
     const mainSize = sizes[i]!;
     const crossMeasure = measure(child, "cross", direction);
@@ -231,9 +237,11 @@ function layoutNode(node: HostNode, container: Rect): void {
     const childRect = mainIsWidth
       ? new Rect(pos, crossStart + crossOffset, mainSize, crossSize)
       : new Rect(crossStart + crossOffset, pos, crossSize, mainSize);
-    layoutNode(child, childRect);
+    layoutNode(child, childRect.intersect(inner));
     pos += mainSize + spacing;
   }
+
+  for (const child of overlayChildren) layoutNode(child, inner);
 }
 
 // -- Paint --------------------------------------------------------------------
@@ -253,23 +261,24 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
   const { layout } = node;
   if (layout.width === 0 || layout.height === 0) return;
 
-  const style = toStyle(props.style);
+  const focused = ctx.focusedFiber === node.fiber;
+  const fillStyle = applyBoxStyle(applyBoxStyle(DefaultStyle, props.style), focused ? props.focusedStyle : undefined);
 
   if (node.type === "text") {
     // Paint background first if given so wide strings with short area align.
-    if (props.style?.bg) buffer.fill(layout, " ", style);
+    if (props.style?.bg) buffer.fill(layout, " ", fillStyle);
     const text = textOf(props.children);
     const truncated = truncate(text, layout.width, props.wrap ?? "truncate");
-    buffer.writeText(layout.x, layout.y, truncated, style, layout);
+    buffer.writeText(layout.x, layout.y, truncated, fillStyle, layout);
     return;
   }
 
   if (node.type === "input") {
-    const base: Style = { ...style, bg: style.bg ?? DefaultStyle.bg };
+    const base: Style = { ...fillStyle, bg: fillStyle.bg ?? DefaultStyle.bg };
     buffer.fill(layout, " ", base);
     const value = String(props.value ?? "");
     if (value.length === 0 && props.placeholder) {
-      const phStyle: Style = { ...base, dim: true };
+      const phStyle = applyBoxStyle({ ...base, dim: true }, props.placeholderStyle);
       buffer.writeText(layout.x, layout.y, truncate(props.placeholder, layout.width, "truncate"), phStyle, layout);
     } else {
       const state = ensureEditableState(node, value);
@@ -280,11 +289,11 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
   }
 
   if (node.type === "textarea") {
-    const base: Style = { ...style, bg: style.bg ?? DefaultStyle.bg };
+    const base: Style = { ...fillStyle, bg: fillStyle.bg ?? DefaultStyle.bg };
     buffer.fill(layout, " ", base);
     const value = String(props.value ?? "");
     if (value.length === 0 && props.placeholder) {
-      const phStyle: Style = { ...base, dim: true };
+      const phStyle = applyBoxStyle({ ...base, dim: true }, props.placeholderStyle);
       const placeholderLines = props.placeholder.split("\n");
       for (let row = 0; row < Math.min(layout.height, placeholderLines.length); row++) {
         buffer.writeText(
@@ -306,8 +315,10 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
   }
 
   // box
-  buffer.fill(layout, " ", style);
-  if (props.border) drawBorder(buffer, layout, style, props.title, ctx.focusedFiber === node.fiber);
+  const frameStyle = applyBoxStyle(fillStyle, props.borderStyle);
+  const titleStyle = applyBoxStyle(frameStyle, props.titleStyle);
+  buffer.fill(layout, " ", fillStyle);
+  if (props.border) drawBorder(buffer, layout, frameStyle, props.title, titleStyle, focused);
   for (const child of node.children) paintNode(child, ctx);
 }
 
@@ -316,6 +327,7 @@ function drawBorder(
   area: Rect,
   style: Style,
   title: string | undefined,
+  titleStyle: Style,
   focused: boolean,
 ): void {
   if (area.width < 2 || area.height < 2) return;
@@ -338,8 +350,8 @@ function drawBorder(
     const text = ` ${title} `;
     const maxW = Math.max(0, area.width - 4);
     const shown = truncate(text, maxW, "truncate");
-    const titleStyle: Style = focused ? { ...style, bold: true } : { ...style, bold: true };
-    buf.writeText(area.x + 2, area.y, shown, titleStyle, area);
+    const themedTitle = mergeStyle(titleStyle, { bold: true });
+    buf.writeText(area.x + 2, area.y, shown, themedTitle, area);
   }
 }
 
@@ -370,9 +382,22 @@ function toStyle(s: TextProps["style"]): Style {
   };
 }
 
+function applyBoxStyle(base: Style, patch: BoxProps["style"]): Style {
+  if (!patch) return base;
+  return mergeStyle(base, {
+    fg: patch.fg ?? base.fg,
+    bg: patch.bg ?? base.bg,
+    bold: patch.bold ?? base.bold,
+    dim: patch.dim ?? base.dim,
+    italic: patch.italic ?? base.italic,
+    underline: patch.underline ?? base.underline,
+    inverse: patch.inverse ?? base.inverse,
+  });
+}
+
 function ensureEditableState(node: HostNode, value: string): EditableState {
   if (!node.editableState) node.editableState = createEditableState(value);
-  syncEditableState(node.editableState, value);
+  commitEditableState(node.editableState, value);
   return node.editableState;
 }
 

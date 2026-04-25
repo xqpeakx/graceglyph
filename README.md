@@ -1,14 +1,13 @@
 * graceglyph
 
-Terminal UI toolkit for TypeScript. -- Do not rely on this yet, it is still very broken. very very not working right at all. feel free to do pull requests if you can help in any way.
-
-Graceglyph is a TUI framework for Node. It uses declarative components, row/column
-layout, typed props and events, and a small built-in inspector. The main focus
-is avoiding manual coordinates for common layouts.
+Graceglyph is a TUI framework for Node and TypeScript. It uses declarative
+components, row/column layout, typed props and events, and a built-in
+inspector so building terminal UI feels closer to building a modern app than
+fighting manual coordinates.
 
 ## Status
 
-Early, but usable. Current focus:
+Early, but actively hardened. Current focus:
 
 - Declarative components
 - Row/column layout
@@ -16,6 +15,25 @@ Early, but usable. Current focus:
 - Multiline `TextArea`
 - Tree inspector (`F12`)
 - Watch-mode examples
+- Automated runtime and onboarding smoke coverage
+
+## First Run
+
+```bash
+npm install
+npm run example:hello
+```
+
+`example:hello` is the flagship demo. It exercises list navigation,
+single-line input, multiline editing, live preview, and modal presentation in
+one screen.
+
+Useful keys on first run:
+
+- `Tab` / `Shift+Tab`: move focus
+- `Enter`: activate buttons and selected list items
+- `Ctrl+C`: exit
+- `F12`: open the inspector and warning panel
 
 ## Install
 
@@ -84,10 +102,6 @@ npm run example:todo
 npm run example:explorer
 ```
 
-`example:hello` is the best demo right now. It exercises list navigation,
-single-line input, multiline editing, live preview, and modal presentation in
-one screen.
-
 Use watch mode while iterating:
 
 ```bash
@@ -97,6 +111,19 @@ npm run dev:explorer
 ```
 
 `Ctrl+C` exits. `Tab` / `Shift+Tab` cycles focus. `F12` toggles the inspector.
+
+## Ten-minute path
+
+If you want to validate whether graceglyph feels pleasant fast, this is the
+short path:
+
+1. Run `npm run dev:hello`.
+2. Change the window title in `examples/hello.tsx`.
+3. Edit the default subject/body strings.
+4. Replace one button action with your own state update.
+5. Resize the terminal and toggle `F12` to inspect the tree and warnings.
+
+If that loop feels awkward, the framework still needs work.
 
 ## Components
 
@@ -115,6 +142,13 @@ Current built-ins:
 - `Modal`
 
 Everything composes down to four host primitives: `box`, `text`, `input`, and `textarea`.
+
+## Examples
+
+- `example:hello`: flagship composer flow with templates, textarea editing, preview, and modal UX
+- `example:form`: smallest useful controlled-form flow with list selection
+- `example:todo`: list management, keyboard shortcuts, and confirmation modal
+- `example:explorer`: async filesystem loading and preview panes
 
 ## Editing
 
@@ -169,6 +203,28 @@ Most apps should not need manual coordinates. Layout uses:
 - terminal resize reflow
 
 Custom components are plain functions over those primitives and hooks.
+
+## Debugging
+
+When something goes wrong, graceglyph now tries to fail early and explain it in
+developer terms instead of leaving the terminal in a weird state.
+
+- fatal runtime errors include the phase (`mount`, `commit`, `input`, `resize`) and a component stack
+- built-in host components validate runtime props and throw on bad values like negative widths, invalid enums, or missing `onChange`
+- `F12` opens the inspector, which now includes warning lines for clipped layouts, truncated titles, and collapsed children
+
+If a layout feels off, run an example in watch mode, resize the terminal, and
+toggle the inspector while moving focus with `Tab`.
+
+## Customizing
+
+The easiest way to start a real app is to copy the structure from
+`examples/hello.tsx`:
+
+- keep a single `render(<App />)` entrypoint
+- compose with `Window`, `Panel`, `Row`, and `Column`
+- keep inputs controlled with `useState`
+- start from one screen, then add modal flows or lists after the base layout feels good
 
 ## Build
 

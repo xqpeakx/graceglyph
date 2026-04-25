@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 
+import { Button, Modal, h, type KeyEvent, useState } from "../src/index.js";
 import { AnsiSeq } from "../src/render/ansi.js";
-import { h } from "../src/runtime/element.js";
 import { Runtime } from "../src/runtime/runtime.js";
 
 test("runtime integration flows", async (t) => {
@@ -92,6 +92,115 @@ test("runtime integration flows", async (t) => {
     assert.equal(harness.runtime.focus.current()?.type, "input");
   });
 
+  await t.test("focus lifecycle callbacks fire on initial focus and transitions", async (t) => {
+    const events: string[] = [];
+    const harness = createHarness(
+      h(
+        "box",
+        { direction: "row", gap: 1 },
+        h("box", {
+          focusable: true,
+          width: 4,
+          height: 1,
+          onFocus: () => events.push("first:focus"),
+          onBlur: () => events.push("first:blur"),
+        }),
+        h("box", {
+          focusable: true,
+          width: 4,
+          height: 1,
+          onFocus: () => events.push("second:focus"),
+          onBlur: () => events.push("second:blur"),
+        }),
+      ),
+      { width: 12, height: 4, devtools: false },
+    );
+    t.after(() => harness.runtime.stop());
+
+    harness.runtime.run();
+    await settleRuntime();
+
+    assert.deepEqual(events, ["first:focus"]);
+
+    harness.input.emitData("\t");
+    await settleRuntime();
+    assert.deepEqual(events, ["first:focus", "first:blur", "second:focus"]);
+  });
+
+  await t.test("modal focus scopes trap tab navigation and restore background focus", async (t) => {
+    let backgroundClicks = 0;
+
+    function ModalHarness() {
+      const [open, setOpen] = useState(false);
+
+      return h(
+        "box",
+        {
+          direction: "column",
+          onKey: (event: KeyEvent) => {
+            if (event.name === "char" && event.char === "o") {
+              setOpen(true);
+              return true;
+            }
+            return false;
+          },
+        },
+        h("box", { focusable: true, width: 8, height: 1, onClick: () => { backgroundClicks += 1; } }),
+        h("box", { focusable: true, width: 8, height: 1, onClick: () => { backgroundClicks += 1; } }),
+        open
+          ? h(
+            Modal,
+            { title: "Dialog", width: 24, height: 4, onDismiss: () => setOpen(false) },
+            h(
+              "box",
+              { direction: "row", gap: 1 },
+              h(Button, { onClick: () => setOpen(false) }, "Cancel"),
+              h(Button, { onClick: () => setOpen(false) }, "Confirm"),
+            ),
+          )
+          : null,
+      );
+    }
+
+    const harness = createHarness(h(ModalHarness, {}), {
+      width: 50,
+      height: 16,
+      devtools: false,
+    });
+    t.after(() => harness.runtime.stop());
+
+    harness.runtime.run();
+    await settleRuntime();
+
+    assert.equal(harness.runtime.focus.current()?.layout.y, 0);
+
+    harness.input.emitData("o");
+    await settleRuntime();
+
+    assert.match(stripAnsi(harness.output.output()), /Dialog/);
+    const modalFocusY = harness.runtime.focus.current()?.layout.y ?? -1;
+    assert.ok(modalFocusY > 0);
+
+    harness.input.emitData("\t");
+    await settleRuntime();
+    assert.equal(harness.runtime.focus.current()?.layout.y, modalFocusY);
+
+    harness.input.emitData("\t");
+    await settleRuntime();
+    assert.equal(harness.runtime.focus.current()?.layout.y, modalFocusY);
+
+    harness.input.emitData(mousePress(0, 0) + mouseRelease(0, 0));
+    await settleRuntime();
+    assert.equal(backgroundClicks, 0);
+    assert.equal(harness.runtime.focus.current()?.layout.y, modalFocusY);
+
+    harness.input.emitData("\r");
+    await settleRuntime();
+
+    assert.doesNotMatch(currentScreen(harness.runtime), /Dialog/);
+    assert.equal(harness.runtime.focus.current()?.layout.y, 0);
+  });
+
   await t.test("keyboard and mouse interactions dispatch through the runtime", async (t) => {
     const clicks: string[] = [];
     const harness = createHarness(
@@ -161,6 +270,60 @@ test("runtime integration flows", async (t) => {
 
     assert.equal((harness.runtime as any).devtoolsVisible, false);
     assert.notEqual(currentCursor(harness.runtime), null);
+  });
+
+  await t.test("focus-only commits avoid rerendering unrelated components while local state stays local", async (t) => {
+    let parentRenders = 0;
+    let leftRenders = 0;
+    let rightRenders = 0;
+
+    function LeftCounter() {
+      leftRenders += 1;
+      const [count, setCount] = useState(0);
+      return h("box", { focusable: true, width: 6, height: 1, onClick: () => setCount((value) => value + 1) }, String(count));
+    }
+
+    function RightStatic() {
+      rightRenders += 1;
+      return h("box", { focusable: true, width: 6, height: 1 }, "static");
+    }
+
+    function CounterApp() {
+      parentRenders += 1;
+      return h("box", { direction: "row", gap: 1 }, h(LeftCounter, {}), h(RightStatic, {}));
+    }
+
+    const harness = createHarness(h(CounterApp, {}), {
+      width: 20,
+      height: 4,
+      devtools: false,
+    });
+    t.after(() => harness.runtime.stop());
+
+    harness.runtime.run();
+    await settleRuntime();
+
+    const baseline = {
+      parent: parentRenders,
+      left: leftRenders,
+      right: rightRenders,
+    };
+
+    harness.input.emitData("\t");
+    await settleRuntime();
+    assert.deepEqual(
+      { parent: parentRenders, left: leftRenders, right: rightRenders },
+      baseline,
+    );
+
+    harness.input.emitData("\t");
+    await settleRuntime();
+    harness.input.emitData("\r");
+    await settleRuntime();
+
+    assert.equal(parentRenders, baseline.parent);
+    assert.equal(leftRenders, baseline.left + 1);
+    assert.equal(rightRenders, baseline.right);
   });
 });
 
@@ -243,6 +406,23 @@ function currentHost(runtime: Runtime): any {
 
 function currentCursor(runtime: Runtime): { x: number; y: number } | null {
   return ((runtime.renderer as any).cursorPos ?? null) as { x: number; y: number } | null;
+}
+
+function currentScreen(runtime: Runtime): string {
+  const front = (runtime.renderer as any).front;
+  const rows: string[] = [];
+
+  for (let y = 0; y < front.height; y++) {
+    let row = "";
+    for (let x = 0; x < front.width; x++) {
+      const cell = front.get(x, y);
+      if (!cell || cell.width === 0) continue;
+      row += cell.char || " ";
+    }
+    rows.push(row);
+  }
+
+  return rows.join("\n");
 }
 
 async function settleRuntime(): Promise<void> {

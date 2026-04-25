@@ -1,22 +1,22 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource ../src */
+/** @jsx h */
 
 import {
   App,
   Button,
   Column,
+  List,
   Modal,
-  Panel,
   Row,
   Text,
   TextInput,
   Window,
-  List,
-  render,
+  h,
   useEffect,
   useState,
+  useTerminalSize,
 } from "../src/index.js";
 import type { KeyEvent } from "../src/index.js";
+import { runExample } from "./_entry.js";
 
 interface Task {
   id: number;
@@ -30,7 +30,11 @@ function makeTask(title: string, done = false): Task {
   return { id: nextId++, title, done };
 }
 
-function TodoApp() {
+export function TodoApp() {
+  const size = useTerminalSize();
+  const stacked = size.width < 72;
+  const compact = stacked && size.height < 22;
+  const actionsStacked = size.width < 58;
   const [draft, setDraft] = useState("");
   const [tasks, setTasks] = useState<Task[]>([
     makeTask("review open pull requests", true),
@@ -47,6 +51,9 @@ function TodoApp() {
 
   const active = tasks[selected] ?? null;
   const doneCount = tasks.filter((task) => task.done).length;
+  const listHeight = stacked
+    ? Math.max(4, Math.min(8, Math.floor(size.height / 3)))
+    : Math.max(6, Math.min(12, size.height - 14));
 
   function addTask(): void {
     const title = draft.trim();
@@ -85,22 +92,53 @@ function TodoApp() {
 
   return (
     <App>
-      <Window title="Todo" width={80} height={24} onKey={onWindowKey}>
+      <Window title="Todo" grow={1} onKey={onWindowKey}>
         <Column gap={1} grow={1}>
-          <Row gap={1} grow={1}>
-            <Panel title="Tasks" width={36}>
+          {!compact && (
+            <Text style={{ dim: true }}>
+              Enter toggles the selected task. d deletes it. c opens clear-done.
+            </Text>
+          )}
+
+          {stacked ? (
+            <Column gap={1} grow={1}>
+              <Text>Tasks</Text>
               <List
                 items={tasks}
                 selected={selected}
                 onChange={setSelected}
                 onSelect={toggleTask}
-                height={12}
+                height={listHeight}
                 render={(task) => `${task.done ? "[x]" : "[ ]"} ${task.title}`}
               />
-            </Panel>
 
-            <Panel title="Detail" grow={1}>
-              <Column gap={1}>
+              {!compact && <Text>{active ? active.title : "(no task selected)"}</Text>}
+              {!compact && (
+                <Text style={{ dim: true }}>
+                  {active ? `status: ${active.done ? "done" : "pending"}` : "Select a task to inspect it."}
+                </Text>
+              )}
+              {!compact && (
+                <Text style={{ dim: true }}>
+                  {tasks.length} task{tasks.length === 1 ? "" : "s"} total, {doneCount} done
+                </Text>
+              )}
+            </Column>
+          ) : (
+            <Row gap={2} grow={1}>
+              <Column width={40} gap={1}>
+                <Text>Tasks</Text>
+                <List
+                  items={tasks}
+                  selected={selected}
+                  onChange={setSelected}
+                  onSelect={toggleTask}
+                  height={listHeight}
+                  render={(task) => `${task.done ? "[x]" : "[ ]"} ${task.title}`}
+                />
+              </Column>
+
+              <Column grow={1} gap={1}>
                 <Text>{active ? active.title : "(no task selected)"}</Text>
                 <Text style={{ dim: true }}>
                   {active ? `status: ${active.done ? "done" : "pending"}` : "Select a task to inspect it."}
@@ -109,30 +147,52 @@ function TodoApp() {
                   {tasks.length} task{tasks.length === 1 ? "" : "s"} total, {doneCount} done
                 </Text>
                 <Text style={{ dim: true }}>
-                  Enter toggles the selected task. d deletes it. c opens clear-done.
+                  Keep the list focused for keyboard-first triage.
                 </Text>
               </Column>
-            </Panel>
-          </Row>
+            </Row>
+          )}
 
-          <Row gap={1}>
-            <TextInput
-              value={draft}
-              onChange={setDraft}
-              onSubmit={addTask}
-              placeholder="describe a task..."
-              width={34}
-            />
-            <Button onClick={addTask}>Add</Button>
-            <Button onClick={() => setConfirmOpen(true)}>Clear done</Button>
-          </Row>
+          {actionsStacked ? (
+            <Column gap={1}>
+              <TextInput
+                value={draft}
+                onChange={setDraft}
+                onSubmit={addTask}
+                placeholder="describe a task..."
+              />
+              <Row gap={1}>
+                <Button onClick={addTask}>Add</Button>
+                <Button onClick={() => setConfirmOpen(true)}>Clear done</Button>
+              </Row>
+            </Column>
+          ) : (
+            <Row gap={1}>
+              <TextInput
+                value={draft}
+                onChange={setDraft}
+                onSubmit={addTask}
+                placeholder="describe a task..."
+                grow={1}
+              />
+              <Button onClick={addTask}>Add</Button>
+              <Button onClick={() => setConfirmOpen(true)}>Clear done</Button>
+            </Row>
+          )}
 
-          <Text style={{ dim: true }}>
-            Tab cycles focus. F12 opens the inspector.
-          </Text>
+          {!compact && (
+            <Text style={{ dim: true }}>
+              Tab cycles focus. F12 opens the inspector.
+            </Text>
+          )}
 
           {confirmOpen && (
-            <Modal title="Clear completed tasks?" width={44} height={9}>
+            <Modal
+              title="Clear completed tasks?"
+              width={40}
+              height={6}
+              onDismiss={() => setConfirmOpen(false)}
+            >
               <Column gap={1}>
                 <Text>
                   Remove {doneCount} completed task{doneCount === 1 ? "" : "s"}?
@@ -150,7 +210,7 @@ function TodoApp() {
   );
 }
 
-render(<TodoApp />);
+runExample(<TodoApp />, import.meta.url);
 
 function clamp(index: number, length: number): number {
   if (length === 0) return 0;
