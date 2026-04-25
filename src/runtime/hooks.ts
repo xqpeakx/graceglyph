@@ -93,8 +93,8 @@ export function useEffect(
   }
 }
 
-/** Called by the reconciler after the commit pass. */
-export function flushEffects(fiber: Fiber): void {
+/** Called by the reconciler before running pending effect setups. */
+export function cleanupPendingEffects(fiber: Fiber): void {
   for (const hook of fiber.hooks) {
     if (hook.kind !== "effect") continue;
     if (hook.pending) {
@@ -104,7 +104,17 @@ export function flushEffects(fiber: Fiber): void {
         } catch (err) {
           reportEffectError(err);
         }
+        hook.cleanup = null;
       }
+    }
+  }
+}
+
+/** Called by the reconciler after pending cleanups have run. */
+export function flushEffects(fiber: Fiber): void {
+  for (const hook of fiber.hooks) {
+    if (hook.kind !== "effect") continue;
+    if (hook.pending) {
       try {
         const result = hook.pending();
         hook.cleanup = typeof result === "function" ? result : null;

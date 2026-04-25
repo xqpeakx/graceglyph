@@ -7,7 +7,7 @@ import {
   normalizeChildren,
 } from "./element.js";
 import { Fiber, createFiber } from "./fiber.js";
-import { cleanupEffects, flushEffects, withFiber } from "./hooks.js";
+import { cleanupEffects, cleanupPendingEffects, flushEffects, withFiber } from "./hooks.js";
 import { HostNode, createHostNode } from "./host.js";
 
 const HOST_TYPES = new Set<string>(["box", "text", "input", "textarea"] satisfies HostType[]);
@@ -111,8 +111,8 @@ function fiberKey(fiber: Fiber, index: number): string {
 }
 
 export function unmount(fiber: Fiber): void {
-  cleanupEffects(fiber);
   for (const c of fiber.children) unmount(c);
+  cleanupEffects(fiber);
   fiber.children = [];
   fiber.hostNode = null;
   fiber.parent = null;
@@ -164,6 +164,16 @@ function attachHosts(
 // -- Effect flush -------------------------------------------------------------
 
 export function flushAllEffects(fiber: Fiber): void {
+  cleanupPendingEffectsDeep(fiber);
+  flushEffectsDeep(fiber);
+}
+
+function cleanupPendingEffectsDeep(fiber: Fiber): void {
+  for (const c of fiber.children) cleanupPendingEffectsDeep(c);
+  cleanupPendingEffects(fiber);
+}
+
+function flushEffectsDeep(fiber: Fiber): void {
+  for (const c of fiber.children) flushEffectsDeep(c);
   flushEffects(fiber);
-  for (const c of fiber.children) flushAllEffects(c);
 }
