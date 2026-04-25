@@ -63,9 +63,9 @@ export function TodoApp() {
   }
 
   function toggleTask(index: number): void {
-    setTasks((items) => items.map((task, current) => (
-      current === index ? { ...task, done: !task.done } : task
-    )));
+    setTasks((items) =>
+      items.map((task, current) => (current === index ? { ...task, done: !task.done } : task)),
+    );
   }
 
   function deleteSelected(): void {
@@ -115,7 +115,9 @@ export function TodoApp() {
               {!compact && <Text>{active ? active.title : "(no task selected)"}</Text>}
               {!compact && (
                 <Text style={{ dim: true }}>
-                  {active ? `status: ${active.done ? "done" : "pending"}` : "Select a task to inspect it."}
+                  {active
+                    ? `status: ${active.done ? "done" : "pending"}`
+                    : "Select a task to inspect it."}
                 </Text>
               )}
               {!compact && (
@@ -141,14 +143,14 @@ export function TodoApp() {
               <Column grow={1} gap={1}>
                 <Text>{active ? active.title : "(no task selected)"}</Text>
                 <Text style={{ dim: true }}>
-                  {active ? `status: ${active.done ? "done" : "pending"}` : "Select a task to inspect it."}
+                  {active
+                    ? `status: ${active.done ? "done" : "pending"}`
+                    : "Select a task to inspect it."}
                 </Text>
                 <Text style={{ dim: true }}>
                   {tasks.length} task{tasks.length === 1 ? "" : "s"} total, {doneCount} done
                 </Text>
-                <Text style={{ dim: true }}>
-                  Keep the list focused for keyboard-first triage.
-                </Text>
+                <Text style={{ dim: true }}>Keep the list focused for keyboard-first triage.</Text>
               </Column>
             </Row>
           )}
@@ -181,9 +183,7 @@ export function TodoApp() {
           )}
 
           {!compact && (
-            <Text style={{ dim: true }}>
-              Tab cycles focus. F12 opens the inspector.
-            </Text>
+            <Text style={{ dim: true }}>Tab cycles focus. F12 opens the inspector.</Text>
           )}
 
           {confirmOpen && (

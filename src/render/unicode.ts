@@ -1,8 +1,9 @@
 import { COMBINING_RANGES, WIDE_RANGES } from "./unicode-width.generated.js";
 
-const SEGMENTER = typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
-  ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
-  : null;
+const SEGMENTER =
+  typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
 const ZERO_WIDTH_NON_JOINER = 0x200c;
 const ZERO_WIDTH_JOINER = 0x200d;
 const VARIATION_SELECTOR_16 = 0xfe0f;

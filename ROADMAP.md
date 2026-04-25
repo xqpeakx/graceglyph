@@ -512,24 +512,24 @@ We don't ship 1.0 until all of the following are true:
 
 ## Schedule summary
 
-| Weeks  | Focus                                                  |
-|--------|--------------------------------------------------------|
-| 1–2    | Foundation, CI, repo hygiene                           |
-| 2–4    | Signal runtime migration                               |
-| 3–6    | Capabilities + renderer hardening                      |
-| 4–7    | Styling DSL + theme tokens                             |
-| 5–8    | Layout engine: grid, dock, overlay                     |
-| 6–12   | Component library (40+)                                |
-| 8–12   | App shell, router, commands, focus, async              |
-| 10–13  | Animation, transitions, frame scheduler                |
-| 11–14  | Testing & DX, devtools v2                              |
-| 12–15  | Benchmarks, perf pass                                  |
-| 14–16  | Templates, `create-graceglyph`, distribution           |
-| 14–18  | Docs site with interactive playground                  |
-| 16–22  | Flagship apps                                          |
-| 18–24  | Plugin protocol + first-party plugins                  |
-| 24     | v1.0 candidate                                         |
-| 27     | v1.0 release                                           |
+| Weeks | Focus                                        |
+| ----- | -------------------------------------------- |
+| 1–2   | Foundation, CI, repo hygiene                 |
+| 2–4   | Signal runtime migration                     |
+| 3–6   | Capabilities + renderer hardening            |
+| 4–7   | Styling DSL + theme tokens                   |
+| 5–8   | Layout engine: grid, dock, overlay           |
+| 6–12  | Component library (40+)                      |
+| 8–12  | App shell, router, commands, focus, async    |
+| 10–13 | Animation, transitions, frame scheduler      |
+| 11–14 | Testing & DX, devtools v2                    |
+| 12–15 | Benchmarks, perf pass                        |
+| 14–16 | Templates, `create-graceglyph`, distribution |
+| 14–18 | Docs site with interactive playground        |
+| 16–22 | Flagship apps                                |
+| 18–24 | Plugin protocol + first-party plugins        |
+| 24    | v1.0 candidate                               |
+| 27    | v1.0 release                                 |
 
 ---
 

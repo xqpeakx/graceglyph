@@ -144,14 +144,25 @@ function collectTree(
 }
 
 function describeNode(node: HostNode): string {
-  const props = node.props as Partial<BoxProps & TextProps & InputProps & TextAreaProps>;
-  const parts = [node.type, `@${node.layout.x},${node.layout.y}`, `${node.layout.width}x${node.layout.height}`];
+  const props = node.resolvedProps as Partial<BoxProps & TextProps & InputProps & TextAreaProps>;
+  const parts = [
+    node.type,
+    `@${node.layout.x},${node.layout.y}`,
+    `${node.layout.width}x${node.layout.height}`,
+  ];
 
   if (node.type === "box") {
+    if (node.hidden) parts.push("display=none");
+    if (props.layout && props.layout !== "flex") parts.push(`layout=${props.layout}`);
     if (props.title) parts.push(`title=${quote(String(props.title))}`);
     if (props.direction) parts.push(`dir=${props.direction}`);
+    if (props.dock) parts.push(`dock=${props.dock}`);
+    if (props.position) parts.push(`pos=${props.position}`);
     if (props.border) parts.push("border");
     if (props.focusable) parts.push("focusable");
+    if (props.aspectRatio) parts.push(`ratio=${props.aspectRatio}`);
+    const constraints = describeConstraints(props);
+    if (constraints) parts.push(constraints);
   } else if (node.type === "text") {
     const text = preview(textOf(props.children));
     if (text) parts.push(quote(text));
@@ -166,6 +177,17 @@ function describeNode(node: HostNode): string {
   }
 
   return parts.join(" ");
+}
+
+function describeConstraints(props: Partial<BoxProps>): string {
+  const parts: string[] = [];
+  if (props.minWidth != null || props.maxWidth != null) {
+    parts.push(`w=${props.minWidth ?? ""}..${props.maxWidth ?? ""}`);
+  }
+  if (props.minHeight != null || props.maxHeight != null) {
+    parts.push(`h=${props.minHeight ?? ""}..${props.maxHeight ?? ""}`);
+  }
+  return parts.length > 0 ? `constraints(${parts.join(" ")})` : "";
 }
 
 function focusPath(node: HostNode): string {

@@ -12,7 +12,7 @@ Thanks for the contribution. A few quick checks before you submit.
 
 ## Changes
 
-- 
+-
 
 ## Tests
 

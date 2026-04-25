@@ -1,5 +1,6 @@
 import type { KeyEvent, MouseEvent } from "../input/keys.js";
 import type { Color } from "../render/style.js";
+import type { BreakpointMap } from "../theme/breakpoints.js";
 
 export const Fragment = Symbol.for("graceglyph.fragment");
 export type FragmentType = typeof Fragment;
@@ -100,11 +101,28 @@ export interface BoxStyle {
   inverse?: boolean;
 }
 
+export interface StyleResolver {
+  toBoxStyle(theme?: unknown, context?: unknown): BoxStyle;
+}
+
+export type StyleLike = BoxStyle | StyleResolver;
+
 export type FlexDirection = "row" | "column";
 export type FlexAlign = "start" | "center" | "end" | "stretch";
 export type FlexJustify = "start" | "center" | "end" | "between" | "around";
+export type DisplayMode = "box" | "none";
+export type LayoutMode = "flex" | "grid" | "dock";
+export type GridTrackSize = number | "auto" | `${number}fr` | `minmax(${string})`;
+export type GridTrackList = string | readonly GridTrackSize[];
+export type GridLine = number | [start: number, end: number];
+export type DockPosition = "top" | "bottom" | "left" | "right" | "fill";
+export type PositionMode = "absolute";
 
-export interface BoxProps {
+export interface BoxLayoutProps {
+  /** Whether this box participates in layout and paint. Default: "box". */
+  display?: DisplayMode;
+  /** Layout algorithm for children. Default: "flex". */
+  layout?: LayoutMode;
   /** Layout direction for children. Default: "column". */
   direction?: FlexDirection;
   /** Space between children on the main axis. */
@@ -119,37 +137,71 @@ export interface BoxProps {
   width?: number;
   /** Fixed cross-axis size (cells). */
   height?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+  /** Preserve width / height when one axis is constrained. */
+  aspectRatio?: number;
   /** Flex grow factor. Default 0. */
   grow?: number;
   /** Draw a single-line border around the box. */
   border?: boolean;
+  /** Paint and focus on top of siblings without consuming layout flow space. */
+  overlay?: boolean;
+  /** Absolute-position this box inside the nearest parent inner bounds. */
+  position?: PositionMode;
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+  /** Paint order among siblings; higher values paint later. */
+  zIndex?: number;
+  /** Grid container track definitions. */
+  gridColumns?: GridTrackList;
+  gridRows?: GridTrackList;
+  gridAutoColumns?: GridTrackSize;
+  gridAutoRows?: GridTrackSize;
+  /** Grid item placement. Lines are 1-based; tuple end line is exclusive. */
+  gridColumn?: GridLine;
+  gridRow?: GridLine;
+  gridColumnSpan?: number;
+  gridRowSpan?: number;
+  /** Dock item placement inside a parent with layout="dock". Default: "fill". */
+  dock?: DockPosition;
+}
+
+export type BoxBreakpointPatch = Partial<BoxLayoutProps>;
+export type BoxBreakpoints = BreakpointMap<BoxBreakpointPatch>;
+
+export interface BoxProps extends BoxLayoutProps {
+  /** Layout-only responsive overrides keyed by theme breakpoint or comparator. */
+  breakpoints?: BoxBreakpoints;
   /** Title rendered into the top border (border must be true). */
   title?: string;
   /** Background + foreground style for the box chrome. */
-  style?: BoxStyle;
+  style?: StyleLike;
   /** Style applied on top of `style` when the box is focused. */
-  focusedStyle?: BoxStyle;
+  focusedStyle?: StyleLike;
   /** Style applied on top of `style` when terminal mouse tracking hovers this box. */
-  hoveredStyle?: BoxStyle;
+  hoveredStyle?: StyleLike;
   /** Style applied on top of `style` while this box is being pressed. */
-  activeStyle?: BoxStyle;
+  activeStyle?: StyleLike;
   /** Style applied when disabled is true. Disabled hosts are skipped by focus and click dispatch. */
-  disabledStyle?: BoxStyle;
+  disabledStyle?: StyleLike;
   /** Style applied when loading is true. */
-  loadingStyle?: BoxStyle;
+  loadingStyle?: StyleLike;
   /** Style applied when error is true. */
-  errorStyle?: BoxStyle;
+  errorStyle?: StyleLike;
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;
   /** Border/frame override used when `border` is true. */
-  borderStyle?: BoxStyle;
+  borderStyle?: StyleLike;
   /** Title override used when `title` is present. */
-  titleStyle?: BoxStyle;
+  titleStyle?: StyleLike;
   /** Make the box keyboard-focusable (Tab reaches it). */
   focusable?: boolean;
-  /** Paint and focus on top of siblings without consuming layout flow space. */
-  overlay?: boolean;
   /** Keep Tab navigation scoped to this subtree while mounted. */
   focusScope?: "contain";
   /** Fires when box has focus and a key is pressed. Return true to stop bubble. */
@@ -165,7 +217,7 @@ export interface BoxProps {
 
 export interface TextProps {
   /** Text color / weight. */
-  style?: BoxStyle;
+  style?: StyleLike;
   /** Wrap mode: truncate (default) or clip. */
   wrap?: "truncate" | "clip";
   children?: unknown;
@@ -180,14 +232,14 @@ export interface InputProps {
   onBlur?: () => void;
   width?: number;
   grow?: number;
-  style?: BoxStyle;
-  focusedStyle?: BoxStyle;
-  hoveredStyle?: BoxStyle;
-  activeStyle?: BoxStyle;
-  disabledStyle?: BoxStyle;
-  loadingStyle?: BoxStyle;
-  errorStyle?: BoxStyle;
-  placeholderStyle?: BoxStyle;
+  style?: StyleLike;
+  focusedStyle?: StyleLike;
+  hoveredStyle?: StyleLike;
+  activeStyle?: StyleLike;
+  disabledStyle?: StyleLike;
+  loadingStyle?: StyleLike;
+  errorStyle?: StyleLike;
+  placeholderStyle?: StyleLike;
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;
@@ -202,14 +254,14 @@ export interface TextAreaProps {
   width?: number;
   height?: number;
   grow?: number;
-  style?: BoxStyle;
-  focusedStyle?: BoxStyle;
-  hoveredStyle?: BoxStyle;
-  activeStyle?: BoxStyle;
-  disabledStyle?: BoxStyle;
-  loadingStyle?: BoxStyle;
-  errorStyle?: BoxStyle;
-  placeholderStyle?: BoxStyle;
+  style?: StyleLike;
+  focusedStyle?: StyleLike;
+  hoveredStyle?: StyleLike;
+  activeStyle?: StyleLike;
+  disabledStyle?: StyleLike;
+  loadingStyle?: StyleLike;
+  errorStyle?: StyleLike;
+  placeholderStyle?: StyleLike;
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;

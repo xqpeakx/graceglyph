@@ -1,11 +1,4 @@
-import {
-  ComponentFn,
-  Fragment,
-  HostType,
-  ZenElement,
-  isElement,
-  normalizeChildren,
-} from "./element.js";
+import { ComponentFn, Fragment, HostType, ZenElement, normalizeChildren } from "./element.js";
 import { validateHostFiberProps } from "./diagnostics.js";
 import { Fiber, createFiber } from "./fiber.js";
 import { cleanupEffects, cleanupPendingEffects, flushEffects, withFiber } from "./hooks.js";
@@ -37,9 +30,7 @@ export function reconcile(fiber: Fiber): void {
     const kids = normalizeChildren(fiber.props.children);
     reconcileChildren(fiber, kids);
   } else if (typeof fiber.type === "function") {
-    const output = withFiber(fiber, () =>
-      (fiber.type as ComponentFn)(fiber.props),
-    );
+    const output = withFiber(fiber, () => (fiber.type as ComponentFn)(fiber.props));
     const kids = normalizeChildren(output);
     reconcileChildren(fiber, kids);
   } else if (fiber.type === "box") {
@@ -58,10 +49,7 @@ export function reconcile(fiber: Fiber): void {
   fiber.lastRenderMs = Math.max(0, now() - started);
 }
 
-function reconcileChildren(
-  parent: Fiber,
-  newKids: Array<ZenElement | string>,
-): void {
+function reconcileChildren(parent: Fiber, newKids: Array<ZenElement | string>): void {
   const old = parent.children;
   const oldByKey = new Map<string, Fiber>();
   for (let i = 0; i < old.length; i++) {
@@ -109,7 +97,12 @@ function toElement(child: ZenElement | string): {
 }
 
 function typedKey(type: ZenElement["type"], key: string | number | null, index: number): string {
-  const t = typeof type === "string" ? type : type === Fragment ? "#frag" : (type as { name?: string }).name ?? "#fn";
+  const t =
+    typeof type === "string"
+      ? type
+      : type === Fragment
+        ? "#frag"
+        : ((type as { name?: string }).name ?? "#fn");
   if (key !== null && key !== undefined) return `${t}::${key}`;
   return `${t}#${index}`;
 }

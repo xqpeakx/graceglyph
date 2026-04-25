@@ -66,7 +66,8 @@ export interface DetectInput {
 
 const TRUECOLOR_TERMS = /(^|[-_])(direct|24bit|truecolor)$/i;
 const TERM_256 = /-256(color)?$/i;
-const TERM_16 = /^(xterm|screen|tmux|rxvt|linux|ansi|vt100|vt220|vt320|vt340|cygwin|konsole|alacritty|wezterm|kitty|foot|ghostty)/i;
+const TERM_16 =
+  /^(xterm|screen|tmux|rxvt|linux|ansi|vt100|vt220|vt320|vt340|cygwin|konsole|alacritty|wezterm|kitty|foot|ghostty)/i;
 
 /**
  * Parse a boolean env var. Recognizes "1", "true", "yes", "on" as true and
@@ -112,7 +113,7 @@ function detectColor(env: NodeJS.ProcessEnv, isTTY: boolean): ColorDepth {
     program === "WezTerm" ||
     program === "ghostty" ||
     program === "vscode" ||
-    program === "Apple_Terminal" && Number(env.TERM_PROGRAM_VERSION ?? 0) >= 400
+    (program === "Apple_Terminal" && Number(env.TERM_PROGRAM_VERSION ?? 0) >= 400)
   ) {
     return "truecolor";
   }
@@ -224,14 +225,12 @@ export function detectCapabilities(input: DetectInput = {}): Capabilities {
     synchronizedOutput:
       overrides.synchronizedOutput ?? (supportsTTY && detectSynchronizedOutput(env)),
     bracketedPaste:
-      overrides.bracketedPaste ?? (parseBoolEnv(env.GRACEGLYPH_BRACKETED_PASTE) ?? supportsTTY),
-    focusReporting:
-      overrides.focusReporting ?? (supportsTTY && detectFocusReporting(env, color)),
+      overrides.bracketedPaste ?? parseBoolEnv(env.GRACEGLYPH_BRACKETED_PASTE) ?? supportsTTY,
+    focusReporting: overrides.focusReporting ?? (supportsTTY && detectFocusReporting(env, color)),
     kittyGraphics: overrides.kittyGraphics ?? (supportsTTY && detectKittyGraphics(env)),
     sixel: overrides.sixel ?? (supportsTTY && detectSixel(env)),
     iterm2Images: overrides.iterm2Images ?? (supportsTTY && detectIterm2Images(env)),
-    extendedUnderline:
-      overrides.extendedUnderline ?? (supportsTTY && detectExtendedUnderline(env)),
+    extendedUnderline: overrides.extendedUnderline ?? (supportsTTY && detectExtendedUnderline(env)),
     boldIsBright: overrides.boldIsBright ?? detectBoldIsBright(env),
     term: env.TERM ?? "",
     termProgram: env.TERM_PROGRAM ?? null,

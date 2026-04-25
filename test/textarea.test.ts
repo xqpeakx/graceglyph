@@ -102,11 +102,7 @@ test("single-line viewport scroll snaps to grapheme boundaries", () => {
 });
 
 test("inspector describes textarea nodes", () => {
-  const tree = h(
-    "box",
-    {},
-    h("textarea", { value: "alpha\nbeta", onChange: () => {}, height: 3 }),
-  );
+  const tree = h("box", {}, h("textarea", { value: "alpha\nbeta", onChange: () => {}, height: 3 }));
 
   const root = createFiber(tree.type, tree.props, tree.key, null);
   reconcile(root);

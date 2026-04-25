@@ -10,10 +10,15 @@ import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
 import { Rect } from "../src/layout/rect.js";
 
 test("invalid host props fail with a clear diagnostic", () => {
-  const root = createFiber("input", {
-    value: 42,
-    onChange: () => {},
-  } as unknown as Record<string, unknown>, null, null);
+  const root = createFiber(
+    "input",
+    {
+      value: 42,
+      onChange: () => {},
+    } as unknown as Record<string, unknown>,
+    null,
+    null,
+  );
 
   assert.throws(
     () => reconcile(root),
@@ -70,4 +75,41 @@ test("inspector surfaces layout warnings for constrained nodes", () => {
   assert.match(output, /warnings: [1-9]/);
   assert.match(output, /title is truncated to fit the border/);
   assert.match(output, /width clipped/);
+});
+
+test("invalid layout constraints fail with a clear diagnostic", () => {
+  const root = createFiber(
+    "box",
+    {
+      minWidth: 12,
+      maxWidth: 4,
+    } as unknown as Record<string, unknown>,
+    null,
+    null,
+  );
+
+  assert.throws(
+    () => reconcile(root),
+    /invalid prop "minWidth" on <box>; expected less than or equal to maxWidth/,
+  );
+});
+
+test("invalid breakpoint layout patches fail with a clear diagnostic", () => {
+  const root = createFiber(
+    "box",
+    {
+      breakpoints: {
+        ">=80": {
+          direction: "sideways",
+        },
+      },
+    } as unknown as Record<string, unknown>,
+    null,
+    null,
+  );
+
+  assert.throws(
+    () => reconcile(root),
+    /invalid prop "breakpoints\.>=80\.direction" on <box>; expected one of "row", "column"/,
+  );
 });

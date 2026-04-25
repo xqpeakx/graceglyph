@@ -13,17 +13,18 @@ import {
   TextInput,
   Window,
 } from "./components.js";
-import type { BoxProps, BoxStyle, ZenElement } from "./runtime/element.js";
+import type {
+  BoxProps,
+  BoxStyle,
+  DockPosition,
+  GridTrackList,
+  GridTrackSize,
+  ZenElement,
+} from "./runtime/element.js";
 import { Fragment, h, isElement, normalizeChildren } from "./runtime/element.js";
 import type { KeyEvent, MouseEvent } from "./input/keys.js";
 import { ansi } from "./render/style.js";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "./runtime/hooks.js";
+import { useCallback, useEffect, useMemo, useRef, useState } from "./runtime/hooks.js";
 
 export interface RouteProps {
   path: string;
@@ -43,9 +44,9 @@ export interface RouterProps {
 
 export function Router(props: RouterProps): ZenElement {
   const routes = normalizeChildren(props.children).filter(isElement);
-  const route = routes.find((child) => (
-    child.type === Route && (child.props as unknown as RouteProps).path === props.path
-  ));
+  const route = routes.find(
+    (child) => child.type === Route && (child.props as unknown as RouteProps).path === props.path,
+  );
   if (!route) return h(Fragment, {}, props.fallback ?? null);
   return h(Fragment, {}, (route.props as unknown as RouteProps).children);
 }
@@ -63,7 +64,10 @@ export interface TabsProps {
 }
 
 export function Tabs(props: TabsProps): ZenElement {
-  const selected = Math.max(0, props.tabs.findIndex((tab) => tab.id === props.selectedId));
+  const selected = Math.max(
+    0,
+    props.tabs.findIndex((tab) => tab.id === props.selectedId),
+  );
 
   function move(delta: number): void {
     if (props.tabs.length === 0) return;
@@ -90,7 +94,9 @@ export function Tabs(props: TabsProps): ZenElement {
         <Button
           key={tab.id}
           onClick={() => props.onChange(tab.id)}
-          style={tab.id === props.selectedId ? { fg: ansi(15), bg: ansi(4), bold: true } : undefined}
+          style={
+            tab.id === props.selectedId ? { fg: ansi(15), bg: ansi(4), bold: true } : undefined
+          }
         >
           {tab.badge == null ? tab.label : `${tab.label} ${tab.badge}`}
         </Button>
@@ -136,11 +142,15 @@ export function useCommands(): readonly Command[] {
       commandListeners.delete(listener);
     };
   }, []);
-  return useMemo(() => (
-    Array.from(commandRegistry.values()).sort((left, right) => (
-      (left.group ?? "").localeCompare(right.group ?? "") || left.title.localeCompare(right.title)
-    ))
-  ), [version]);
+  return useMemo(
+    () =>
+      Array.from(commandRegistry.values()).sort(
+        (left, right) =>
+          (left.group ?? "").localeCompare(right.group ?? "") ||
+          left.title.localeCompare(right.title),
+      ),
+    [version],
+  );
 }
 
 export interface CommandPaletteProps {
@@ -209,9 +219,10 @@ export function HelpOverlay(props: HelpOverlayProps): ZenElement | null {
   const registered = useCommands();
   const commands = props.commands ?? registered;
   const [selected, setSelected] = useState(0);
-  const lines = commands.length > 0
-    ? commands.map((command) => formatCommand(command))
-    : ["No commands registered."];
+  const lines =
+    commands.length > 0
+      ? commands.map((command) => formatCommand(command))
+      : ["No commands registered."];
 
   useEffect(() => {
     setSelected((index) => clamp(index, lines.length));
@@ -260,7 +271,9 @@ export function ToastViewport(props: {
           >
             <Row gap={1}>
               <Text style={{ dim: true }}>{toast.detail ?? toast.tone ?? "info"}</Text>
-              {props.onDismiss && <Button onClick={() => props.onDismiss?.(toast.id)}>Dismiss</Button>}
+              {props.onDismiss && (
+                <Button onClick={() => props.onDismiss?.(toast.id)}>Dismiss</Button>
+              )}
             </Row>
           </Panel>
         ))}
@@ -296,30 +309,33 @@ export function AppShell(props: AppShellProps): ZenElement {
   const registered = useCommands();
   const commands = mergeCommands(registered, props.commands ?? []);
 
-  const shellCommands = useMemo<Command[]>(() => [
-    {
-      id: "shell.palette",
-      title: "Open command palette",
-      group: "Shell",
-      keys: [":"],
-      run: () => setPaletteOpen(true),
-    },
-    {
-      id: "shell.help",
-      title: "Open help",
-      group: "Shell",
-      keys: ["?"],
-      run: () => setHelpOpen(true),
-    },
-    {
-      id: "shell.back",
-      title: "Navigate back",
-      group: "Shell",
-      keys: ["escape"],
-      run: goBack,
-    },
-    ...commands,
-  ], [commands]);
+  const shellCommands = useMemo<Command[]>(
+    () => [
+      {
+        id: "shell.palette",
+        title: "Open command palette",
+        group: "Shell",
+        keys: [":"],
+        run: () => setPaletteOpen(true),
+      },
+      {
+        id: "shell.help",
+        title: "Open help",
+        group: "Shell",
+        keys: ["?"],
+        run: () => setHelpOpen(true),
+      },
+      {
+        id: "shell.back",
+        title: "Navigate back",
+        group: "Shell",
+        keys: ["escape"],
+        run: goBack,
+      },
+      ...commands,
+    ],
+    [commands],
+  );
 
   function goBack(): void {
     const crumbs = props.breadcrumbs ?? [];
@@ -364,7 +380,11 @@ export function AppShell(props: AppShellProps): ZenElement {
             </Column>
           </Window>
         )}
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={shellCommands} />
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          commands={shellCommands}
+        />
         <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} commands={shellCommands} />
         <ToastViewport toasts={props.toasts ?? []} onDismiss={props.onDismissToast} />
       </Column>
@@ -388,28 +408,60 @@ export function Breadcrumbs(props: {
   );
 }
 
-export function Stack(props: Omit<BoxProps, "direction"> & { direction?: "row" | "column" }): ZenElement {
+export function Stack(
+  props: Omit<BoxProps, "direction"> & { direction?: "row" | "column" },
+): ZenElement {
   return <Box {...props} direction={props.direction ?? "column"} />;
 }
 
-export function Grid(props: {
-  columns: number;
-  gap?: number;
+export interface GridProps extends Omit<BoxProps, "layout" | "gridColumns" | "gridRows"> {
+  columns: number | GridTrackList;
+  rows?: GridTrackList;
+  autoColumns?: GridTrackSize;
+  autoRows?: GridTrackSize;
+}
+
+export function Grid(props: GridProps): ZenElement {
+  const { columns, rows, autoColumns, autoRows, gap = 1, children, ...rest } = props;
+  const gridColumns =
+    typeof columns === "number"
+      ? Array.from({ length: Math.max(1, Math.floor(columns)) }, () => "1fr" as const)
+      : columns;
+  return (
+    <Box
+      {...rest}
+      layout="grid"
+      gap={gap}
+      gridColumns={gridColumns}
+      gridRows={rows}
+      gridAutoColumns={autoColumns}
+      gridAutoRows={autoRows}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export interface DockProps extends Omit<BoxProps, "layout"> {
   children?: unknown;
-}): ZenElement {
-  const children = normalizeChildren(props.children);
-  const columns = Math.max(1, props.columns);
-  const rows: unknown[] = [];
-  for (let index = 0; index < children.length; index += columns) {
-    rows.push(
-      <Row key={`row-${index}`} gap={props.gap ?? 1}>
-        {children.slice(index, index + columns).map((child, childIndex) => (
-          <Box key={`cell-${index + childIndex}`} grow={1}>{child}</Box>
-        ))}
-      </Row>,
-    );
-  }
-  return <Column gap={props.gap ?? 1}>{rows}</Column>;
+}
+
+export function Dock(props: DockProps): ZenElement {
+  return <Box {...props} layout="dock" />;
+}
+
+export interface DockSlotProps extends Omit<BoxProps, "dock"> {
+  side?: DockPosition;
+  children?: unknown;
+}
+
+export function DockSlot(props: DockSlotProps): ZenElement {
+  const { side = "fill", children, ...rest } = props;
+  return (
+    <Box {...rest} dock={side}>
+      {children}
+    </Box>
+  );
 }
 
 export function SplitPane(props: {
@@ -440,7 +492,11 @@ export function SplitPane(props: {
         return false;
       }}
     >
-      <Box width={horizontal ? props.firstSize : undefined} height={!horizontal ? props.firstSize : undefined} grow={props.firstSize ? undefined : 1}>
+      <Box
+        width={horizontal ? props.firstSize : undefined}
+        height={!horizontal ? props.firstSize : undefined}
+        grow={props.firstSize ? undefined : 1}
+      >
         {props.first}
       </Box>
       <Box focusable width={horizontal ? 3 : undefined} height={horizontal ? undefined : 1}>
@@ -466,7 +522,8 @@ export function ScrollView(props: {
   const maxOffset = Math.max(0, props.lines.length - props.height);
   const offset = Math.min(Math.max(0, props.offset), maxOffset);
   const visible = props.lines.slice(offset, offset + props.height);
-  const scrollBy = (delta: number) => props.onOffsetChange(Math.min(maxOffset, Math.max(0, offset + delta)));
+  const scrollBy = (delta: number) =>
+    props.onOffsetChange(Math.min(maxOffset, Math.max(0, offset + delta)));
 
   return (
     <Panel
@@ -516,7 +573,11 @@ export function ScrollView(props: {
         <Row gap={1}>
           <Button onClick={() => scrollBy(-1)}>Up</Button>
           <Button onClick={() => scrollBy(1)}>Down</Button>
-          <Text style={{ dim: true }}>{props.lines.length === 0 ? "empty" : `${offset + 1}-${Math.min(props.lines.length, offset + props.height)} / ${props.lines.length}`}</Text>
+          <Text style={{ dim: true }}>
+            {props.lines.length === 0
+              ? "empty"
+              : `${offset + 1}-${Math.min(props.lines.length, offset + props.height)} / ${props.lines.length}`}
+          </Text>
         </Row>
       </Column>
     </Panel>
@@ -553,10 +614,7 @@ export interface AsyncState<T> {
   reload: () => void;
 }
 
-export function useAsync<T>(
-  load: () => Promise<T>,
-  deps: unknown[] = [],
-): AsyncState<T> {
+export function useAsync<T>(load: () => Promise<T>, deps: unknown[] = []): AsyncState<T> {
   const [version, setVersion] = useState(0);
   const [state, setState] = useState<Omit<AsyncState<T>, "reload">>({
     loading: true,
@@ -594,7 +652,7 @@ export function usePersistentState<T>(
     const storage = optionalLocalStorage();
     try {
       const stored = storage?.getItem(key);
-      return stored ? JSON.parse(stored) as T : fallback;
+      return stored ? (JSON.parse(stored) as T) : fallback;
     } catch {
       return fallback;
     }
@@ -616,10 +674,17 @@ export function usePersistentState<T>(
   return [value, setPersistentValue];
 }
 
-function optionalLocalStorage(): { getItem(key: string): string | null; setItem(key: string, value: string): void } | undefined {
-  return (globalThis as {
-    localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void };
-  }).localStorage;
+function optionalLocalStorage():
+  | { getItem(key: string): string | null; setItem(key: string, value: string): void }
+  | undefined {
+  return (
+    globalThis as {
+      localStorage?: {
+        getItem(key: string): string | null;
+        setItem(key: string, value: string): void;
+      };
+    }
+  ).localStorage;
 }
 
 export function useFocusWithin(): {
@@ -673,10 +738,7 @@ function emitCommandChange(): void {
   for (const listener of commandListeners) listener();
 }
 
-function mergeCommands(
-  registered: readonly Command[],
-  explicit: readonly Command[],
-): Command[] {
+function mergeCommands(registered: readonly Command[], explicit: readonly Command[]): Command[] {
   const merged = new Map<string, Command>();
   for (const command of registered) merged.set(command.id, command);
   for (const command of explicit) merged.set(command.id, command);
@@ -686,12 +748,13 @@ function mergeCommands(
 function filterCommands(commands: readonly Command[], query: string): Command[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return [...commands];
-  return commands.filter((command) => (
-    command.title.toLowerCase().includes(trimmed)
-    || command.id.toLowerCase().includes(trimmed)
-    || (command.group ?? "").toLowerCase().includes(trimmed)
-    || (command.keys ?? []).some((key) => key.toLowerCase().includes(trimmed))
-  ));
+  return commands.filter(
+    (command) =>
+      command.title.toLowerCase().includes(trimmed) ||
+      command.id.toLowerCase().includes(trimmed) ||
+      (command.group ?? "").toLowerCase().includes(trimmed) ||
+      (command.keys ?? []).some((key) => key.toLowerCase().includes(trimmed)),
+  );
 }
 
 function formatCommand(command: Command): string {

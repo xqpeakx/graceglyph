@@ -63,15 +63,18 @@ export function createResource<T>(
 
 export function createResource<T, S>(
   ...args:
-    | [Accessor<S>, (source: S, info: ResourceFetcherInfo<T>) => Promise<T> | T, ResourceOptions<T>?]
+    | [
+        Accessor<S>,
+        (source: S, info: ResourceFetcherInfo<T>) => Promise<T> | T,
+        ResourceOptions<T>?,
+      ]
     | [() => Promise<T> | T, ResourceOptions<T>?]
 ): Resource<T> {
   const hasSource = args.length >= 2 && typeof args[1] === "function";
-  const source = hasSource ? (args[0] as Accessor<S>) : (() => undefined as unknown as S);
+  const source = hasSource ? (args[0] as Accessor<S>) : () => undefined as unknown as S;
   const fetcher = hasSource
     ? (args[1] as (source: S, info: ResourceFetcherInfo<T>) => Promise<T> | T)
-    : ((_s: S, info: ResourceFetcherInfo<T>) =>
-        (args[0] as () => Promise<T> | T)());
+    : (_s: S, _info: ResourceFetcherInfo<T>) => (args[0] as () => Promise<T> | T)();
   const options = (hasSource ? args[2] : args[1]) as ResourceOptions<T> | undefined;
 
   const [data, setData] = createSignal<T | undefined>(options?.initialValue);

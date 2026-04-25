@@ -16,7 +16,11 @@ export class FocusManager {
     const nextScope = root ? findActiveScope(root) : null;
     const list: HostNode[] = [];
     if (nextScope) {
-      if ((!this.activeScope || this.activeScope.fiber !== nextScope.fiber) && prev && !containsNode(nextScope, prev)) {
+      if (
+        (!this.activeScope || this.activeScope.fiber !== nextScope.fiber) &&
+        prev &&
+        !containsNode(nextScope, prev)
+      ) {
         this.returnFocusFiber = prev.fiber;
       }
       walk(nextScope, list);
@@ -75,14 +79,18 @@ export class FocusManager {
 }
 
 function walk(node: HostNode, out: HostNode[]): void {
-  const disabled = node.props.disabled === true;
-  const focusable = !disabled && (node.type === "input" || node.type === "textarea" || node.props.focusable === true);
+  if (node.hidden) return;
+  const disabled = node.resolvedProps.disabled === true;
+  const focusable =
+    !disabled &&
+    (node.type === "input" || node.type === "textarea" || node.resolvedProps.focusable === true);
   if (focusable) out.push(node);
   for (const c of node.children) walk(c, out);
 }
 
 function findActiveScope(node: HostNode): HostNode | null {
-  let active = node.props.focusScope === "contain" ? node : null;
+  if (node.hidden) return null;
+  let active = node.resolvedProps.focusScope === "contain" ? node : null;
   for (const child of node.children) {
     const nested = findActiveScope(child);
     if (nested) active = nested;

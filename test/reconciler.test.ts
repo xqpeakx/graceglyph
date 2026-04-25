@@ -12,12 +12,14 @@ test("keyed reordering preserves component identity and state by key", () => {
     return h("text", {}, stable);
   }
 
-  const root = createFiber("box", {
-    children: [
-      h(Item, { key: "a", label: "A" }),
-      h(Item, { key: "b", label: "B" }),
-    ],
-  }, null, null);
+  const root = createFiber(
+    "box",
+    {
+      children: [h(Item, { key: "a", label: "A" }), h(Item, { key: "b", label: "B" })],
+    },
+    null,
+    null,
+  );
 
   commit(root);
 
@@ -25,10 +27,7 @@ test("keyed reordering preserves component identity and state by key", () => {
   const firstB = root.children[1]!;
 
   root.props = {
-    children: [
-      h(Item, { key: "b", label: "B2" }),
-      h(Item, { key: "a", label: "A2" }),
-    ],
+    children: [h(Item, { key: "b", label: "B2" }), h(Item, { key: "a", label: "A2" })],
   };
 
   commit(root);
@@ -50,9 +49,14 @@ test("mount, unmount, and remount effects fire in a stable lifecycle order", () 
     return h("text", {}, props.label);
   }
 
-  const root = createFiber("box", {
-    children: [h(Probe, { key: "probe", label: "alpha" })],
-  }, null, null);
+  const root = createFiber(
+    "box",
+    {
+      children: [h(Probe, { key: "probe", label: "alpha" })],
+    },
+    null,
+    null,
+  );
 
   commit(root);
   assert.deepEqual(log, ["mount alpha"]);
@@ -90,27 +94,16 @@ test("effects clean up before re-running and process children before parents", (
   const root = createFiber(Parent, { step: 1 }, null, null);
 
   commit(root);
-  assert.deepEqual(log, [
-    "mount child 1",
-    "mount parent 1",
-  ]);
+  assert.deepEqual(log, ["mount child 1", "mount parent 1"]);
 
   log.length = 0;
   root.props = { step: 2 };
   commit(root);
-  assert.deepEqual(log, [
-    "cleanup child 1",
-    "cleanup parent 1",
-    "mount child 2",
-    "mount parent 2",
-  ]);
+  assert.deepEqual(log, ["cleanup child 1", "cleanup parent 1", "mount child 2", "mount parent 2"]);
 
   log.length = 0;
   unmount(root);
-  assert.deepEqual(log, [
-    "cleanup child 2",
-    "cleanup parent 2",
-  ]);
+  assert.deepEqual(log, ["cleanup child 2", "cleanup parent 2"]);
 });
 
 test("state updates scheduled during effects settle on the next commit", () => {
@@ -146,7 +139,5 @@ function commit(root: Fiber): void {
 }
 
 function readState(fiber: Fiber): unknown {
-  return fiber.hooks[0] && fiber.hooks[0].kind === "state"
-    ? fiber.hooks[0].value
-    : undefined;
+  return fiber.hooks[0] && fiber.hooks[0].kind === "state" ? fiber.hooks[0].value : undefined;
 }

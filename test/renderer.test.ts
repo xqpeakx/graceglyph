@@ -67,7 +67,10 @@ test("renderer can update cursor position without repainting unchanged cells", (
 class FakeTerminal {
   private chunks: string[] = [];
 
-  constructor(private width: number, private height: number) {}
+  constructor(
+    private width: number,
+    private height: number,
+  ) {}
 
   size(): { width: number; height: number } {
     return { width: this.width, height: this.height };

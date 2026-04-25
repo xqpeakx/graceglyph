@@ -19,6 +19,7 @@ export type Hook =
 
 export interface FiberEnvironment {
   theme: Theme;
+  setTheme: (theme: Theme) => void;
   size: () => Size;
   onResize: (listener: (size: Size) => void) => () => void;
   capabilities: Capabilities;

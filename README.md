@@ -1,4 +1,4 @@
-* graceglyph
+- graceglyph
 
 Graceglyph is a TUI framework for Node and TypeScript. It uses declarative
 components, row/column layout, typed props and events, and a built-in
@@ -25,6 +25,7 @@ Early, but actively hardened. Current focus:
 - Tree inspector (`F12`)
 - App shell, command palette, help overlay, and toasts
 - Terminal testkit and project templates
+- Tokenized styling DSL and built-in themes
 - Watch-mode examples
 - Automated runtime and onboarding smoke coverage
 
@@ -152,6 +153,8 @@ Current built-ins:
 - `Row`
 - `Column`
 - `Grid`
+- `Dock`
+- `DockSlot`
 - `Stack`
 - `SplitPane`
 - `ScrollView`
@@ -169,6 +172,99 @@ Current built-ins:
 - `ToastViewport`
 
 Everything composes down to four host primitives: `box`, `text`, `input`, and `textarea`.
+
+## Layout
+
+The host layout engine supports flex, grid, dock, and absolute overlays on the
+same `box` primitive.
+
+```tsx
+import { Dock, DockSlot, Grid, Panel, Text } from "graceglyph";
+
+<Dock grow={1}>
+  <DockSlot side="top" height={3}>
+    <Text>toolbar</Text>
+  </DockSlot>
+  <DockSlot side="left" width={24}>
+    <Text>navigation</Text>
+  </DockSlot>
+  <DockSlot>
+    <Grid columns="24 1fr" rows="auto 1fr" gap={1}>
+      <Panel title="Summary">fixed</Panel>
+      <Panel title="Details">fluid</Panel>
+    </Grid>
+  </DockSlot>
+</Dock>;
+```
+
+Grid tracks accept fixed cell counts, `auto`, `fr`, and `minmax(...)`.
+Grid item placement uses 1-based lines:
+`gridColumn={2}`, `gridColumn={[1, 3]}`, `gridRowSpan={2}`. Absolute children
+can be placed with `position="absolute"`, `top`, `right`, `bottom`, `left`,
+and `zIndex`. Boxes also support `minWidth`, `maxWidth`, `minHeight`,
+`maxHeight`, and `aspectRatio` constraints.
+
+Boxes can change layout at breakpoints without a wrapper component. Patches
+are layout-only, merge in order, and use either theme breakpoint names
+(`sm`, `md`, `lg`) or comparator queries (`>=100`, `<80`):
+
+```tsx
+<Box
+  direction="column"
+  breakpoints={{
+    md: { direction: "row", gap: 1 },
+    ">=120": { gridColumns: "28 1fr", layout: "grid" },
+  }}
+>
+  <Box width={28}>nav</Box>
+  <Box grow={1}>content</Box>
+</Box>
+```
+
+Use `display="none"` or a breakpoint patch like `{ display: "none" }` to
+remove a box from layout, paint, focus, and mouse hit testing.
+
+## Styling
+
+Graceglyph accepts the original object style shape and the newer token-aware
+DSL:
+
+```tsx
+import { Box, Text, css, getTheme, render, style } from "graceglyph";
+
+const panel = style()
+  .fg("foreground")
+  .bg("surface")
+  .padding("sm", "md")
+  .border("round")
+  .when("focused")
+  .fg("accent")
+  .bold()
+  .done();
+
+render(
+  <Box {...panel.toProps(getTheme("tokyo-night"))}>
+    <Text style={style().fg("primary").underline()}>Styled text</Text>
+  </Box>,
+  { theme: getTheme("tokyo-night") },
+);
+```
+
+The tagged-template form is useful for compact declarations:
+
+```tsx
+const commandStyle = css`
+  fg: primary;
+  bg: panel;
+  padding: xs md;
+  border: double;
+`;
+```
+
+Built-in themes: `light`, `dark`, `solarized-light`, `solarized-dark`,
+`tokyo-night`, `nord`, `dracula`, and `gruvbox`. Use `getTheme(name)` for a
+fresh theme instance, or `render(...).setTheme(nextTheme)` / `useSetTheme()` to
+switch at runtime.
 
 ## App Shell
 
@@ -324,7 +420,9 @@ function Footer() {
   return (
     <App>
       <Link href="https://graceglyph.dev">Docs</Link>
-      <Text>color: {caps.color}, hyperlinks: {String(caps.hyperlinks)}</Text>
+      <Text>
+        color: {caps.color}, hyperlinks: {String(caps.hyperlinks)}
+      </Text>
     </App>
   );
 }

@@ -15,17 +15,14 @@ test("jsx runtime forwards props and explicit keys", () => {
 
 test("jsx runtime preserves fragments and nested children", () => {
   const fragment = jsxs(Fragment, {
-    children: [
-      jsx("text", { children: "alpha" }),
-      "beta",
-    ],
+    children: [jsx("text", { children: "alpha" }), "beta"],
   });
 
   assert.equal(fragment.type, Fragment);
   assert.deepEqual(
-    normalizeChildren(fragment.props.children).map((child) => (
-      typeof child === "string" ? child : child.type
-    )),
+    normalizeChildren(fragment.props.children).map((child) =>
+      typeof child === "string" ? child : child.type,
+    ),
     ["text", "beta"],
   );
 });
@@ -39,9 +36,9 @@ test("jsx dev runtime matches the production jsx contract", () => {
   assert.equal(node.type, "text");
   assert.equal(node.key, "dev");
   assert.deepEqual(
-    normalizeChildren(fragment.props.children).map((child) => (
-      typeof child === "string" ? child : child.type
-    )),
+    normalizeChildren(fragment.props.children).map((child) =>
+      typeof child === "string" ? child : child.type,
+    ),
     ["text", "beta"],
   );
 });

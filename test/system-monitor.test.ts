@@ -31,9 +31,30 @@ const SNAPSHOT: MonitorSnapshot = {
   networkTxPerSecond: 384 * 1024,
   networkInterfaces: ["en0", "lo0"],
   processes: [
-    { pid: 310, cpuPercent: 64.2, memoryPercent: 8.4, state: "R", command: "node", args: "node server.js" },
-    { pid: 120, cpuPercent: 12.1, memoryPercent: 5.7, state: "S", command: "postgres", args: "postgres: writer process" },
-    { pid: 88, cpuPercent: 4.3, memoryPercent: 2.2, state: "S", command: "nginx", args: "nginx: master process" },
+    {
+      pid: 310,
+      cpuPercent: 64.2,
+      memoryPercent: 8.4,
+      state: "R",
+      command: "node",
+      args: "node server.js",
+    },
+    {
+      pid: 120,
+      cpuPercent: 12.1,
+      memoryPercent: 5.7,
+      state: "S",
+      command: "postgres",
+      args: "postgres: writer process",
+    },
+    {
+      pid: 88,
+      cpuPercent: 4.3,
+      memoryPercent: 2.2,
+      state: "S",
+      command: "nginx",
+      args: "nginx: master process",
+    },
   ],
 };
 

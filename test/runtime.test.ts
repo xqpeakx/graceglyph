@@ -8,10 +8,11 @@ import { Runtime } from "../src/runtime/runtime.js";
 
 test("runtime integration flows", async (t) => {
   await t.test("startup and shutdown manage terminal lifecycle cleanly", async () => {
-    const harness = createHarness(
-      h("input", { value: "draft", width: 8, onChange: () => {} }),
-      { width: 12, height: 4, devtools: false },
-    );
+    const harness = createHarness(h("input", { value: "draft", width: 8, onChange: () => {} }), {
+      width: 12,
+      height: 4,
+      devtools: false,
+    });
 
     harness.runtime.run();
     await settleRuntime();
@@ -37,11 +38,7 @@ test("runtime integration flows", async (t) => {
 
   await t.test("resize relayouts the host tree and repaints the terminal", async (t) => {
     const harness = createHarness(
-      h(
-        "box",
-        {},
-        h("input", { value: "abcdefgh", onChange: () => {} }),
-      ),
+      h("box", {}, h("input", { value: "abcdefgh", onChange: () => {} })),
       { width: 6, height: 2, devtools: false },
     );
     t.after(() => harness.runtime.stop());
@@ -145,19 +142,33 @@ test("runtime integration flows", async (t) => {
             return false;
           },
         },
-        h("box", { focusable: true, width: 8, height: 1, onClick: () => { backgroundClicks += 1; } }),
-        h("box", { focusable: true, width: 8, height: 1, onClick: () => { backgroundClicks += 1; } }),
+        h("box", {
+          focusable: true,
+          width: 8,
+          height: 1,
+          onClick: () => {
+            backgroundClicks += 1;
+          },
+        }),
+        h("box", {
+          focusable: true,
+          width: 8,
+          height: 1,
+          onClick: () => {
+            backgroundClicks += 1;
+          },
+        }),
         open
           ? h(
-            Modal,
-            { title: "Dialog", width: 24, height: 4, onDismiss: () => setOpen(false) },
-            h(
-              "box",
-              { direction: "row", gap: 1 },
-              h(Button, { onClick: () => setOpen(false) }, "Cancel"),
-              h(Button, { onClick: () => setOpen(false) }, "Confirm"),
-            ),
-          )
+              Modal,
+              { title: "Dialog", width: 24, height: 4, onDismiss: () => setOpen(false) },
+              h(
+                "box",
+                { direction: "row", gap: 1 },
+                h(Button, { onClick: () => setOpen(false) }, "Cancel"),
+                h(Button, { onClick: () => setOpen(false) }, "Confirm"),
+              ),
+            )
           : null,
       );
     }
@@ -266,10 +277,11 @@ test("runtime integration flows", async (t) => {
   });
 
   await t.test("cursor placement follows grapheme-aware viewport math", async (t) => {
-    const harness = createHarness(
-      h("input", { value: "a👍🏽b", width: 3, onChange: () => {} }),
-      { width: 6, height: 2, devtools: false },
-    );
+    const harness = createHarness(h("input", { value: "a👍🏽b", width: 3, onChange: () => {} }), {
+      width: 6,
+      height: 2,
+      devtools: false,
+    });
     t.after(() => harness.runtime.stop());
 
     harness.runtime.run();
@@ -284,10 +296,11 @@ test("runtime integration flows", async (t) => {
   });
 
   await t.test("f12 toggles the inspector overlay", async (t) => {
-    const harness = createHarness(
-      h("input", { value: "hi", width: 4, onChange: () => {} }),
-      { width: 40, height: 10, devtools: true },
-    );
+    const harness = createHarness(h("input", { value: "hi", width: 4, onChange: () => {} }), {
+      width: 40,
+      height: 10,
+      devtools: true,
+    });
     t.after(() => harness.runtime.stop());
 
     harness.runtime.run();
@@ -309,59 +322,63 @@ test("runtime integration flows", async (t) => {
     assert.notEqual(currentCursor(harness.runtime), null);
   });
 
-  await t.test("focus-only commits avoid rerendering unrelated components while local state stays local", async (t) => {
-    let parentRenders = 0;
-    let leftRenders = 0;
-    let rightRenders = 0;
+  await t.test(
+    "focus-only commits avoid rerendering unrelated components while local state stays local",
+    async (t) => {
+      let parentRenders = 0;
+      let leftRenders = 0;
+      let rightRenders = 0;
 
-    function LeftCounter() {
-      leftRenders += 1;
-      const [count, setCount] = useState(0);
-      return h("box", { focusable: true, width: 6, height: 1, onClick: () => setCount((value) => value + 1) }, String(count));
-    }
+      function LeftCounter() {
+        leftRenders += 1;
+        const [count, setCount] = useState(0);
+        return h(
+          "box",
+          { focusable: true, width: 6, height: 1, onClick: () => setCount((value) => value + 1) },
+          String(count),
+        );
+      }
 
-    function RightStatic() {
-      rightRenders += 1;
-      return h("box", { focusable: true, width: 6, height: 1 }, "static");
-    }
+      function RightStatic() {
+        rightRenders += 1;
+        return h("box", { focusable: true, width: 6, height: 1 }, "static");
+      }
 
-    function CounterApp() {
-      parentRenders += 1;
-      return h("box", { direction: "row", gap: 1 }, h(LeftCounter, {}), h(RightStatic, {}));
-    }
+      function CounterApp() {
+        parentRenders += 1;
+        return h("box", { direction: "row", gap: 1 }, h(LeftCounter, {}), h(RightStatic, {}));
+      }
 
-    const harness = createHarness(h(CounterApp, {}), {
-      width: 20,
-      height: 4,
-      devtools: false,
-    });
-    t.after(() => harness.runtime.stop());
+      const harness = createHarness(h(CounterApp, {}), {
+        width: 20,
+        height: 4,
+        devtools: false,
+      });
+      t.after(() => harness.runtime.stop());
 
-    harness.runtime.run();
-    await settleRuntime();
+      harness.runtime.run();
+      await settleRuntime();
 
-    const baseline = {
-      parent: parentRenders,
-      left: leftRenders,
-      right: rightRenders,
-    };
+      const baseline = {
+        parent: parentRenders,
+        left: leftRenders,
+        right: rightRenders,
+      };
 
-    harness.input.emitData("\t");
-    await settleRuntime();
-    assert.deepEqual(
-      { parent: parentRenders, left: leftRenders, right: rightRenders },
-      baseline,
-    );
+      harness.input.emitData("\t");
+      await settleRuntime();
+      assert.deepEqual({ parent: parentRenders, left: leftRenders, right: rightRenders }, baseline);
 
-    harness.input.emitData("\t");
-    await settleRuntime();
-    harness.input.emitData("\r");
-    await settleRuntime();
+      harness.input.emitData("\t");
+      await settleRuntime();
+      harness.input.emitData("\r");
+      await settleRuntime();
 
-    assert.equal(parentRenders, baseline.parent);
-    assert.equal(leftRenders, baseline.left + 1);
-    assert.equal(rightRenders, baseline.right);
-  });
+      assert.equal(parentRenders, baseline.parent);
+      assert.equal(leftRenders, baseline.left + 1);
+      assert.equal(rightRenders, baseline.right);
+    },
+  );
 });
 
 class FakeInput extends EventEmitter {

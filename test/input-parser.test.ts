@@ -56,15 +56,17 @@ test("parser flushes a lone escape when the sequence timeout expires", () => {
   assert.deepEqual(parser.feed("\x1b"), []);
   const events = parser.flushPending();
 
-  assert.deepEqual(events, [{
-    type: "key",
-    name: "escape",
-    char: undefined,
-    ctrl: false,
-    alt: false,
-    shift: false,
-    raw: "\x1b",
-  }]);
+  assert.deepEqual(events, [
+    {
+      type: "key",
+      name: "escape",
+      char: undefined,
+      ctrl: false,
+      alt: false,
+      shift: false,
+      raw: "\x1b",
+    },
+  ]);
 });
 
 test("parser degrades incomplete CSI to escape plus remaining characters on flush", () => {

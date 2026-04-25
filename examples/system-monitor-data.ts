@@ -52,9 +52,7 @@ export interface SystemMonitorSourceOptions {
   diskPath?: string;
 }
 
-export function createSystemMonitorSource(
-  options: SystemMonitorSourceOptions = {},
-): MonitorSource {
+export function createSystemMonitorSource(options: SystemMonitorSourceOptions = {}): MonitorSource {
   const diskPath = options.diskPath ?? process.cwd();
   let previousCpu = readCpuTotals();
   let previousNetwork: NetworkTotals | null = null;
@@ -77,8 +75,14 @@ export function createSystemMonitorSource(
       let networkTxPerSecond = 0;
       if (previousNetwork && previousNetwork.available && network.available) {
         const elapsedSeconds = Math.max(0.25, (capturedAt - previousNetworkAt) / 1000);
-        networkRxPerSecond = Math.max(0, (network.rxBytes - previousNetwork.rxBytes) / elapsedSeconds);
-        networkTxPerSecond = Math.max(0, (network.txBytes - previousNetwork.txBytes) / elapsedSeconds);
+        networkRxPerSecond = Math.max(
+          0,
+          (network.rxBytes - previousNetwork.rxBytes) / elapsedSeconds,
+        );
+        networkTxPerSecond = Math.max(
+          0,
+          (network.txBytes - previousNetwork.txBytes) / elapsedSeconds,
+        );
       }
       previousNetwork = network;
       previousNetworkAt = capturedAt;
@@ -93,11 +97,7 @@ export function createSystemMonitorSource(
         platform: process.platform,
         uptimeSeconds: os.uptime(),
         cpuPercent,
-        loadAverage: [
-          loadAverage[0] ?? 0,
-          loadAverage[1] ?? 0,
-          loadAverage[2] ?? 0,
-        ],
+        loadAverage: [loadAverage[0] ?? 0, loadAverage[1] ?? 0, loadAverage[2] ?? 0],
         memoryTotal: totalMemory,
         memoryUsed: Math.max(0, totalMemory - freeMemory),
         diskPath,
@@ -112,9 +112,7 @@ export function createSystemMonitorSource(
   };
 }
 
-export function createStaticMonitorSource(
-  snapshot: MonitorSnapshot,
-): MonitorSource {
+export function createStaticMonitorSource(snapshot: MonitorSnapshot): MonitorSource {
   return {
     async readSnapshot(): Promise<MonitorSnapshot> {
       return snapshot;
@@ -122,9 +120,7 @@ export function createStaticMonitorSource(
   };
 }
 
-async function readDiskUsage(
-  diskPath: string,
-): Promise<{ total: number; used: number }> {
+async function readDiskUsage(diskPath: string): Promise<{ total: number; used: number }> {
   try {
     const stats = await statfs(diskPath);
     const blockSize = toNumber(stats.bsize);
@@ -140,11 +136,10 @@ async function readDiskUsage(
 
 async function readProcessTable(): Promise<MonitorProcess[]> {
   try {
-    const { stdout } = await execFileAsync(
-      "ps",
-      ["-axo", "pid=,pcpu=,pmem=,state=,comm=,args="],
-      { timeout: 1200, maxBuffer: 1024 * 1024 },
-    );
+    const { stdout } = await execFileAsync("ps", ["-axo", "pid=,pcpu=,pmem=,state=,comm=,args="], {
+      timeout: 1200,
+      maxBuffer: 1024 * 1024,
+    });
     const output = String(stdout);
     const processes = output
       .split(/\r?\n/)
@@ -250,12 +245,13 @@ async function readLinuxNetworkTotals(): Promise<NetworkTotals> {
 
 async function readDarwinNetworkTotals(): Promise<NetworkTotals> {
   try {
-    const { stdout } = await execFileAsync(
-      "netstat",
-      ["-ibn"],
-      { timeout: 1200, maxBuffer: 1024 * 1024 },
-    );
-    const lines = String(stdout).split(/\r?\n/).filter((line) => line.trim().length > 0);
+    const { stdout } = await execFileAsync("netstat", ["-ibn"], {
+      timeout: 1200,
+      maxBuffer: 1024 * 1024,
+    });
+    const lines = String(stdout)
+      .split(/\r?\n/)
+      .filter((line) => line.trim().length > 0);
     const header = lines.find((line) => line.includes("Ibytes") && line.includes("Obytes"));
     if (!header) throw new Error("netstat header missing");
 

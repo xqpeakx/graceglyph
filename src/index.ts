@@ -4,14 +4,26 @@ import "./jsx.js";
 export { h, Fragment } from "./runtime/element.js";
 export type {
   BoxProps,
+  BoxBreakpointPatch,
+  BoxBreakpoints,
+  BoxLayoutProps,
   BoxStyle,
   ComponentFn,
+  DisplayMode,
+  DockPosition,
   Edges,
   FlexAlign,
   FlexDirection,
   FlexJustify,
+  GridLine,
+  GridTrackList,
+  GridTrackSize,
   HostType,
   InputProps,
+  LayoutMode,
+  PositionMode,
+  StyleLike,
+  StyleResolver,
   TextAreaProps,
   TextProps,
   ZenElement,
@@ -29,6 +41,7 @@ export {
   useMemo,
   useCallback,
   useCapabilities,
+  useSetTheme,
   useTerminalSize,
   useTheme,
 } from "./runtime/hooks.js";
@@ -85,6 +98,8 @@ export {
   AppShell,
   Breadcrumbs,
   CommandPalette,
+  Dock,
+  DockSlot,
   Grid,
   HelpOverlay,
   Router,
@@ -112,6 +127,9 @@ export type {
   BreadcrumbItem,
   Command,
   CommandPaletteProps,
+  DockProps,
+  DockSlotProps,
+  GridProps,
   HelpOverlayProps,
   MouseState,
   RouteProps,
@@ -140,25 +158,21 @@ export { ScreenBuffer } from "./render/buffer.js";
 export { Rect } from "./layout/rect.js";
 export type { Point, Size } from "./layout/rect.js";
 export * from "./render/style.js";
-export { stringWidth } from "./render/unicode.js";
-export type { Theme } from "./theme/theme.js";
-export { defaultTheme, darkTheme } from "./theme/theme.js";
+export { css, isStyleRule, style, StyleRule } from "./style/index.js";
 export type {
-  Capabilities,
-  CapabilityOverrides,
-  ColorDepth,
-} from "./render/capabilities.js";
-export {
-  detectCapabilities,
-  DUMB_CAPABILITIES,
-  FULL_CAPABILITIES,
-} from "./render/capabilities.js";
-export {
-  parseColor,
-  downgrade,
-  rgbToAnsi16,
-  rgbToAnsi256,
-} from "./render/color.js";
+  StyledBoxProps,
+  StyleBreakpoint,
+  StyleResolveContext,
+  StyleState,
+} from "./style/index.js";
+export { stringWidth } from "./render/unicode.js";
+export type { BorderPreset, BuiltInThemeName, Theme, ThemeTokens } from "./theme/theme.js";
+export { builtInThemes, darkTheme, defaultTheme, getTheme, themeNames } from "./theme/theme.js";
+export type { BreakpointComparator, BreakpointMap, BreakpointQuery } from "./theme/breakpoints.js";
+export { matchesBreakpoint, resolveBreakpointMap } from "./theme/breakpoints.js";
+export type { Capabilities, CapabilityOverrides, ColorDepth } from "./render/capabilities.js";
+export { detectCapabilities, DUMB_CAPABILITIES, FULL_CAPABILITIES } from "./render/capabilities.js";
+export { parseColor, downgrade, rgbToAnsi16, rgbToAnsi256 } from "./render/color.js";
 export type { ColorInput } from "./render/color.js";
 
 export {

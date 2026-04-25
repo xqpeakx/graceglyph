@@ -21,7 +21,9 @@ import {
 
 test("router selects a route by path and falls back cleanly", async () => {
   const harness = renderWithFakeTty(
-    h(Router, { path: "/logs", fallback: h("text", {}, "missing") },
+    h(
+      Router,
+      { path: "/logs", fallback: h("text", {}, "missing") },
       h(Route, { path: "/", title: "Home" }, h("text", {}, "home")),
       h(Route, { path: "/logs", title: "Logs" }, h("text", {}, "logs")),
     ),
@@ -53,14 +55,11 @@ test("command palette exposes registered commands and runs them by keyboard", as
     },
   });
 
-  const harness = renderWithFakeTty(
-    h(CommandPalette, { open: true, onClose: () => {} }),
-    {
-      width: 80,
-      height: 20,
-      runtime: { devtools: false },
-    },
-  );
+  const harness = renderWithFakeTty(h(CommandPalette, { open: true, onClose: () => {} }), {
+    width: 80,
+    height: 20,
+    runtime: { devtools: false },
+  });
 
   try {
     await waitFor(() => screenText(harness.handle).includes("Run test command"));
@@ -78,33 +77,37 @@ test("app shell handles command hotkeys and escape breadcrumb navigation", async
   function ShellHarness() {
     const [path, setPath] = useState("/details");
     const [status, setStatus] = useState("idle");
-    useCommand({
-      id: "test.save",
-      title: "Save",
-      group: "Test",
-      keys: ["s"],
-      run: () => setStatus("saved"),
-    }, [setStatus]);
+    useCommand(
+      {
+        id: "test.save",
+        title: "Save",
+        group: "Test",
+        keys: ["s"],
+        run: () => setStatus("saved"),
+      },
+      [setStatus],
+    );
 
-    return h(AppShell, {
-      title: "Shell",
-      path,
-      onNavigate: setPath,
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Details", path: "/details" },
-      ],
-    }, h("text", {}, `${path} ${status}`));
+    return h(
+      AppShell,
+      {
+        title: "Shell",
+        path,
+        onNavigate: setPath,
+        breadcrumbs: [
+          { label: "Home", path: "/" },
+          { label: "Details", path: "/details" },
+        ],
+      },
+      h("text", {}, `${path} ${status}`),
+    );
   }
 
-  const harness = renderWithFakeTty(
-    h(ShellHarness, {}),
-    {
-      width: 80,
-      height: 24,
-      runtime: { devtools: false },
-    },
-  );
+  const harness = renderWithFakeTty(h(ShellHarness, {}), {
+    width: 80,
+    height: 24,
+    runtime: { devtools: false },
+  });
 
   try {
     await waitFor(() => screenText(harness.handle).includes("/details idle"));

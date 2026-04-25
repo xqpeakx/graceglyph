@@ -31,9 +31,11 @@ test("screen buffer diff only reports changed cells", () => {
 
   const diffs = [...next.diff(previous)];
 
-  assert.deepEqual(diffs, [{
-    x: 1,
-    y: 0,
-    cell: { char: "x", style: DefaultStyle, width: 1 },
-  }]);
+  assert.deepEqual(diffs, [
+    {
+      x: 1,
+      y: 0,
+      cell: { char: "x", style: DefaultStyle, width: 1 },
+    },
+  ]);
 });

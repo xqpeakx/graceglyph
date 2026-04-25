@@ -9,10 +9,7 @@ import {
   createStaticApiClient,
   type ApiResponse,
 } from "../examples/api-explorer.js";
-import {
-  DashboardShellApp,
-  createMemoryShellStateStore,
-} from "../examples/dashboard-shell.js";
+import { DashboardShellApp, createMemoryShellStateStore } from "../examples/dashboard-shell.js";
 import { ExplorerApp } from "../examples/explorer.js";
 import {
   GitDashboardApp,
@@ -140,14 +137,11 @@ test("log viewer renders streamed logs and filters search text", async () => {
 
 test("git dashboard renders status, history, and staging action", async () => {
   const source = createStaticGitSource(GIT_SNAPSHOT);
-  const harness = renderWithFakeTty(
-    h(GitDashboardApp, { source }),
-    {
-      width: 118,
-      height: 32,
-      runtime: { devtools: false },
-    },
-  );
+  const harness = renderWithFakeTty(h(GitDashboardApp, { source }), {
+    width: 118,
+    height: 32,
+    runtime: { devtools: false },
+  });
 
   try {
     await waitFor(() => screenText(harness.handle).includes("src/index.ts"));
@@ -228,14 +222,11 @@ test("file manager renders preview and action controls", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "graceglyph-files-"));
   await fs.writeFile(path.join(dir, "sample.txt"), "hello from a preview\n", "utf8");
 
-  const harness = renderWithFakeTty(
-    h(ExplorerApp, { initialCwd: dir }),
-    {
-      width: 96,
-      height: 28,
-      runtime: { devtools: false },
-    },
-  );
+  const harness = renderWithFakeTty(h(ExplorerApp, { initialCwd: dir }), {
+    width: 96,
+    height: 28,
+    runtime: { devtools: false },
+  });
 
   try {
     await waitFor(() => screenText(harness.handle).includes("sample.txt"));

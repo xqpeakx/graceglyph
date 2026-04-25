@@ -82,7 +82,10 @@ export function GitDashboardApp(props: GitDashboardAppProps = {}) {
   const commits = snapshot?.commits ?? [];
   const activeFile = visibleFiles[selectedFile] ?? null;
   const fileCounts = countGitFiles(files);
-  const diffLines = formatDiffLines(snapshot?.diff ?? "", stacked ? size.width - 8 : Math.floor(size.width * 0.42));
+  const diffLines = formatDiffLines(
+    snapshot?.diff ?? "",
+    stacked ? size.width - 8 : Math.floor(size.width * 0.42),
+  );
   const fileListHeight = stacked
     ? Math.max(4, Math.min(8, Math.floor((size.height - 16) / 2)))
     : Math.max(4, Math.min(6, size.height - 26));
@@ -180,50 +183,71 @@ export function GitDashboardApp(props: GitDashboardAppProps = {}) {
     return false;
   }
 
-  useCommand({
-    id: "git-dashboard.stage",
-    title: activeFile?.staged && !activeFile.unstaged ? "Unstage selected file" : "Stage selected file",
-    group: "Git dashboard",
-    keys: ["s"],
-    run: () => {
-      void stageSelected();
+  useCommand(
+    {
+      id: "git-dashboard.stage",
+      title:
+        activeFile?.staged && !activeFile.unstaged
+          ? "Unstage selected file"
+          : "Stage selected file",
+      group: "Git dashboard",
+      keys: ["s"],
+      run: () => {
+        void stageSelected();
+      },
     },
-  }, [activeFile?.path, activeFile?.staged, activeFile?.unstaged]);
-  useCommand({
-    id: "git-dashboard.refresh",
-    title: "Refresh repository status",
-    group: "Git dashboard",
-    keys: ["r", "f5"],
-    run: () => setRefreshToken((value) => value + 1),
-  }, []);
-  useCommand({
-    id: "git-dashboard.filter.all",
-    title: "Show all files",
-    group: "Git dashboard",
-    keys: ["1"],
-    run: () => setFileFilter("all"),
-  }, []);
-  useCommand({
-    id: "git-dashboard.filter.unstaged",
-    title: "Show unstaged files",
-    group: "Git dashboard",
-    keys: ["2"],
-    run: () => setFileFilter("unstaged"),
-  }, []);
-  useCommand({
-    id: "git-dashboard.filter.staged",
-    title: "Show staged files",
-    group: "Git dashboard",
-    keys: ["3"],
-    run: () => setFileFilter("staged"),
-  }, []);
-  useCommand({
-    id: "git-dashboard.filter.untracked",
-    title: "Show untracked files",
-    group: "Git dashboard",
-    keys: ["4"],
-    run: () => setFileFilter("untracked"),
-  }, []);
+    [activeFile?.path, activeFile?.staged, activeFile?.unstaged],
+  );
+  useCommand(
+    {
+      id: "git-dashboard.refresh",
+      title: "Refresh repository status",
+      group: "Git dashboard",
+      keys: ["r", "f5"],
+      run: () => setRefreshToken((value) => value + 1),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "git-dashboard.filter.all",
+      title: "Show all files",
+      group: "Git dashboard",
+      keys: ["1"],
+      run: () => setFileFilter("all"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "git-dashboard.filter.unstaged",
+      title: "Show unstaged files",
+      group: "Git dashboard",
+      keys: ["2"],
+      run: () => setFileFilter("unstaged"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "git-dashboard.filter.staged",
+      title: "Show staged files",
+      group: "Git dashboard",
+      keys: ["3"],
+      run: () => setFileFilter("staged"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "git-dashboard.filter.untracked",
+      title: "Show untracked files",
+      group: "Git dashboard",
+      keys: ["4"],
+      run: () => setFileFilter("untracked"),
+    },
+    [],
+  );
 
   return (
     <App>
@@ -234,13 +258,19 @@ export function GitDashboardApp(props: GitDashboardAppProps = {}) {
             <FilterButton active={fileFilter === "all"} onClick={() => setFileFilter("all")}>
               All {fileCounts.all}
             </FilterButton>
-            <FilterButton active={fileFilter === "unstaged"} onClick={() => setFileFilter("unstaged")}>
+            <FilterButton
+              active={fileFilter === "unstaged"}
+              onClick={() => setFileFilter("unstaged")}
+            >
               Unstaged {fileCounts.unstaged}
             </FilterButton>
             <FilterButton active={fileFilter === "staged"} onClick={() => setFileFilter("staged")}>
               Staged {fileCounts.staged}
             </FilterButton>
-            <FilterButton active={fileFilter === "untracked"} onClick={() => setFileFilter("untracked")}>
+            <FilterButton
+              active={fileFilter === "untracked"}
+              onClick={() => setFileFilter("untracked")}
+            >
               New {fileCounts.untracked}
             </FilterButton>
           </Row>
@@ -273,7 +303,7 @@ export function GitDashboardApp(props: GitDashboardAppProps = {}) {
             <Row gap={1} grow={1}>
               <Column width={42} gap={1}>
                 <GitFilesPanel
-                files={visibleFiles}
+                  files={visibleFiles}
                   selected={selectedFile}
                   onChange={(index) => {
                     setSelectedFile(index);
@@ -298,7 +328,9 @@ export function GitDashboardApp(props: GitDashboardAppProps = {}) {
           )}
 
           <Row gap={1}>
-            <Button onClick={() => void stageSelected()}>{activeFile?.staged && !activeFile.unstaged ? "Unstage" : "Stage"}</Button>
+            <Button onClick={() => void stageSelected()}>
+              {activeFile?.staged && !activeFile.unstaged ? "Unstage" : "Stage"}
+            </Button>
             <Button onClick={() => setRefreshToken((value) => value + 1)}>Refresh</Button>
             <Text style={{ dim: true }}>
               s stage toggle | 1-4 filters | f files | h history | F5 refresh
@@ -332,13 +364,11 @@ export function createGitSource(repoPath: string): GitSource {
         workingTree = root;
         const statusText = await git(root, ["status", "--porcelain=v1", "-b"]);
         const files = parseStatusFiles(statusText);
-        const target = selectedPath && files.some((file) => file.path === selectedPath)
-          ? selectedPath
-          : files[0]?.path;
-        const [commits, diff] = await Promise.all([
-          readCommits(root),
-          readDiff(root, target),
-        ]);
+        const target =
+          selectedPath && files.some((file) => file.path === selectedPath)
+            ? selectedPath
+            : files[0]?.path;
+        const [commits, diff] = await Promise.all([readCommits(root), readDiff(root, target)]);
         const branch = parseBranch(statusText);
         return {
           repoPath: root,
@@ -384,18 +414,24 @@ export function createStaticGitSource(snapshot: GitSnapshot): GitSource {
       current = {
         ...current,
         message: `staged ${filePath}`,
-        files: current.files.map((file) => file.path === filePath
-          ? { ...file, staged: true, indexStatus: file.indexStatus === "?" ? "A" : file.indexStatus }
-          : file),
+        files: current.files.map((file) =>
+          file.path === filePath
+            ? {
+                ...file,
+                staged: true,
+                indexStatus: file.indexStatus === "?" ? "A" : file.indexStatus,
+              }
+            : file,
+        ),
       };
     },
     async unstage(filePath: string): Promise<void> {
       current = {
         ...current,
         message: `unstaged ${filePath}`,
-        files: current.files.map((file) => file.path === filePath
-          ? { ...file, staged: false, indexStatus: " " }
-          : file),
+        files: current.files.map((file) =>
+          file.path === filePath ? { ...file, staged: false, indexStatus: " " } : file,
+        ),
       };
     },
   };
@@ -406,16 +442,23 @@ function RepoSummary(props: { snapshot: GitSnapshot | null; status: string }) {
   const dirty = snapshot ? snapshot.files.length : 0;
   const branch = snapshot?.branch ?? "loading";
   const upstream = snapshot?.upstream ? ` -> ${snapshot.upstream}` : "";
-  const divergence = snapshot && (snapshot.ahead > 0 || snapshot.behind > 0)
-    ? ` | +${snapshot.ahead} -${snapshot.behind}`
-    : "";
+  const divergence =
+    snapshot && (snapshot.ahead > 0 || snapshot.behind > 0)
+      ? ` | +${snapshot.ahead} -${snapshot.behind}`
+      : "";
 
   return (
     <Panel title="Status" padding={0}>
       <Column gap={0}>
-        <Text style={{ bold: true }}>{branch}{upstream}{divergence}</Text>
+        <Text style={{ bold: true }}>
+          {branch}
+          {upstream}
+          {divergence}
+        </Text>
         <Text style={{ dim: true }}>
-          {snapshot?.repoPath ?? process.cwd()} | {dirty === 0 ? "clean working tree" : `${dirty} changed file${dirty === 1 ? "" : "s"}`} | {props.status}
+          {snapshot?.repoPath ?? process.cwd()} |{" "}
+          {dirty === 0 ? "clean working tree" : `${dirty} changed file${dirty === 1 ? "" : "s"}`} |{" "}
+          {props.status}
         </Text>
       </Column>
     </Panel>
@@ -490,17 +533,22 @@ function DiffPanel(props: { lines: readonly string[]; height: number }) {
 }
 
 async function git(repoPath: string, args: readonly string[]): Promise<string> {
-  const { stdout } = await execFileAsync(
-    "git",
-    ["-C", repoPath, ...args],
-    { timeout: 2000, maxBuffer: 2 * 1024 * 1024 },
-  );
+  const { stdout } = await execFileAsync("git", ["-C", repoPath, ...args], {
+    timeout: 2000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
   return String(stdout);
 }
 
 async function readCommits(repoPath: string): Promise<GitCommit[]> {
   try {
-    const text = await git(repoPath, ["log", "--decorate=short", "--pretty=format:%h%x09%d%x09%s", "-n", "24"]);
+    const text = await git(repoPath, [
+      "log",
+      "--decorate=short",
+      "--pretty=format:%h%x09%d%x09%s",
+      "-n",
+      "24",
+    ]);
     return text
       .split(/\r?\n/)
       .filter((line) => line.trim().length > 0)
@@ -531,7 +579,12 @@ async function readDiff(repoPath: string, selectedPath: string | undefined): Pro
   return git(repoPath, ["diff", "--cached", "--", selectedPath]).catch(() => "");
 }
 
-function parseBranch(statusText: string): { branch: string; upstream?: string; ahead: number; behind: number } {
+function parseBranch(statusText: string): {
+  branch: string;
+  upstream?: string;
+  ahead: number;
+  behind: number;
+} {
   const line = statusText.split(/\r?\n/)[0] ?? "";
   const raw = line.startsWith("## ") ? line.slice(3) : "unknown";
   const match = raw.match(/^([^\s.]+|\S+?)(?:\.\.\.([^\s\[]+))?(?:\s+\[(.*)\])?/);
@@ -552,7 +605,9 @@ function parseStatusFiles(statusText: string): GitStatusFile[] {
       const indexStatus = line[0] ?? " ";
       const worktreeStatus = line[1] ?? " ";
       const rawPath = line.slice(3);
-      const filePath = rawPath.includes(" -> ") ? rawPath.split(" -> ").pop() ?? rawPath : rawPath;
+      const filePath = rawPath.includes(" -> ")
+        ? (rawPath.split(" -> ").pop() ?? rawPath)
+        : rawPath;
       const untracked = indexStatus === "?" && worktreeStatus === "?";
       return {
         path: filePath,

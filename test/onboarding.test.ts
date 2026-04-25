@@ -8,16 +8,7 @@ import { ExplorerApp } from "../examples/explorer.js";
 import { FormApp } from "../examples/form.js";
 import { HelloApp } from "../examples/hello.js";
 import { TodoApp } from "../examples/todo.js";
-import {
-  App,
-  Button,
-  Column,
-  Text,
-  TextInput,
-  Window,
-  h,
-  useState,
-} from "../src/index.js";
+import { App, Button, Column, Text, TextInput, Window, h, useState } from "../src/index.js";
 import {
   renderWithFakeTty,
   runtimeWarnings,
@@ -27,7 +18,7 @@ import {
 } from "./support/fake-tty.js";
 
 test("onboarding and example smoke flows", async (t) => {
-  await t.test("\"useful in 10 minutes\" app flow works through the public API", async () => {
+  await t.test('"useful in 10 minutes" app flow works through the public API', async () => {
     function QuickStartApp() {
       const [name, setName] = useState("");
       const [status, setStatus] = useState("draft");
@@ -43,7 +34,11 @@ test("onboarding and example smoke flows", async (t) => {
             { gap: 1, grow: 1 },
             h(Text, {}, "Type a name, then save."),
             h(TextInput, { value: name, onChange: setName, placeholder: "name" }),
-            h(Button, { onClick: () => setStatus(name.trim() ? `saved ${name.trim()}` : "saved") }, "Save"),
+            h(
+              Button,
+              { onClick: () => setStatus(name.trim() ? `saved ${name.trim()}` : "saved") },
+              "Save",
+            ),
             h(Text, {}, status),
           ),
         ),
@@ -152,7 +147,13 @@ test("onboarding and example smoke flows", async (t) => {
   });
 
   await t.test("examples stay structurally sound in common narrow terminals", async () => {
-    const cases: Array<{ name: string; element: ReturnType<typeof h>; width: number; height: number; expect: RegExp }> = [
+    const cases: Array<{
+      name: string;
+      element: ReturnType<typeof h>;
+      width: number;
+      height: number;
+      expect: RegExp;
+    }> = [
       { name: "hello", element: h(HelloApp, {}), width: 60, height: 20, expect: /Templates/ },
       { name: "form", element: h(FormApp, {}), width: 48, height: 18, expect: /Signup form/ },
       { name: "todo", element: h(TodoApp, {}), width: 60, height: 20, expect: /Todo/ },
@@ -168,7 +169,11 @@ test("onboarding and example smoke flows", async (t) => {
 
       try {
         await waitFor(() => testCase.expect.test(screenText(harness.handle)));
-        assert.deepEqual(runtimeWarnings(harness.handle), [], `${testCase.name} emitted structural warnings`);
+        assert.deepEqual(
+          runtimeWarnings(harness.handle),
+          [],
+          `${testCase.name} emitted structural warnings`,
+        );
       } finally {
         harness.handle.stop();
       }

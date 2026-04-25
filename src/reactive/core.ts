@@ -63,10 +63,7 @@ const pendingFlush: Set<Computation> = new Set();
 /**
  * Create a writable reactive signal.
  */
-export function createSignal<T>(
-  initial: T,
-  options?: SignalOptions<T>,
-): [Accessor<T>, Setter<T>] {
+export function createSignal<T>(initial: T, options?: SignalOptions<T>): [Accessor<T>, Setter<T>] {
   const node: SignalNode<T> = {
     value: initial,
     observers: new Set(),
@@ -82,8 +79,7 @@ export function createSignal<T>(
   };
 
   const write: Setter<T> = (next) => {
-    const value =
-      typeof next === "function" ? (next as (prev: T) => T)(node.value) : next;
+    const value = typeof next === "function" ? (next as (prev: T) => T)(node.value) : next;
     if (node.equals !== false && node.equals(node.value, value)) {
       return node.value;
     }
@@ -282,7 +278,7 @@ function disposeComputation(c: Computation): void {
 }
 
 function reportCleanupError(err: unknown): void {
-  const message = err instanceof Error ? err.stack ?? err.message : String(err);
+  const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
   // eslint-disable-next-line no-console
   console.error(`graceglyph: cleanup error: ${message}`);
 }

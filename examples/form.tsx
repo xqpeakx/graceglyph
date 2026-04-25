@@ -24,9 +24,7 @@ export function FormApp() {
   const compact = size.height < 20;
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState(0);
-  const [message, setMessage] = useState(
-    "Type a name, pick a role, then press Enter.",
-  );
+  const [message, setMessage] = useState("Type a name, pick a role, then press Enter.");
 
   function submit(): void {
     const role = ROLES[selectedRole] ?? "teammate";

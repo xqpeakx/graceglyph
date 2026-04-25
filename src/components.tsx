@@ -1,14 +1,15 @@
 import { Fragment, h } from "./runtime/element.js";
 import type {
   BoxProps,
-  BoxStyle,
   Edges,
+  StyleLike,
   TextAreaProps as HostTextAreaProps,
   TextProps,
   ZenElement,
 } from "./runtime/element.js";
 import type { KeyEvent } from "./input/keys.js";
 import { useCapabilities, useTheme } from "./runtime/hooks.js";
+import { style as styleRule } from "./style/index.js";
 
 /**
  * Built-in components. Deliberately thin — each one is a handful of lines
@@ -134,8 +135,8 @@ export interface LinkProps {
    * supports OSC 8. Useful for printable output.
    */
   showHref?: boolean;
-  style?: Partial<TextProps["style"]>;
-  focusedStyle?: Partial<TextProps["style"]>;
+  style?: StyleLike;
+  focusedStyle?: StyleLike;
 }
 
 /**
@@ -157,8 +158,8 @@ export function Link(props: LinkProps): ZenElement {
     "text",
     {
       onClick: props.onClick,
-      style: { ...theme.link.normal, ...(props.style ?? {}) },
-      focusedStyle: { ...theme.link.focused, ...(props.focusedStyle ?? {}) },
+      style: mergeBoxStyle(theme.link.normal, props.style),
+      focusedStyle: mergeBoxStyle(theme.link.focused, props.focusedStyle),
       // The runtime ignores unknown text props today; a follow-up pass will
       // teach the renderer to wrap these cells in OSC 8 when caps.hyperlinks
       // is true. The capability flag is already detected and threaded.
@@ -172,13 +173,13 @@ export function Link(props: LinkProps): ZenElement {
 // -- <Button> -----------------------------------------------------------------
 export interface ButtonProps {
   onClick?: () => void;
-  style?: BoxStyle;
-  focusedStyle?: BoxStyle;
-  hoveredStyle?: BoxStyle;
-  activeStyle?: BoxStyle;
-  disabledStyle?: BoxStyle;
-  loadingStyle?: BoxStyle;
-  errorStyle?: BoxStyle;
+  style?: StyleLike;
+  focusedStyle?: StyleLike;
+  hoveredStyle?: StyleLike;
+  activeStyle?: StyleLike;
+  disabledStyle?: StyleLike;
+  loadingStyle?: StyleLike;
+  errorStyle?: StyleLike;
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;
@@ -235,14 +236,14 @@ export interface TextInputProps {
   placeholder?: string;
   width?: number;
   grow?: number;
-  style?: BoxStyle;
-  focusedStyle?: BoxStyle;
-  hoveredStyle?: BoxStyle;
-  activeStyle?: BoxStyle;
-  disabledStyle?: BoxStyle;
-  loadingStyle?: BoxStyle;
-  errorStyle?: BoxStyle;
-  placeholderStyle?: BoxStyle;
+  style?: StyleLike;
+  focusedStyle?: StyleLike;
+  hoveredStyle?: StyleLike;
+  activeStyle?: StyleLike;
+  disabledStyle?: StyleLike;
+  loadingStyle?: StyleLike;
+  errorStyle?: StyleLike;
+  placeholderStyle?: StyleLike;
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;
@@ -296,11 +297,11 @@ export interface ListProps<T> {
   width?: number;
   height?: number;
   disabled?: boolean;
-  rowStyle?: BoxStyle;
-  rowFocusedStyle?: BoxStyle;
-  rowHoveredStyle?: BoxStyle;
-  rowActiveStyle?: BoxStyle;
-  rowDisabledStyle?: BoxStyle;
+  rowStyle?: StyleLike;
+  rowFocusedStyle?: StyleLike;
+  rowHoveredStyle?: StyleLike;
+  rowActiveStyle?: StyleLike;
+  rowDisabledStyle?: StyleLike;
 }
 
 export function List<T>(props: ListProps<T>): ZenElement {
@@ -334,9 +335,8 @@ export function List<T>(props: ListProps<T>): ZenElement {
 
   const windowSize = props.height == null ? props.items.length : Math.max(1, props.height);
   const maxStart = Math.max(0, props.items.length - windowSize);
-  const start = props.height == null
-    ? 0
-    : clamp(props.selected - Math.floor(windowSize / 2), 0, maxStart);
+  const start =
+    props.height == null ? 0 : clamp(props.selected - Math.floor(windowSize / 2), 0, maxStart);
   const visibleItems = props.items.slice(start, start + windowSize);
 
   const rows = visibleItems.map((item, offset) => {
@@ -344,9 +344,10 @@ export function List<T>(props: ListProps<T>): ZenElement {
     const isSel = i === props.selected;
     const rendered = props.render(item, i, isSel);
     const rowStyle = mergeBoxStyle(isSel ? theme.list.selected : theme.list.normal, props.rowStyle);
-    const content = typeof rendered === "string"
-      ? h("text", { style: rowStyle } as TextProps, rendered.length > 0 ? rendered : " ")
-      : rendered;
+    const content =
+      typeof rendered === "string"
+        ? h("text", { style: rowStyle } as TextProps, rendered.length > 0 ? rendered : " ")
+        : rendered;
     return h(
       "box",
       {
@@ -406,13 +407,13 @@ export function Modal(props: ModalProps): ZenElement {
       justify: "center",
       focusScope: "contain",
       onKey: props.onDismiss
-        ? ((event: KeyEvent) => {
-          if (event.name === "escape") {
-            props.onDismiss?.();
-            return true;
+        ? (event: KeyEvent) => {
+            if (event.name === "escape") {
+              props.onDismiss?.();
+              return true;
+            }
+            return false;
           }
-          return false;
-        })
         : undefined,
     } as BoxProps,
     h(
@@ -434,8 +435,8 @@ export function Modal(props: ModalProps): ZenElement {
 
 export { Fragment };
 
-function mergeBoxStyle(base: BoxStyle, override?: BoxStyle): BoxStyle {
-  return { ...base, ...(override ?? {}) };
+function mergeBoxStyle(base: StyleLike, override?: StyleLike): StyleLike {
+  return override ? styleRule.merge(base, override) : base;
 }
 
 function chromeSize(
@@ -446,16 +447,23 @@ function chromeSize(
 ): number | undefined {
   if (value === undefined) return undefined;
   const edge = expandEdges(padding);
-  const chrome = axis === "width"
-    ? edge.left + edge.right + (border ? 2 : 0)
-    : edge.top + edge.bottom + (border ? 2 : 0);
+  const chrome =
+    axis === "width"
+      ? edge.left + edge.right + (border ? 2 : 0)
+      : edge.top + edge.bottom + (border ? 2 : 0);
   return value + chrome;
 }
 
-function expandEdges(value: Edges | undefined): { top: number; right: number; bottom: number; left: number } {
+function expandEdges(value: Edges | undefined): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
   if (value === undefined) return { top: 0, right: 0, bottom: 0, left: 0 };
   if (typeof value === "number") return { top: value, right: value, bottom: value, left: value };
-  if (value.length === 2) return { top: value[0], right: value[1], bottom: value[0], left: value[1] };
+  if (value.length === 2)
+    return { top: value[0], right: value[1], bottom: value[0], left: value[1] };
   return { top: value[0], right: value[1], bottom: value[2], left: value[3] };
 }
 

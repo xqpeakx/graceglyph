@@ -267,7 +267,10 @@ function insertAtCursor(value: string, state: EditableState, text: string): stri
   return next;
 }
 
-function locateCursor(value: string, cursor: number): {
+function locateCursor(
+  value: string,
+  cursor: number,
+): {
   line: number;
   column: number;
   info: LineInfo;

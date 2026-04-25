@@ -78,10 +78,13 @@ test("layout clips overflowing children to the parent inner bounds", () => {
 });
 
 test("border titles clip without overwriting frame corners", () => {
-  const tree = h(
-    "box",
-    { border: true, title: "ABCDEFGHIJ", width: 8, height: 3, style: { bg: DefaultStyle.bg } },
-  );
+  const tree = h("box", {
+    border: true,
+    title: "ABCDEFGHIJ",
+    width: 8,
+    height: 3,
+    style: { bg: DefaultStyle.bg },
+  });
 
   const root = createFiber(tree.type, tree.props, tree.key, null);
   reconcile(root);
@@ -103,16 +106,8 @@ test("deep nesting with padding and gaps keeps painted content inside the root b
     h(
       "box",
       { border: true, padding: 1, gap: 1, direction: "row" },
-      h(
-        "box",
-        { border: true, padding: 1, width: 8 },
-        h("text", {}, "alpha"),
-      ),
-      h(
-        "box",
-        { border: true, padding: 1, width: 12 },
-        h("text", {}, "beta"),
-      ),
+      h("box", { border: true, padding: 1, width: 8 }, h("text", {}, "alpha")),
+      h("box", { border: true, padding: 1, width: 12 }, h("text", {}, "beta")),
     ),
   );
 
@@ -132,6 +127,207 @@ test("deep nesting with padding and gaps keeps painted content inside the root b
   assert.equal(buffer.get(19, 9)?.char, "┘");
 });
 
+test("grid layout resolves fixed fr and spanning tracks", () => {
+  const tree = h(
+    "box",
+    {
+      layout: "grid",
+      gridColumns: "4 1fr 2fr",
+      gridRows: "auto 1fr",
+      gap: 1,
+    },
+    h("text", {}, "a"),
+    h("box", { gridColumn: [2, 4] }, h("text", {}, "wide")),
+    h("text", {}, "b"),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 20, 8));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 1, 1));
+  assert.deepEqual(host.children[1]?.layout, new Rect(5, 0, 15, 1));
+  assert.deepEqual(host.children[2]?.layout, new Rect(0, 2, 1, 1));
+});
+
+test("grid layout supports auto and minmax tracks", () => {
+  const tree = h(
+    "box",
+    { layout: "grid", gridColumns: "auto minmax(3, 1fr)", gap: 1 },
+    h("text", {}, "hello"),
+    h("box", {}, h("text", {}, "fill")),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 14, 3));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 5, 1));
+  assert.deepEqual(host.children[1]?.layout, new Rect(6, 0, 8, 1));
+});
+
+test("dock layout consumes edges and leaves a fill region", () => {
+  const tree = h(
+    "box",
+    { layout: "dock" },
+    h("box", { dock: "top", height: 2 }),
+    h("box", { dock: "bottom", height: 1 }),
+    h("box", { dock: "left", width: 4 }),
+    h("box", { dock: "right", width: 3 }),
+    h("box", { dock: "fill" }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 20, 10));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 20, 2));
+  assert.deepEqual(host.children[1]?.layout, new Rect(0, 9, 20, 1));
+  assert.deepEqual(host.children[2]?.layout, new Rect(0, 2, 4, 7));
+  assert.deepEqual(host.children[3]?.layout, new Rect(17, 2, 3, 7));
+  assert.deepEqual(host.children[4]?.layout, new Rect(4, 2, 13, 7));
+});
+
+test("absolute children do not consume flex flow space", () => {
+  const tree = h(
+    "box",
+    { direction: "column" },
+    h("box", { height: 2 }),
+    h("box", { position: "absolute", left: 10, top: 1, width: 4, height: 3 }),
+    h("box", { height: 2 }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 20, 8));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 20, 2));
+  assert.deepEqual(host.children[1]?.layout, new Rect(10, 1, 4, 3));
+  assert.deepEqual(host.children[2]?.layout, new Rect(0, 2, 20, 2));
+});
+
+test("layout applies min and max constraints on both axes", () => {
+  const tree = h(
+    "box",
+    { direction: "row", gap: 1 },
+    h("box", { width: 20, maxWidth: 6, height: 10, maxHeight: 3 }),
+    h("box", { width: 2, minWidth: 5, height: 1, minHeight: 2 }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 20, 8));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 6, 3));
+  assert.deepEqual(host.children[1]?.layout, new Rect(7, 0, 5, 2));
+});
+
+test("layout preserves aspect ratio when one axis is fixed", () => {
+  const tree = h(
+    "box",
+    { direction: "row", gap: 1 },
+    h("box", { width: 12, aspectRatio: 3 }),
+    h("box", { height: 4, aspectRatio: 2 }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 30, 10));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 12, 4));
+  assert.deepEqual(host.children[1]?.layout, new Rect(13, 0, 8, 4));
+});
+
+test("layout applies breakpoint patches during measurement and placement", () => {
+  const tree = h(
+    "box",
+    {
+      direction: "column",
+      breakpoints: {
+        base: { gap: 0 },
+        ">=20": { direction: "row", gap: 1 },
+      },
+    },
+    h("box", { width: 4, height: 1 }),
+    h("box", { width: 4, height: 1 }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 12, 4));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 4, 1));
+  assert.deepEqual(host.children[1]?.layout, new Rect(0, 1, 4, 1));
+  assert.equal(host.resolvedProps.direction, "column");
+
+  layoutTree(host, new Rect(0, 0, 24, 4));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 4, 1));
+  assert.deepEqual(host.children[1]?.layout, new Rect(5, 0, 4, 1));
+  assert.equal(host.resolvedProps.direction, "row");
+});
+
+test("display none removes responsive children from layout and paint", () => {
+  const tree = h(
+    "box",
+    { direction: "row", gap: 1 },
+    h("box", { width: 4, height: 1 }),
+    h("box", {
+      width: 4,
+      height: 1,
+      breakpoints: {
+        ">=10": { display: "none" },
+      },
+    }),
+    h("box", { width: 4, height: 1 }),
+  );
+
+  const root = createFiber(tree.type, tree.props, tree.key, null);
+  reconcile(root);
+
+  const host = buildHostTree(root);
+  assert.ok(host);
+
+  layoutTree(host, new Rect(0, 0, 8, 3));
+  assert.deepEqual(host.children[1]?.layout, new Rect(5, 0, 3, 1));
+  assert.equal(host.children[1]?.hidden, false);
+
+  layoutTree(host, new Rect(0, 0, 12, 3));
+
+  assert.deepEqual(host.children[0]?.layout, new Rect(0, 0, 4, 1));
+  assert.deepEqual(host.children[1]?.layout, Rect.empty());
+  assert.equal(host.children[1]?.hidden, true);
+  assert.deepEqual(host.children[2]?.layout, new Rect(5, 0, 4, 1));
+});
+
 function readRow(buffer: ScreenBuffer, y: number): string {
   let out = "";
   for (let x = 0; x < buffer.width; x++) {
@@ -142,7 +338,9 @@ function readRow(buffer: ScreenBuffer, y: number): string {
   return out;
 }
 
-function assertAllDescendantsClipped(node: ReturnType<typeof buildHostTree> extends infer T ? Exclude<T, null> : never): void {
+function assertAllDescendantsClipped(
+  node: ReturnType<typeof buildHostTree> extends infer T ? Exclude<T, null> : never,
+): void {
   for (const child of node.children) {
     if (child.layout.width > 0 && child.layout.height > 0) {
       assert.ok(child.layout.x >= node.layout.x);

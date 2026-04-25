@@ -16,12 +16,7 @@ import { Fiber, createFiber, type FiberEnvironment } from "./fiber.js";
 import { FocusManager } from "./focus.js";
 import { HostNode, layoutTree, paintTree } from "./host.js";
 import { paintInspector } from "./devtools.js";
-import {
-  buildHostTree,
-  flushAllEffects,
-  reconcile,
-  unmount,
-} from "./reconciler.js";
+import { buildHostTree, flushAllEffects, reconcile, unmount } from "./reconciler.js";
 import { fiberForError, formatComponentStack } from "./diagnostics.js";
 
 export interface RuntimeOptions extends TerminalOptions {
@@ -34,9 +29,9 @@ export class Runtime {
   readonly renderer: Renderer;
   readonly parser: InputParser;
   readonly focus: FocusManager;
-  readonly theme: Theme;
 
   private rootFiber: Fiber | null = null;
+  private themeValue: Theme;
   private hostRoot: HostNode | null = null;
   private running = false;
   private commitScheduled = false;
@@ -63,23 +58,33 @@ export class Runtime {
     this.parser = new InputParser();
     this.focus = new FocusManager();
     this.devtoolsEnabled = opts.devtools ?? true;
-    this.theme = opts.theme ?? defaultTheme();
+    this.themeValue = opts.theme ?? defaultTheme();
     this.environment = {
-      theme: this.theme,
+      theme: this.themeValue,
+      setTheme: (theme) => this.setTheme(theme),
       size: () => this.terminal.size(),
       onResize: (listener) => this.terminal.onResize(listener),
       capabilities: this.terminal.capabilities,
     };
   }
 
+  get theme(): Theme {
+    return this.themeValue;
+  }
+
+  setTheme(theme: Theme): void {
+    if (Object.is(this.themeValue, theme)) return;
+    this.themeValue = theme;
+    this.environment.theme = theme;
+    this.fullReconcile = true;
+    this.hostTreeDirty = true;
+    this.layoutDirty = true;
+    this.scheduleCommit();
+  }
+
   mount(element: ZenElement): void {
     this.withFatalBoundary("mount", () => {
-      const root = createFiber(
-        element.type,
-        element.props,
-        element.key,
-        null,
-      );
+      const root = createFiber(element.type, element.props, element.key, null);
       root.environment = this.environment;
       root.scheduler = (fiber) => this.scheduleCommit(fiber);
       this.rootFiber = root;
@@ -185,9 +190,7 @@ export class Runtime {
       this.hostTreeDirty = false;
       this.layoutDirty = true;
     }
-    this.focus.collect(this.hostRoot);
     if (!this.running) return;
-    this.notifyFocusTransition(this.focus.current());
 
     const { width, height } = this.terminal.size();
     const bounds = new Rect(0, 0, width, height);
@@ -197,6 +200,8 @@ export class Runtime {
         layoutTree(this.hostRoot, bounds);
         this.layoutDirty = false;
       }
+      this.focus.collect(this.hostRoot);
+      this.notifyFocusTransition(this.focus.current());
       const focused = this.focus.current();
       paintTree(this.hostRoot, {
         buffer,
@@ -285,7 +290,7 @@ export class Runtime {
         if (props.onKey(ev) === true) return;
       }
       if (typeof props.onClick === "function") {
-        if ((ev.name === "enter" || ev.name === "space")) {
+        if (ev.name === "enter" || ev.name === "space") {
           props.onClick();
           return;
         }
@@ -295,11 +300,12 @@ export class Runtime {
   }
 
   private recordInputEvent(ev: InputEvent): void {
-    const label = ev.type === "key"
-      ? `key ${ev.ctrl ? "C-" : ""}${ev.alt ? "M-" : ""}${ev.shift ? "S-" : ""}${ev.name}${ev.char ? `:${ev.char}` : ""}`
-      : ev.type === "mouse"
-        ? `mouse ${ev.button} ${ev.action} @${ev.x},${ev.y}`
-        : `resize ${ev.width}x${ev.height}`;
+    const label =
+      ev.type === "key"
+        ? `key ${ev.ctrl ? "C-" : ""}${ev.alt ? "M-" : ""}${ev.shift ? "S-" : ""}${ev.name}${ev.char ? `:${ev.char}` : ""}`
+        : ev.type === "mouse"
+          ? `mouse ${ev.button} ${ev.action} @${ev.x},${ev.y}`
+          : `resize ${ev.width}x${ev.height}`;
     this.eventLog.push(label);
     if (this.eventLog.length > 30) this.eventLog.splice(0, this.eventLog.length - 30);
   }
@@ -307,9 +313,7 @@ export class Runtime {
   private dispatchMouse(ev: MouseEvent): void {
     if (!this.hostRoot) return;
     const scope = this.focus.scope();
-    const hit = scope
-      ? hitTest(scope, ev.x, ev.y)
-      : hitTest(this.hostRoot, ev.x, ev.y);
+    const hit = scope ? hitTest(scope, ev.x, ev.y) : hitTest(this.hostRoot, ev.x, ev.y);
     if (!hit) {
       if (this.hoveredFiber || this.activeFiber) {
         this.hoveredFiber = null;
@@ -477,7 +481,7 @@ export class Runtime {
 }
 
 function hitTest(node: HostNode, x: number, y: number): HostNode | null {
-  if (!node.layout.contains(x, y)) return null;
+  if (node.hidden || !node.layout.contains(x, y)) return null;
   for (let i = node.children.length - 1; i >= 0; i--) {
     const h = hitTest(node.children[i]!, x, y);
     if (h) return h;
@@ -485,11 +489,7 @@ function hitTest(node: HostNode, x: number, y: number): HostNode | null {
   return node;
 }
 
-function handleEditableKey(
-  host: HostNode,
-  ev: KeyEvent,
-  commit: () => void,
-): boolean {
+function handleEditableKey(host: HostNode, ev: KeyEvent, commit: () => void): boolean {
   const props = host.props as unknown as InputProps;
   if (props.disabled) return false;
   const committedValue = String(props.value ?? "");
@@ -526,7 +526,11 @@ function isEditableHost(host: HostNode): boolean {
 }
 
 function isFocusableHost(host: HostNode): boolean {
-  return host.props.disabled !== true && (isEditableHost(host) || host.props.focusable === true);
+  return (
+    !host.hidden &&
+    host.resolvedProps.disabled !== true &&
+    (isEditableHost(host) || host.resolvedProps.focusable === true)
+  );
 }
 
 function nearestFocusable(host: HostNode): HostNode | null {
@@ -538,12 +542,12 @@ function nearestFocusable(host: HostNode): HostNode | null {
 
 function nearestInteractive(host: HostNode): HostNode | null {
   for (let current: HostNode | null = host; current; current = current.parent) {
-    if (current.props.disabled === true) continue;
+    if (current.hidden || current.resolvedProps.disabled === true) continue;
     if (
-      isEditableHost(current)
-      || current.props.focusable === true
-      || typeof current.props.onClick === "function"
-      || typeof current.props.onMouse === "function"
+      isEditableHost(current) ||
+      current.resolvedProps.focusable === true ||
+      typeof current.props.onClick === "function" ||
+      typeof current.props.onMouse === "function"
     ) {
       return current;
     }
@@ -559,16 +563,17 @@ function isAncestor(parent: Fiber, child: Fiber): boolean {
 }
 
 function callLifecycleHandler(host: HostNode, name: "onFocus" | "onBlur"): void {
-  const handler = (host.props as unknown as (BoxProps & Partial<InputProps>))[name];
+  const handler = (host.props as unknown as BoxProps & Partial<InputProps>)[name];
   if (typeof handler === "function") handler();
 }
 
 function decorateFatalError(phase: string, error: unknown): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
   const componentStack = formatComponentStack(fiberForError(error));
-  const message = componentStack.length > 0
-    ? `graceglyph fatal error during ${phase}: ${cause.message}\n${componentStack}`
-    : `graceglyph fatal error during ${phase}: ${cause.message}`;
+  const message =
+    componentStack.length > 0
+      ? `graceglyph fatal error during ${phase}: ${cause.message}\n${componentStack}`
+      : `graceglyph fatal error during ${phase}: ${cause.message}`;
   const wrapped = new Error(message);
   if (cause.stack) {
     const [, ...rest] = cause.stack.split("\n");

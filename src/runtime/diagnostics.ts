@@ -1,11 +1,13 @@
 import type { HostNode } from "./host.js";
 import type {
   BoxProps,
+  BoxLayoutProps,
   BoxStyle,
   Edges,
   ElementType,
   HostType,
   InputProps,
+  StyleLike,
   TextAreaProps,
   TextProps,
 } from "./element.js";
@@ -68,13 +70,17 @@ export function collectInspectorWarnings(root: HostNode): string[] {
 }
 
 function collectNodeWarnings(node: HostNode, parent: HostNode | null, out: string[]): void {
-  const props = node.props as DiagnosticProps;
+  if (node.hidden) return;
+  const props = node.resolvedProps as DiagnosticProps;
   const location = `${node.type} @${node.layout.x},${node.layout.y}`;
 
   if (parent && !parent.layout.contains(node.layout.x, node.layout.y)) {
     out.push(`${location} starts outside parent bounds`);
   }
-  if (parent && (node.layout.right > parent.layout.right || node.layout.bottom > parent.layout.bottom)) {
+  if (
+    parent &&
+    (node.layout.right > parent.layout.right || node.layout.bottom > parent.layout.bottom)
+  ) {
     out.push(`${location} overflows parent bounds`);
   }
 
@@ -90,7 +96,13 @@ function collectNodeWarnings(node: HostNode, parent: HostNode | null, out: strin
 
   if (node.layout.width === 0 || node.layout.height === 0) {
     const hasTextContent = node.type === "text" && textOf(props.children).length > 0;
-    if (node.children.length > 0 || requestedWidth !== null || requestedHeight !== null || props.grow || hasTextContent) {
+    if (
+      node.children.length > 0 ||
+      requestedWidth !== null ||
+      requestedHeight !== null ||
+      props.grow ||
+      hasTextContent
+    ) {
       out.push(`${location} collapsed to ${node.layout.width}x${node.layout.height}`);
     }
   }
@@ -113,7 +125,10 @@ function collectNodeWarnings(node: HostNode, parent: HostNode | null, out: strin
   for (const child of node.children) collectNodeWarnings(child, node, out);
 }
 
-function innerSpace(layout: { width: number; height: number }, props: DiagnosticProps): { width: number; height: number } {
+function innerSpace(
+  layout: { width: number; height: number },
+  props: DiagnosticProps,
+): { width: number; height: number } {
   const pad = expandEdges(props.padding);
   const border = props.border ? 1 : 0;
   return {
@@ -123,20 +138,41 @@ function innerSpace(layout: { width: number; height: number }, props: Diagnostic
 }
 
 function validateBoxProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateOptionalEnum(fiber, "display", props.display, ["box", "none"]);
+  validateOptionalEnum(fiber, "layout", props.layout, ["flex", "grid", "dock"]);
   validateOptionalEnum(fiber, "direction", props.direction, ["row", "column"]);
   validateOptionalEnum(fiber, "align", props.align, ["start", "center", "end", "stretch"]);
-  validateOptionalEnum(fiber, "justify", props.justify, ["start", "center", "end", "between", "around"]);
+  validateOptionalEnum(fiber, "justify", props.justify, [
+    "start",
+    "center",
+    "end",
+    "between",
+    "around",
+  ]);
   validateOptionalInteger(fiber, "gap", props.gap);
   validateOptionalInteger(fiber, "width", props.width);
   validateOptionalInteger(fiber, "height", props.height);
+  validateOptionalInteger(fiber, "minWidth", props.minWidth);
+  validateOptionalInteger(fiber, "maxWidth", props.maxWidth);
+  validateOptionalInteger(fiber, "minHeight", props.minHeight);
+  validateOptionalInteger(fiber, "maxHeight", props.maxHeight);
+  validateOptionalFiniteNumber(fiber, "aspectRatio", props.aspectRatio);
   validateOptionalNumber(fiber, "grow", props.grow);
+  validateOptionalFiniteNumber(fiber, "top", props.top);
+  validateOptionalFiniteNumber(fiber, "right", props.right);
+  validateOptionalFiniteNumber(fiber, "bottom", props.bottom);
+  validateOptionalFiniteNumber(fiber, "left", props.left);
+  validateOptionalFiniteNumber(fiber, "zIndex", props.zIndex);
   validateOptionalBoolean(fiber, "border", props.border);
   validateOptionalBoolean(fiber, "focusable", props.focusable);
   validateOptionalBoolean(fiber, "overlay", props.overlay);
   validateOptionalBoolean(fiber, "disabled", props.disabled);
   validateOptionalBoolean(fiber, "loading", props.loading);
   validateOptionalBoolean(fiber, "error", props.error);
+  validateOptionalEnum(fiber, "position", props.position, ["absolute"]);
+  validateOptionalEnum(fiber, "dock", props.dock, ["top", "bottom", "left", "right", "fill"]);
   validateOptionalEnum(fiber, "focusScope", props.focusScope, ["contain"]);
+  validateOptionalBreakpoints(fiber, props.breakpoints);
   validateOptionalString(fiber, "title", props.title);
   validateOptionalFunction(fiber, "onKey", props.onKey);
   validateOptionalFunction(fiber, "onMouse", props.onMouse);
@@ -153,8 +189,97 @@ function validateBoxProps(fiber: Fiber, props: DiagnosticProps): void {
   validateOptionalStyle(fiber, props.errorStyle);
   validateOptionalStyle(fiber, props.borderStyle);
   validateOptionalStyle(fiber, props.titleStyle);
+  if (props.minWidth != null && props.maxWidth != null && props.minWidth > props.maxWidth) {
+    throw invalidPropError(fiber, "minWidth", "less than or equal to maxWidth", props.minWidth);
+  }
+  if (props.minHeight != null && props.maxHeight != null && props.minHeight > props.maxHeight) {
+    throw invalidPropError(fiber, "minHeight", "less than or equal to maxHeight", props.minHeight);
+  }
+  if (props.aspectRatio != null && props.aspectRatio <= 0) {
+    throw invalidPropError(fiber, "aspectRatio", "a positive finite number", props.aspectRatio);
+  }
   if (props.title !== undefined && props.border !== true) {
     throw invalidPropError(fiber, "title", "a string only when border={true}", props.title);
+  }
+}
+
+function validateOptionalBreakpoints(fiber: Fiber, value: unknown): void {
+  if (value === undefined) return;
+  if (!isObject(value) || Array.isArray(value)) {
+    throw invalidPropError(fiber, "breakpoints", "an object of layout prop patches", value);
+  }
+
+  for (const [query, patch] of Object.entries(value)) {
+    if (query.length === 0) {
+      throw invalidPropError(fiber, "breakpoints", "non-empty breakpoint names", query);
+    }
+    if (patch === undefined) continue;
+    if (!isObject(patch) || Array.isArray(patch)) {
+      throw invalidPropError(
+        fiber,
+        `breakpoints.${query}`,
+        "an object of layout prop overrides",
+        patch,
+      );
+    }
+    validateBreakpointPatch(fiber, `breakpoints.${query}`, patch as Partial<BoxLayoutProps>);
+  }
+}
+
+function validateBreakpointPatch(
+  fiber: Fiber,
+  prefix: string,
+  props: Partial<BoxLayoutProps>,
+): void {
+  validateOptionalEnum(fiber, `${prefix}.display`, props.display, ["box", "none"]);
+  validateOptionalEnum(fiber, `${prefix}.layout`, props.layout, ["flex", "grid", "dock"]);
+  validateOptionalEnum(fiber, `${prefix}.direction`, props.direction, ["row", "column"]);
+  validateOptionalEnum(fiber, `${prefix}.align`, props.align, [
+    "start",
+    "center",
+    "end",
+    "stretch",
+  ]);
+  validateOptionalEnum(fiber, `${prefix}.justify`, props.justify, [
+    "start",
+    "center",
+    "end",
+    "between",
+    "around",
+  ]);
+  validateOptionalInteger(fiber, `${prefix}.gap`, props.gap);
+  validateOptionalInteger(fiber, `${prefix}.width`, props.width);
+  validateOptionalInteger(fiber, `${prefix}.height`, props.height);
+  validateOptionalInteger(fiber, `${prefix}.minWidth`, props.minWidth);
+  validateOptionalInteger(fiber, `${prefix}.maxWidth`, props.maxWidth);
+  validateOptionalInteger(fiber, `${prefix}.minHeight`, props.minHeight);
+  validateOptionalInteger(fiber, `${prefix}.maxHeight`, props.maxHeight);
+  validateOptionalFiniteNumber(fiber, `${prefix}.aspectRatio`, props.aspectRatio);
+  validateOptionalNumber(fiber, `${prefix}.grow`, props.grow);
+  validateOptionalFiniteNumber(fiber, `${prefix}.top`, props.top);
+  validateOptionalFiniteNumber(fiber, `${prefix}.right`, props.right);
+  validateOptionalFiniteNumber(fiber, `${prefix}.bottom`, props.bottom);
+  validateOptionalFiniteNumber(fiber, `${prefix}.left`, props.left);
+  validateOptionalFiniteNumber(fiber, `${prefix}.zIndex`, props.zIndex);
+  validateOptionalBoolean(fiber, `${prefix}.border`, props.border);
+  validateOptionalBoolean(fiber, `${prefix}.overlay`, props.overlay);
+  validateOptionalEnum(fiber, `${prefix}.position`, props.position, ["absolute"]);
+  validateOptionalEnum(fiber, `${prefix}.dock`, props.dock, [
+    "top",
+    "bottom",
+    "left",
+    "right",
+    "fill",
+  ]);
+  validateOptionalPadding(fiber, props.padding, `${prefix}.padding`);
+  if (props.minWidth != null && props.maxWidth != null && props.minWidth > props.maxWidth) {
+    throw invalidPropError(fiber, `${prefix}.minWidth`, "less than or equal to maxWidth", props);
+  }
+  if (props.minHeight != null && props.maxHeight != null && props.minHeight > props.maxHeight) {
+    throw invalidPropError(fiber, `${prefix}.minHeight`, "less than or equal to maxHeight", props);
+  }
+  if (props.aspectRatio != null && props.aspectRatio <= 0) {
+    throw invalidPropError(fiber, `${prefix}.aspectRatio`, "a positive finite number", props);
   }
 }
 
@@ -213,28 +338,35 @@ function validateTextAreaProps(fiber: Fiber, props: DiagnosticProps): void {
   }
 }
 
-function validateOptionalPadding(fiber: Fiber, padding: Edges | undefined): void {
+function validateOptionalPadding(fiber: Fiber, padding: Edges | undefined, prop = "padding"): void {
   if (padding === undefined) return;
   if (typeof padding === "number") {
-    validateNumberValue(fiber, "padding", padding, true);
+    validateNumberValue(fiber, prop, padding, true);
     return;
   }
   if (!Array.isArray(padding) || (padding.length !== 2 && padding.length !== 4)) {
-    throw invalidPropError(fiber, "padding", "a number, [vertical, horizontal], or [top, right, bottom, left]", padding);
+    throw invalidPropError(
+      fiber,
+      prop,
+      "a number, [vertical, horizontal], or [top, right, bottom, left]",
+      padding,
+    );
   }
-  for (const value of padding) validateNumberValue(fiber, "padding", value, true);
+  for (const value of padding) validateNumberValue(fiber, prop, value, true);
 }
 
-function validateOptionalStyle(fiber: Fiber, style: BoxStyle | undefined): void {
+function validateOptionalStyle(fiber: Fiber, style: StyleLike | undefined): void {
   if (style === undefined) return;
   if (!isObject(style)) {
     throw invalidPropError(fiber, "style", "an object", style);
   }
-  validateOptionalBoolean(fiber, "style.bold", style.bold);
-  validateOptionalBoolean(fiber, "style.dim", style.dim);
-  validateOptionalBoolean(fiber, "style.italic", style.italic);
-  validateOptionalBoolean(fiber, "style.underline", style.underline);
-  validateOptionalBoolean(fiber, "style.inverse", style.inverse);
+  if ("toBoxStyle" in style && typeof style.toBoxStyle === "function") return;
+  const boxStyle = style as BoxStyle;
+  validateOptionalBoolean(fiber, "style.bold", boxStyle.bold);
+  validateOptionalBoolean(fiber, "style.dim", boxStyle.dim);
+  validateOptionalBoolean(fiber, "style.italic", boxStyle.italic);
+  validateOptionalBoolean(fiber, "style.underline", boxStyle.underline);
+  validateOptionalBoolean(fiber, "style.inverse", boxStyle.inverse);
 }
 
 function validateRequiredString(fiber: Fiber, prop: string, value: unknown): void {
@@ -270,15 +402,37 @@ function validateOptionalNumber(fiber: Fiber, prop: string, value: unknown): voi
   validateNumberValue(fiber, prop, value, false);
 }
 
-function validateOptionalEnum<T extends string>(fiber: Fiber, prop: string, value: unknown, options: readonly T[]): void {
+function validateOptionalFiniteNumber(fiber: Fiber, prop: string, value: unknown): void {
+  if (value === undefined) return;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw invalidPropError(fiber, prop, "a finite number", value);
+  }
+}
+
+function validateOptionalEnum<T extends string>(
+  fiber: Fiber,
+  prop: string,
+  value: unknown,
+  options: readonly T[],
+): void {
   if (value === undefined) return;
   if (typeof value !== "string" || !options.includes(value as T)) {
-    throw invalidPropError(fiber, prop, `one of ${options.map((option) => JSON.stringify(option)).join(", ")}`, value);
+    throw invalidPropError(
+      fiber,
+      prop,
+      `one of ${options.map((option) => JSON.stringify(option)).join(", ")}`,
+      value,
+    );
   }
 }
 
 function validateNumberValue(fiber: Fiber, prop: string, value: unknown, integer: boolean): void {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || (integer && !Number.isInteger(value))) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    (integer && !Number.isInteger(value))
+  ) {
     throw invalidPropError(
       fiber,
       prop,
@@ -296,10 +450,16 @@ function invalidPropError(fiber: Fiber, prop: string, expected: string, actual: 
   return error;
 }
 
-function expandEdges(value: Edges | undefined): { top: number; right: number; bottom: number; left: number } {
+function expandEdges(value: Edges | undefined): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
   if (value === undefined) return { top: 0, right: 0, bottom: 0, left: 0 };
   if (typeof value === "number") return { top: value, right: value, bottom: value, left: value };
-  if (value.length === 2) return { top: value[0], right: value[1], bottom: value[0], left: value[1] };
+  if (value.length === 2)
+    return { top: value[0], right: value[1], bottom: value[0], left: value[1] };
   return { top: value[0], right: value[1], bottom: value[2], left: value[3] };
 }
 
@@ -307,7 +467,8 @@ function describeValue(value: unknown): string {
   if (value === undefined) return "undefined";
   if (value === null) return "null";
   if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean") return `${String(value)} (${typeof value})`;
+  if (typeof value === "number" || typeof value === "boolean")
+    return `${String(value)} (${typeof value})`;
   if (typeof value === "function") return `function ${value.name || "(anonymous)"}`;
   if (Array.isArray(value)) return `array(${value.length})`;
   if (typeof value === "object") return "object";
@@ -321,7 +482,9 @@ function isObject(value: unknown): value is Record<PropertyKey, unknown> {
 export function elementTypeName(type: ElementType): string {
   if (typeof type === "string") return type;
   if (typeof type === "symbol") return "Fragment";
-  return (type as { displayName?: string; name?: string }).displayName
-    ?? (type as { name?: string }).name
-    ?? "Anonymous";
+  return (
+    (type as { displayName?: string; name?: string }).displayName ??
+    (type as { name?: string }).name ??
+    "Anonymous"
+  );
 }

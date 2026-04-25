@@ -103,7 +103,9 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
         cursorRef.current = batch.cursor;
         if (batch.entries.length > 0) {
           setEntries((current) => [...current, ...batch.entries].slice(-600));
-          setStatus(`streamed ${batch.entries.length} line${batch.entries.length === 1 ? "" : "s"}`);
+          setStatus(
+            `streamed ${batch.entries.length} line${batch.entries.length === 1 ? "" : "s"}`,
+          );
         } else {
           setStatus("stream idle");
         }
@@ -128,11 +130,12 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
   const filter = compileLogFilter(query, regexMode);
   const tabs = [{ id: "all", label: "all files" }, ...files];
   const activeFile = tabs.find((file) => file.id === selectedFileId) ?? tabs[0]!;
-  const visibleEntries = entries.filter((entry) => (
-    (selectedFileId === "all" || entry.fileId === selectedFileId)
-    && (levelFilter === "all" || entry.level === levelFilter)
-    && filter.matches(entry)
-  ));
+  const visibleEntries = entries.filter(
+    (entry) =>
+      (selectedFileId === "all" || entry.fileId === selectedFileId) &&
+      (levelFilter === "all" || entry.level === levelFilter) &&
+      filter.matches(entry),
+  );
   const counts = countEntries(entries);
   const selectedEntry = visibleEntries[selectedLog] ?? null;
   const listHeight = stacked
@@ -191,62 +194,86 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
     return false;
   }
 
-  useCommand({
-    id: "log-viewer.pause",
-    title: paused ? "Resume log stream" : "Pause log stream",
-    group: "Log viewer",
-    keys: ["space"],
-    run: () => setPaused((value) => !value),
-  }, [paused]);
-  useCommand({
-    id: "log-viewer.refresh",
-    title: "Poll logs now",
-    group: "Log viewer",
-    keys: ["f5"],
-    run: () => setRefreshToken((value) => value + 1),
-  }, []);
-  useCommand({
-    id: "log-viewer.regex",
-    title: regexMode ? "Disable regex filtering" : "Enable regex filtering",
-    group: "Log viewer",
-    keys: ["r"],
-    run: () => setRegexMode((value) => !value),
-  }, [regexMode]);
-  useCommand({
-    id: "log-viewer.clear-search",
-    title: "Clear search",
-    group: "Log viewer",
-    keys: ["c"],
-    run: () => setQuery(""),
-  }, []);
-  useCommand({
-    id: "log-viewer.level.all",
-    title: "Show all log levels",
-    group: "Log viewer",
-    keys: ["1"],
-    run: () => setLevelFilter("all"),
-  }, []);
-  useCommand({
-    id: "log-viewer.level.error",
-    title: "Show error logs",
-    group: "Log viewer",
-    keys: ["2"],
-    run: () => setLevelFilter("error"),
-  }, []);
-  useCommand({
-    id: "log-viewer.level.warn",
-    title: "Show warning logs",
-    group: "Log viewer",
-    keys: ["3"],
-    run: () => setLevelFilter("warn"),
-  }, []);
-  useCommand({
-    id: "log-viewer.level.info",
-    title: "Show info logs",
-    group: "Log viewer",
-    keys: ["4"],
-    run: () => setLevelFilter("info"),
-  }, []);
+  useCommand(
+    {
+      id: "log-viewer.pause",
+      title: paused ? "Resume log stream" : "Pause log stream",
+      group: "Log viewer",
+      keys: ["space"],
+      run: () => setPaused((value) => !value),
+    },
+    [paused],
+  );
+  useCommand(
+    {
+      id: "log-viewer.refresh",
+      title: "Poll logs now",
+      group: "Log viewer",
+      keys: ["f5"],
+      run: () => setRefreshToken((value) => value + 1),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "log-viewer.regex",
+      title: regexMode ? "Disable regex filtering" : "Enable regex filtering",
+      group: "Log viewer",
+      keys: ["r"],
+      run: () => setRegexMode((value) => !value),
+    },
+    [regexMode],
+  );
+  useCommand(
+    {
+      id: "log-viewer.clear-search",
+      title: "Clear search",
+      group: "Log viewer",
+      keys: ["c"],
+      run: () => setQuery(""),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "log-viewer.level.all",
+      title: "Show all log levels",
+      group: "Log viewer",
+      keys: ["1"],
+      run: () => setLevelFilter("all"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "log-viewer.level.error",
+      title: "Show error logs",
+      group: "Log viewer",
+      keys: ["2"],
+      run: () => setLevelFilter("error"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "log-viewer.level.warn",
+      title: "Show warning logs",
+      group: "Log viewer",
+      keys: ["3"],
+      run: () => setLevelFilter("warn"),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "log-viewer.level.info",
+      title: "Show info logs",
+      group: "Log viewer",
+      keys: ["4"],
+      run: () => setLevelFilter("info"),
+    },
+    [],
+  );
 
   return (
     <App>
@@ -254,7 +281,8 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
         <Column gap={compact ? 0 : 1} grow={1}>
           {!compact && (
             <Text style={{ dim: true }}>
-              Stream logs, switch files with t, toggle regex with r, pause with Space, refresh with F5.
+              Stream logs, switch files with t, toggle regex with r, pause with Space, refresh with
+              F5.
             </Text>
           )}
 
@@ -275,15 +303,19 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
           </Row>
 
           <Row gap={1}>
-            <FilterButton active={levelFilter === "all"} onClick={() => setLevelFilter("all")}>All</FilterButton>
-            <FilterButton active={levelFilter === "error"} onClick={() => setLevelFilter("error")}>Errors</FilterButton>
-            <FilterButton active={levelFilter === "warn"} onClick={() => setLevelFilter("warn")}>Warnings</FilterButton>
-            <FilterButton active={levelFilter === "info"} onClick={() => setLevelFilter("info")}>Info</FilterButton>
-            {!compact && (
-              <Text style={{ dim: true }}>
-                1 all | 2 errors | 3 warnings | 4 info
-              </Text>
-            )}
+            <FilterButton active={levelFilter === "all"} onClick={() => setLevelFilter("all")}>
+              All
+            </FilterButton>
+            <FilterButton active={levelFilter === "error"} onClick={() => setLevelFilter("error")}>
+              Errors
+            </FilterButton>
+            <FilterButton active={levelFilter === "warn"} onClick={() => setLevelFilter("warn")}>
+              Warnings
+            </FilterButton>
+            <FilterButton active={levelFilter === "info"} onClick={() => setLevelFilter("info")}>
+              Info
+            </FilterButton>
+            {!compact && <Text style={{ dim: true }}>1 all | 2 errors | 3 warnings | 4 info</Text>}
           </Row>
 
           {stacked ? (
@@ -291,7 +323,10 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
               <Panel title={`Files (${activeFile.label})`} padding={0}>
                 <List
                   items={tabs}
-                  selected={Math.max(0, tabs.findIndex((file) => file.id === selectedFileId))}
+                  selected={Math.max(
+                    0,
+                    tabs.findIndex((file) => file.id === selectedFileId),
+                  )}
                   onChange={(index) => setSelectedFileId(tabs[index]?.id ?? "all")}
                   height={tabHeight}
                   render={(file) => formatFileTab(file, entries)}
@@ -304,7 +339,9 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
                 height={listHeight}
                 width={rowWidth}
               />
-              {!compact && <LogDetailPanel entry={selectedEntry} filterError={filter.error} counts={counts} />}
+              {!compact && (
+                <LogDetailPanel entry={selectedEntry} filterError={filter.error} counts={counts} />
+              )}
             </Column>
           ) : (
             <Row gap={1} grow={1}>
@@ -312,7 +349,10 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
                 <Panel title="Files" padding={0}>
                   <List
                     items={tabs}
-                    selected={Math.max(0, tabs.findIndex((file) => file.id === selectedFileId))}
+                    selected={Math.max(
+                      0,
+                      tabs.findIndex((file) => file.id === selectedFileId),
+                    )}
                     onChange={(index) => setSelectedFileId(tabs[index]?.id ?? "all")}
                     height={tabHeight}
                     render={(file) => formatFileTab(file, entries)}
@@ -331,7 +371,8 @@ export function LogViewerApp(props: LogViewerAppProps = {}) {
           )}
 
           <Text style={{ dim: true }}>
-            {status} | {visibleEntries.length} visible | {entries.length} buffered | level {levelFilter} | mode {regexMode ? "regex" : "text"}
+            {status} | {visibleEntries.length} visible | {entries.length} buffered | level{" "}
+            {levelFilter} | mode {regexMode ? "regex" : "text"}
           </Text>
         </Column>
       </Window>
@@ -400,7 +441,10 @@ export function createStaticLogSource(entries: readonly LogEntry[]): LogSource {
   };
 }
 
-export function createFileLogSource(paths: readonly string[]): { files: LogFile[]; source: LogSource } {
+export function createFileLogSource(paths: readonly string[]): {
+  files: LogFile[];
+  source: LogSource;
+} {
   const files = paths.map((filePath, index) => ({
     id: `file-${index}`,
     label: path.basename(filePath),
@@ -488,13 +532,18 @@ function LogDetailPanel(props: {
           {entry ? `${entry.level.toUpperCase()} ${entry.fileLabel}` : "Select a log line"}
         </Text>
         <Text>{entry ? formatTime(entry.timestamp) : "Waiting for stream data."}</Text>
-        <Text style={{ dim: !entry }}>{entry?.message ?? "Use search or regex mode to narrow the stream."}</Text>
+        <Text style={{ dim: !entry }}>
+          {entry?.message ?? "Use search or regex mode to narrow the stream."}
+        </Text>
       </Column>
     </Panel>
   );
 }
 
-function createCliLogSource(args: readonly string[]): { files: readonly LogFile[]; source: LogSource } {
+function createCliLogSource(args: readonly string[]): {
+  files: readonly LogFile[];
+  source: LogSource;
+} {
   const paths = args.filter((arg) => arg.trim().length > 0);
   if (paths.length === 0) {
     return { files: DEMO_FILES, source: createDemoLogSource(DEMO_FILES) };
@@ -518,13 +567,14 @@ async function readFileSlice(filePath: string, start: number, end: number): Prom
 
 function parseLogLine(file: LogFile, line: string, id: string): LogEntry {
   const lower = line.toLowerCase();
-  const level: LogLevel = lower.includes("error") || lower.includes("fatal")
-    ? "error"
-    : lower.includes("warn")
-      ? "warn"
-      : lower.includes("debug") || lower.includes("trace")
-        ? "debug"
-        : "info";
+  const level: LogLevel =
+    lower.includes("error") || lower.includes("fatal")
+      ? "error"
+      : lower.includes("warn")
+        ? "warn"
+        : lower.includes("debug") || lower.includes("trace")
+          ? "debug"
+          : "info";
   return {
     id,
     fileId: file.id,
@@ -545,7 +595,8 @@ function compileLogFilter(
   if (!regexMode) {
     const lower = trimmed.toLowerCase();
     return {
-      matches: (entry) => `${entry.fileLabel} ${entry.level} ${entry.message}`.toLowerCase().includes(lower),
+      matches: (entry) =>
+        `${entry.fileLabel} ${entry.level} ${entry.message}`.toLowerCase().includes(lower),
       error: null,
     };
   }
@@ -565,9 +616,8 @@ function compileLogFilter(
 }
 
 function formatFileTab(file: Pick<LogFile, "id" | "label">, entries: readonly LogEntry[]): string {
-  const count = file.id === "all"
-    ? entries.length
-    : entries.filter((entry) => entry.fileId === file.id).length;
+  const count =
+    file.id === "all" ? entries.length : entries.filter((entry) => entry.fileId === file.id).length;
   return `${file.label} (${count})`;
 }
 

@@ -7,9 +7,28 @@ import type { ScreenBuffer } from "../src/render/buffer.js";
 test("renderTestApp snapshots frames and simulates keyboard/mouse flows", async () => {
   let clicks = 0;
   const app = renderTestApp(
-    h(Row, { gap: 1 },
-      h(Button, { disabled: true, onClick: () => { clicks += 10; } }, "Disabled"),
-      h(Button, { onClick: () => { clicks += 1; } }, "Run"),
+    h(
+      Row,
+      { gap: 1 },
+      h(
+        Button,
+        {
+          disabled: true,
+          onClick: () => {
+            clicks += 10;
+          },
+        },
+        "Disabled",
+      ),
+      h(
+        Button,
+        {
+          onClick: () => {
+            clicks += 1;
+          },
+        },
+        "Run",
+      ),
     ),
     { width: 32, height: 4, runtime: { devtools: false } },
   );
@@ -34,13 +53,11 @@ test("renderTestApp snapshots frames and simulates keyboard/mouse flows", async 
 });
 
 test("mouse hover applies hover styles to non-focused controls", async () => {
-  const app = renderTestApp(
-    h(Row, { gap: 1 },
-      h(Button, {}, "One"),
-      h(Button, {}, "Two"),
-    ),
-    { width: 24, height: 4, runtime: { devtools: false } },
-  );
+  const app = renderTestApp(h(Row, { gap: 1 }, h(Button, {}, "One"), h(Button, {}, "Two")), {
+    width: 24,
+    height: 4,
+    runtime: { devtools: false },
+  });
 
   try {
     await app.settle();
@@ -55,9 +72,7 @@ test("mouse hover applies hover styles to non-focused controls", async () => {
 
 test("renderTestApp exposes layout warning assertions", async () => {
   const app = renderTestApp(
-    h("box", { width: 10, height: 1, border: true, padding: 1 },
-      h(Text, {}, "will collapse"),
-    ),
+    h("box", { width: 10, height: 1, border: true, padding: 1 }, h(Text, {}, "will collapse")),
     { width: 10, height: 1, runtime: { devtools: false } },
   );
 

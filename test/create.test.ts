@@ -14,16 +14,20 @@ test("create-graceglyph scaffolds selected templates", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "graceglyph-create-"));
   const target = path.join(dir, "example");
 
-  await execFileAsync(process.execPath, [
-    "--loader",
-    "ts-node/esm",
-    "src/create.ts",
-    "example",
-    "--dir",
-    target,
-    "--template",
-    "log-viewer",
-  ], { cwd: repoRoot });
+  await execFileAsync(
+    process.execPath,
+    [
+      "--loader",
+      "ts-node/esm",
+      "src/create.ts",
+      "example",
+      "--dir",
+      target,
+      "--template",
+      "log-viewer",
+    ],
+    { cwd: repoRoot },
+  );
 
   const packageJson = JSON.parse(await fs.readFile(path.join(target, "package.json"), "utf8")) as {
     name: string;

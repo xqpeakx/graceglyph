@@ -43,9 +43,7 @@ function getEnvironment(): FiberEnvironment {
   return currentFiber.environment;
 }
 
-export function useState<T>(
-  initial: T | (() => T),
-): [T, (next: T | ((prev: T) => T)) => void] {
+export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void] {
   const fiber = currentFiber!;
   const hook = getHook<Extract<Hook, { kind: "state" }>>(() => ({
     kind: "state",
@@ -90,6 +88,10 @@ export function useTheme(): Theme {
   return getEnvironment().theme;
 }
 
+export function useSetTheme(): (theme: Theme) => void {
+  return getEnvironment().setTheme;
+}
+
 export function useCapabilities(): Capabilities {
   return getEnvironment().capabilities;
 }
@@ -98,21 +100,18 @@ export function useTerminalSize(): Size {
   const environment = getEnvironment();
   const [size, setSize] = useState<Size>(() => environment.size());
 
-  useEffect(() => (
-    environment.onResize((next) => {
-      setSize((prev) => (
-        prev.width === next.width && prev.height === next.height ? prev : next
-      ));
-    })
-  ), [environment]);
+  useEffect(
+    () =>
+      environment.onResize((next) => {
+        setSize((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+      }),
+    [environment],
+  );
 
   return size;
 }
 
-export function useEffect(
-  effect: () => void | (() => void),
-  deps?: unknown[],
-): void {
+export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void {
   const hook = getHook<Extract<Hook, { kind: "effect" }>>(() => ({
     kind: "effect",
     deps: null,
@@ -120,10 +119,7 @@ export function useEffect(
     pending: null,
   }));
   const nextDeps = deps ?? null;
-  const shouldRun =
-    hook.deps === null ||
-    nextDeps === null ||
-    !arraysEqual(hook.deps, nextDeps);
+  const shouldRun = hook.deps === null || nextDeps === null || !arraysEqual(hook.deps, nextDeps);
   if (shouldRun) {
     hook.pending = effect;
     hook.deps = nextDeps;

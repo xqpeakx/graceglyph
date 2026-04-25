@@ -242,64 +242,85 @@ export function ExplorerApp(props: ExplorerAppProps = {}) {
     }
   }
 
-  useCommand({
-    id: "file-manager.parent",
-    title: "Go to parent directory",
-    group: "File manager",
-    keys: ["backspace"],
-    run: () => {
-      const parent = path.dirname(cwd);
-      if (parent !== cwd) setCwd(parent);
+  useCommand(
+    {
+      id: "file-manager.parent",
+      title: "Go to parent directory",
+      group: "File manager",
+      keys: ["backspace"],
+      run: () => {
+        const parent = path.dirname(cwd);
+        if (parent !== cwd) setCwd(parent);
+      },
     },
-  }, [cwd]);
-  useCommand({
-    id: "file-manager.reload",
-    title: "Reload directory",
-    group: "File manager",
-    keys: ["f5"],
-    run: () => setRefreshToken((value) => value + 1),
-  }, []);
-  useCommand({
-    id: "file-manager.rename",
-    title: "Rename selected entry",
-    group: "File manager",
-    keys: ["r"],
-    run: () => openAction("rename"),
-  }, [entries, selected]);
-  useCommand({
-    id: "file-manager.copy",
-    title: "Copy selected entry",
-    group: "File manager",
-    keys: ["y"],
-    run: () => openAction("copy"),
-  }, [entries, selected]);
-  useCommand({
-    id: "file-manager.delete",
-    title: "Delete selected entry",
-    group: "File manager",
-    keys: ["d"],
-    run: () => openAction("delete"),
-  }, [entries, selected]);
-  useCommand({
-    id: "file-manager.hidden",
-    title: showHidden ? "Hide dotfiles" : "Show dotfiles",
-    group: "File manager",
-    keys: ["."],
-    run: () => setShowHidden((value) => !value),
-  }, [showHidden]);
-  useCommand({
-    id: "file-manager.sort",
-    title: "Cycle file sort",
-    group: "File manager",
-    keys: ["s"],
-    run: () => setSortMode((value) => nextSortMode(value)),
-  }, []);
+    [cwd],
+  );
+  useCommand(
+    {
+      id: "file-manager.reload",
+      title: "Reload directory",
+      group: "File manager",
+      keys: ["f5"],
+      run: () => setRefreshToken((value) => value + 1),
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "file-manager.rename",
+      title: "Rename selected entry",
+      group: "File manager",
+      keys: ["r"],
+      run: () => openAction("rename"),
+    },
+    [entries, selected],
+  );
+  useCommand(
+    {
+      id: "file-manager.copy",
+      title: "Copy selected entry",
+      group: "File manager",
+      keys: ["y"],
+      run: () => openAction("copy"),
+    },
+    [entries, selected],
+  );
+  useCommand(
+    {
+      id: "file-manager.delete",
+      title: "Delete selected entry",
+      group: "File manager",
+      keys: ["d"],
+      run: () => openAction("delete"),
+    },
+    [entries, selected],
+  );
+  useCommand(
+    {
+      id: "file-manager.hidden",
+      title: showHidden ? "Hide dotfiles" : "Show dotfiles",
+      group: "File manager",
+      keys: ["."],
+      run: () => setShowHidden((value) => !value),
+    },
+    [showHidden],
+  );
+  useCommand(
+    {
+      id: "file-manager.sort",
+      title: "Cycle file sort",
+      group: "File manager",
+      keys: ["s"],
+      run: () => setSortMode((value) => nextSortMode(value)),
+    },
+    [],
+  );
 
   const listHeight = compact
     ? Math.max(4, Math.min(8, size.height - 10))
     : stacked
       ? Math.max(3, Math.min(7, Math.floor((size.height - 14) / 2)))
-    : Math.max(6, Math.min(14, size.height - 12));
+      : Math.max(6, Math.min(14, size.height - 12));
 
   return (
     <App>
@@ -307,7 +328,8 @@ export function ExplorerApp(props: ExplorerAppProps = {}) {
         <Column gap={compact ? 0 : 1} grow={1}>
           <Text>{cwd}</Text>
           <Text style={{ dim: true }}>
-            {entries.length} entries · {status} · sort {sortMode} · {showHidden ? "hidden shown" : "hidden off"} · r/y/d actions
+            {entries.length} entries · {status} · sort {sortMode} ·{" "}
+            {showHidden ? "hidden shown" : "hidden off"} · r/y/d actions
           </Text>
 
           {stacked ? (
@@ -320,39 +342,35 @@ export function ExplorerApp(props: ExplorerAppProps = {}) {
                   onChange={setSelected}
                   onSelect={openEntry}
                   height={listHeight}
-                  render={(entry) => (
-                    entry.isDir
-                      ? `${entry.name}/`
-                      : `${entry.name} · ${formatSize(entry.size)}`
-                  )}
+                  render={(entry) =>
+                    entry.isDir ? `${entry.name}/` : `${entry.name} · ${formatSize(entry.size)}`
+                  }
                 />
                 <Text style={{ dim: true }}>{previewLines[0] ?? "(no preview)"}</Text>
               </Column>
             ) : (
-            <Column gap={1} grow={1}>
-              <Text>Entries</Text>
-              <List
-                items={entries}
-                selected={selected}
-                onChange={setSelected}
-                onSelect={openEntry}
-                height={listHeight}
-                render={(entry) => (
-                  entry.isDir
-                    ? `${entry.name}/`
-                    : `${entry.name} · ${formatSize(entry.size)}`
-                )}
-              />
+              <Column gap={1} grow={1}>
+                <Text>Entries</Text>
+                <List
+                  items={entries}
+                  selected={selected}
+                  onChange={setSelected}
+                  onSelect={openEntry}
+                  height={listHeight}
+                  render={(entry) =>
+                    entry.isDir ? `${entry.name}/` : `${entry.name} · ${formatSize(entry.size)}`
+                  }
+                />
 
-              <Text>Preview</Text>
-              <List
-                items={previewLines}
-                selected={previewSelected}
-                onChange={setPreviewSelected}
-                height={listHeight}
-                render={(line) => line}
-              />
-            </Column>
+                <Text>Preview</Text>
+                <List
+                  items={previewLines}
+                  selected={previewSelected}
+                  onChange={setPreviewSelected}
+                  height={listHeight}
+                  render={(line) => line}
+                />
+              </Column>
             )
           ) : (
             <Row gap={2} grow={1}>
@@ -364,11 +382,9 @@ export function ExplorerApp(props: ExplorerAppProps = {}) {
                   onChange={setSelected}
                   onSelect={openEntry}
                   height={listHeight}
-                  render={(entry) => (
-                    entry.isDir
-                      ? `${entry.name}/`
-                      : `${entry.name} · ${formatSize(entry.size)}`
-                  )}
+                  render={(entry) =>
+                    entry.isDir ? `${entry.name}/` : `${entry.name} · ${formatSize(entry.size)}`
+                  }
                 />
               </Column>
 

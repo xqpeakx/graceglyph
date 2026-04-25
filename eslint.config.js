@@ -3,12 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist/**",
-      "node_modules/**",
-      "coverage/**",
-      "src/render/unicode-width.generated.ts",
-    ],
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "src/render/unicode-width.generated.ts"],
   },
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
@@ -31,8 +26,29 @@ export default tseslint.config(
         },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/array-type": "off",
+      "@typescript-eslint/consistent-generic-constructors": "off",
+      "@typescript-eslint/consistent-type-imports": "off",
+      "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-invalid-void-type": "off",
+      "@typescript-eslint/no-namespace": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
+    },
+  },
+  {
+    files: ["examples/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^(h|Fragment|_)",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
   {

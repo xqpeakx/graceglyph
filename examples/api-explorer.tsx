@@ -92,7 +92,9 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
   const compact = size.height < 25;
   const stacked = size.width < 108;
   const [client] = useState(() => props.client ?? createFetchApiClient());
-  const [collections, setCollections] = useState<ApiRequest[]>(() => [...(props.collections ?? DEFAULT_COLLECTIONS)]);
+  const [collections, setCollections] = useState<ApiRequest[]>(() => [
+    ...(props.collections ?? DEFAULT_COLLECTIONS),
+  ]);
   const [selectedCollection, setSelectedCollection] = useState(0);
   const [method, setMethod] = useState<HttpMethod>(collections[0]?.method ?? "GET");
   const [url, setUrl] = useState(collections[0]?.url ?? "");
@@ -104,7 +106,9 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
   const [selectedHistory, setSelectedHistory] = useState(0);
   const [status, setStatus] = useState("ready");
 
-  const responseLines = response ? formatResponseLines(response) : ["Send a request to inspect the response."];
+  const responseLines = response
+    ? formatResponseLines(response)
+    : ["Send a request to inspect the response."];
   const collectionsHeight = stacked
     ? Math.max(3, Math.min(5, collections.length))
     : Math.max(5, Math.min(8, collections.length));
@@ -200,12 +204,17 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
       });
       setResponse(next);
       setResponseLine(0);
-      setHistory((items) => [{
-        id: `${request.id}-${next.status}`,
-        request,
-        response: next,
-        capturedAt: Date.now(),
-      }, ...items].slice(0, 30));
+      setHistory((items) =>
+        [
+          {
+            id: `${request.id}-${next.status}`,
+            request,
+            response: next,
+            capturedAt: Date.now(),
+          },
+          ...items,
+        ].slice(0, 30),
+      );
       setSelectedHistory(0);
       setStatus(`${next.status} ${next.statusText} in ${next.durationMs.toFixed(0)}ms`);
     } catch (error) {
@@ -240,36 +249,48 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
     return false;
   }
 
-  useCommand({
-    id: "api-explorer.send",
-    title: "Send request",
-    group: "API explorer",
-    keys: ["f5"],
-    run: () => {
-      void sendRequest();
+  useCommand(
+    {
+      id: "api-explorer.send",
+      title: "Send request",
+      group: "API explorer",
+      keys: ["f5"],
+      run: () => {
+        void sendRequest();
+      },
     },
-  }, [method, url, headersText, body]);
-  useCommand({
-    id: "api-explorer.save",
-    title: "Save request",
-    group: "API explorer",
-    keys: ["s"],
-    run: saveRequest,
-  }, [method, url, headersText, body]);
-  useCommand({
-    id: "api-explorer.method",
-    title: "Cycle HTTP method",
-    group: "API explorer",
-    keys: ["m"],
-    run: cycleMethod,
-  }, [method]);
-  useCommand({
-    id: "api-explorer.clear-response",
-    title: "Clear response",
-    group: "API explorer",
-    keys: ["c"],
-    run: () => setResponse(null),
-  }, []);
+    [method, url, headersText, body],
+  );
+  useCommand(
+    {
+      id: "api-explorer.save",
+      title: "Save request",
+      group: "API explorer",
+      keys: ["s"],
+      run: saveRequest,
+    },
+    [method, url, headersText, body],
+  );
+  useCommand(
+    {
+      id: "api-explorer.method",
+      title: "Cycle HTTP method",
+      group: "API explorer",
+      keys: ["m"],
+      run: cycleMethod,
+    },
+    [method],
+  );
+  useCommand(
+    {
+      id: "api-explorer.clear-response",
+      title: "Clear response",
+      group: "API explorer",
+      keys: ["c"],
+      run: () => setResponse(null),
+    },
+    [],
+  );
 
   return (
     <App>
@@ -277,7 +298,8 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
         <Column gap={compact ? 0 : 1} grow={1}>
           {!compact && (
             <Text style={{ dim: true }}>
-              Saved collections, editable requests, JSON response viewer, timing, and headers. F5 sends.
+              Saved collections, editable requests, JSON response viewer, timing, and headers. F5
+              sends.
             </Text>
           )}
 
@@ -328,16 +350,16 @@ export function ApiExplorerApp(props: ApiExplorerAppProps = {}) {
                   selected={selectedCollection}
                   onChange={setSelectedCollection}
                   onSelect={loadCollection}
-                height={collectionsHeight}
-              />
-              <HistoryPanel
-                history={history}
-                selected={selectedHistory}
-                onChange={setSelectedHistory}
-                onSelect={loadHistory}
-                height={Math.max(3, Math.min(5, size.height - 25))}
-              />
-              <RequestStats response={response} />
+                  height={collectionsHeight}
+                />
+                <HistoryPanel
+                  history={history}
+                  selected={selectedHistory}
+                  onChange={setSelectedHistory}
+                  onSelect={loadHistory}
+                  height={Math.max(3, Math.min(5, size.height - 25))}
+                />
+                <RequestStats response={response} />
               </Column>
               <RequestPanel
                 method={method}
@@ -456,7 +478,11 @@ function RequestPanel(props: {
             </Button>
           ))}
         </Row>
-        <TextInput value={props.url} onChange={props.setUrl} placeholder="https://api.example.test/resource" />
+        <TextInput
+          value={props.url}
+          onChange={props.setUrl}
+          placeholder="https://api.example.test/resource"
+        />
         <TextArea
           value={props.headersText}
           onChange={props.setHeadersText}
@@ -495,7 +521,9 @@ function HistoryPanel(props: {
           onChange={props.onChange}
           onSelect={props.onSelect}
           height={props.height}
-          render={(item) => `${item.response.status} ${item.request.method} ${truncate(item.request.name, 14)}`}
+          render={(item) =>
+            `${item.response.status} ${item.request.method} ${truncate(item.request.name, 14)}`
+          }
         />
       ) : (
         <Text style={{ dim: true }}>Sent requests appear here.</Text>
@@ -518,8 +546,11 @@ function ResponsePanel(props: {
     <Panel title={title} padding={0} grow={1}>
       <Column gap={0} grow={1}>
         {props.response && (
-          <Text style={props.response.ok ? { fg: ansi(2), bold: true } : { fg: ansi(1), bold: true }}>
-            {props.response.status} {props.response.statusText} | {props.response.contentType || "unknown content"}
+          <Text
+            style={props.response.ok ? { fg: ansi(2), bold: true } : { fg: ansi(1), bold: true }}
+          >
+            {props.response.status} {props.response.statusText} |{" "}
+            {props.response.contentType || "unknown content"}
           </Text>
         )}
         <List
@@ -540,9 +571,9 @@ function RequestStats(props: { response: ApiResponse | null }) {
     <Panel title="Headers" padding={0} grow={1}>
       <Column gap={0}>
         {response ? (
-          Object.entries(response.headers).slice(0, 8).map(([key, value]) => (
-            <Text key={key}>{truncate(`${key}: ${value}`, 24)}</Text>
-          ))
+          Object.entries(response.headers)
+            .slice(0, 8)
+            .map(([key, value]) => <Text key={key}>{truncate(`${key}: ${value}`, 24)}</Text>)
         ) : (
           <Text style={{ dim: true }}>Response headers appear here after send.</Text>
         )}

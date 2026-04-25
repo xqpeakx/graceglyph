@@ -77,7 +77,11 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
         setLastError(null);
         setHistory((current) => ({
           cpu: appendPoint(current.cpu, next.cpuPercent, historyLimit),
-          memory: appendPoint(current.memory, percentOf(next.memoryUsed, next.memoryTotal), historyLimit),
+          memory: appendPoint(
+            current.memory,
+            percentOf(next.memoryUsed, next.memoryTotal),
+            historyLimit,
+          ),
           disk: appendPoint(current.disk, percentOf(next.diskUsed, next.diskTotal), historyLimit),
           network: appendPoint(
             current.network,
@@ -120,16 +124,17 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
     }
   }, [processes, selectedPid]);
 
-  const selectedIndex = Math.max(0, processes.findIndex((process) => process.pid === selectedPid));
+  const selectedIndex = Math.max(
+    0,
+    processes.findIndex((process) => process.pid === selectedPid),
+  );
   const selectedProcess = processes[selectedIndex] ?? null;
   const memoryPercent = snapshot ? percentOf(snapshot.memoryUsed, snapshot.memoryTotal) : 0;
   const diskPercent = snapshot ? percentOf(snapshot.diskUsed, snapshot.diskTotal) : 0;
   const listHeight = stacked
-    ? (
-      compact
-        ? Math.max(4, Math.min(8, size.height - 20))
-        : Math.max(6, Math.min(10, size.height - 18))
-    )
+    ? compact
+      ? Math.max(4, Math.min(8, size.height - 20))
+      : Math.max(6, Math.min(10, size.height - 18))
     : size.width >= 132
       ? Math.max(9, Math.min(16, size.height - 16))
       : Math.max(4, Math.min(10, size.height - 26));
@@ -178,47 +183,62 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
     return false;
   }
 
-  useCommand({
-    id: "system-monitor.pause",
-    title: paused ? "Resume polling" : "Pause polling",
-    group: "System monitor",
-    keys: ["space"],
-    run: () => setPaused((value) => !value),
-  }, [paused]);
-  useCommand({
-    id: "system-monitor.refresh",
-    title: "Refresh metrics",
-    group: "System monitor",
-    keys: ["u"],
-    run: () => setRefreshToken((value) => value + 1),
-  }, []);
-  useCommand({
-    id: "system-monitor.sort-cpu",
-    title: "Sort processes by CPU",
-    group: "System monitor",
-    keys: ["c"],
-    run: () => {
-      setSortKey("cpu");
-      setDescending(true);
+  useCommand(
+    {
+      id: "system-monitor.pause",
+      title: paused ? "Resume polling" : "Pause polling",
+      group: "System monitor",
+      keys: ["space"],
+      run: () => setPaused((value) => !value),
     },
-  }, []);
-  useCommand({
-    id: "system-monitor.sort-memory",
-    title: "Sort processes by memory",
-    group: "System monitor",
-    keys: ["m"],
-    run: () => {
-      setSortKey("memory");
-      setDescending(true);
+    [paused],
+  );
+  useCommand(
+    {
+      id: "system-monitor.refresh",
+      title: "Refresh metrics",
+      group: "System monitor",
+      keys: ["u"],
+      run: () => setRefreshToken((value) => value + 1),
     },
-  }, []);
-  useCommand({
-    id: "system-monitor.reverse",
-    title: "Reverse process sort",
-    group: "System monitor",
-    keys: ["r"],
-    run: () => setDescending((value) => !value),
-  }, []);
+    [],
+  );
+  useCommand(
+    {
+      id: "system-monitor.sort-cpu",
+      title: "Sort processes by CPU",
+      group: "System monitor",
+      keys: ["c"],
+      run: () => {
+        setSortKey("cpu");
+        setDescending(true);
+      },
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "system-monitor.sort-memory",
+      title: "Sort processes by memory",
+      group: "System monitor",
+      keys: ["m"],
+      run: () => {
+        setSortKey("memory");
+        setDescending(true);
+      },
+    },
+    [],
+  );
+  useCommand(
+    {
+      id: "system-monitor.reverse",
+      title: "Reverse process sort",
+      group: "System monitor",
+      keys: ["r"],
+      run: () => setDescending((value) => !value),
+    },
+    [],
+  );
 
   const statusLine = buildStatusLine({
     snapshot,
@@ -238,7 +258,8 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
         <Column gap={0} grow={1}>
           {!compact && (
             <Text style={{ dim: true }}>
-              A live terminal dashboard: sort with c/m/p/n, reverse with r, refresh with u, pause with Space.
+              A live terminal dashboard: sort with c/m/p/n, reverse with r, refresh with u, pause
+              with Space.
             </Text>
           )}
 
@@ -352,14 +373,12 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
 
           {stacked ? (
             <Column gap={0}>
-              <TextInput
-                value={filter}
-                onChange={setFilter}
-                placeholder="filter processes..."
-              />
+              <TextInput value={filter} onChange={setFilter} placeholder="filter processes..." />
               <Row gap={1}>
                 <Button onClick={() => setRefreshToken((value) => value + 1)}>Refresh</Button>
-                <Button onClick={() => setPaused((value) => !value)}>{paused ? "Resume" : "Pause"}</Button>
+                <Button onClick={() => setPaused((value) => !value)}>
+                  {paused ? "Resume" : "Pause"}
+                </Button>
                 <Button onClick={() => setFilter("")}>Clear</Button>
               </Row>
             </Column>
@@ -372,7 +391,9 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
                 grow={1}
               />
               <Button onClick={() => setRefreshToken((value) => value + 1)}>Refresh</Button>
-              <Button onClick={() => setPaused((value) => !value)}>{paused ? "Resume" : "Pause"}</Button>
+              <Button onClick={() => setPaused((value) => !value)}>
+                {paused ? "Resume" : "Pause"}
+              </Button>
               <Button onClick={() => setFilter("")}>Clear</Button>
             </Row>
           )}
@@ -448,14 +469,21 @@ function SelectionPanel(props: {
     <Panel title="Selected" padding={0} width={36}>
       <Column gap={0} grow={1}>
         <Text style={{ bold: true }}>
-          {props.process ? `${props.process.command} · pid ${props.process.pid}` : props.snapshot?.hostname ?? "Loading host..."}
+          {props.process
+            ? `${props.process.command} · pid ${props.process.pid}`
+            : (props.snapshot?.hostname ?? "Loading host...")}
         </Text>
         <Text style={{ dim: true }}>
           {props.process
             ? `${formatPercent(props.process.cpuPercent)} cpu · ${formatPercent(props.process.memoryPercent)} mem · ${props.process.state}`
             : `${props.snapshot?.platform ?? process.platform} · uptime ${formatDuration(props.snapshot?.uptimeSeconds ?? 0)}`}
         </Text>
-        <Text>{truncateText(props.process?.args || shortPath(props.snapshot?.diskPath ?? process.cwd()), 34)}</Text>
+        <Text>
+          {truncateText(
+            props.process?.args || shortPath(props.snapshot?.diskPath ?? process.cwd()),
+            34,
+          )}
+        </Text>
         <Text style={{ dim: true }}>
           {props.snapshot
             ? `${props.visibleCount} visible · ${formatInterfaceSummary(props.snapshot.networkInterfaces)}`
@@ -475,17 +503,24 @@ function sortProcesses(
   sorted.sort((left, right) => {
     const direction = descending ? -1 : 1;
     if (sortKey === "cpu") {
-      return compareNumbers(left.cpuPercent, right.cpuPercent, direction)
-        || compareNumbers(left.pid, right.pid, -1);
+      return (
+        compareNumbers(left.cpuPercent, right.cpuPercent, direction) ||
+        compareNumbers(left.pid, right.pid, -1)
+      );
     }
     if (sortKey === "memory") {
-      return compareNumbers(left.memoryPercent, right.memoryPercent, direction)
-        || compareNumbers(left.pid, right.pid, -1);
+      return (
+        compareNumbers(left.memoryPercent, right.memoryPercent, direction) ||
+        compareNumbers(left.pid, right.pid, -1)
+      );
     }
     if (sortKey === "pid") {
       return compareNumbers(left.pid, right.pid, direction);
     }
-    return direction * left.command.localeCompare(right.command) || compareNumbers(left.pid, right.pid, -1);
+    return (
+      direction * left.command.localeCompare(right.command) ||
+      compareNumbers(left.pid, right.pid, -1)
+    );
   });
   return sorted;
 }
@@ -493,11 +528,12 @@ function sortProcesses(
 function filterProcesses(processes: MonitorProcess[], filter: string): MonitorProcess[] {
   const query = filter.trim().toLowerCase();
   if (query.length === 0) return processes;
-  return processes.filter((process) => (
-    process.command.toLowerCase().includes(query)
-    || process.args.toLowerCase().includes(query)
-    || String(process.pid).includes(query)
-  ));
+  return processes.filter(
+    (process) =>
+      process.command.toLowerCase().includes(query) ||
+      process.args.toLowerCase().includes(query) ||
+      String(process.pid).includes(query),
+  );
 }
 
 function appendPoint(values: number[], next: number, limit: number): number[] {
@@ -511,7 +547,10 @@ function sparkline(values: number[]): string {
   const maxValue = Math.max(1, ...values);
   return values
     .map((value) => {
-      const index = Math.max(0, Math.min(blocks.length - 1, Math.round((value / maxValue) * (blocks.length - 1))));
+      const index = Math.max(
+        0,
+        Math.min(blocks.length - 1, Math.round((value / maxValue) * (blocks.length - 1))),
+      );
       return blocks[index] ?? blocks[0]!;
     })
     .join("");
@@ -550,10 +589,13 @@ function buildStatusLine(props: {
   descending: boolean;
   filter: string;
 }): string {
-  const cadence = props.paused ? "paused" : `refresh ${Math.max(0.1, props.pollMs / 1000).toFixed(1)}s`;
+  const cadence = props.paused
+    ? "paused"
+    : `refresh ${Math.max(0.1, props.pollMs / 1000).toFixed(1)}s`;
   const updated = props.lastUpdated ? `updated ${formatClock(props.lastUpdated)}` : "warming up";
   const error = props.lastError ? ` · fallback ${truncateText(props.lastError, 28)}` : "";
-  const filterSummary = props.filter.trim().length > 0 ? truncateText(props.filter.trim(), 12) : "all";
+  const filterSummary =
+    props.filter.trim().length > 0 ? truncateText(props.filter.trim(), 12) : "all";
   return `${props.snapshot?.hostname ?? "host"} · ${cadence} · ${updated} · sort ${props.sortKey} ${props.descending ? "desc" : "asc"} · filter ${filterSummary} · ${props.processCount} rows${error}`;
 }
 
@@ -622,7 +664,11 @@ function formatDuration(seconds: number): string {
 }
 
 function formatClock(value: number): string {
-  return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return new Date(value).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function formatLoadAverage(values: [number, number, number]): string {

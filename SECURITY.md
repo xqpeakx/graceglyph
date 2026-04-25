@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-| Version | Status                                |
-|---------|---------------------------------------|
+| Version | Status                                                      |
+| ------- | ----------------------------------------------------------- |
 | 0.x     | Active development; security fixes on the latest minor only |
 
 After v1.0, the latest two minors will receive security fixes.

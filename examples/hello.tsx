@@ -94,7 +94,9 @@ export function HelloApp() {
   const rootGap = compact ? 1 : stacked ? 1 : 2;
   const editorGap = compact ? 0 : 1;
   const listHeight = stacked
-    ? (compact ? 2 : Math.max(3, Math.min(4, size.height - 16)))
+    ? compact
+      ? 2
+      : Math.max(3, Math.min(4, size.height - 16))
     : Math.max(4, Math.min(8, size.height - 20));
   const previewLimit = Math.max(4, Math.min(10, size.height - 10));
 
@@ -155,11 +157,7 @@ export function HelloApp() {
                 render={(item) => item.name}
               />
 
-              <TextInput
-                value={subject}
-                onChange={setSubject}
-                placeholder="Subject"
-              />
+              <TextInput value={subject} onChange={setSubject} placeholder="Subject" />
 
               <TextArea
                 value={body}
@@ -202,11 +200,7 @@ export function HelloApp() {
               </Column>
 
               <Column grow={1} gap={1}>
-                <TextInput
-                  value={subject}
-                  onChange={setSubject}
-                  placeholder="Subject"
-                />
+                <TextInput value={subject} onChange={setSubject} placeholder="Subject" />
 
                 <TextArea
                   value={body}
@@ -240,7 +234,12 @@ export function HelloApp() {
           <Text style={{ dim: true }}>{latestEvent}</Text>
 
           {previewOpen && (
-            <Modal title="Preview" width={54} height={previewLimit + 6} onDismiss={() => setPreviewOpen(false)}>
+            <Modal
+              title="Preview"
+              width={54}
+              height={previewLimit + 6}
+              onDismiss={() => setPreviewOpen(false)}
+            >
               <Column gap={0} grow={1}>
                 <Text>{subject || "(untitled draft)"}</Text>
                 {previewLines(body, previewLimit).map((line, index) => (

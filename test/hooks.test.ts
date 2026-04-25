@@ -2,7 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createFiber } from "../src/runtime/fiber.js";
-import { cleanupEffects, flushEffects, useState, useTerminalSize, useTheme, withFiber } from "../src/runtime/hooks.js";
+import {
+  cleanupEffects,
+  flushEffects,
+  useState,
+  useTerminalSize,
+  useTheme,
+  withFiber,
+} from "../src/runtime/hooks.js";
 import { defaultTheme } from "../src/theme/theme.js";
 import { DUMB_CAPABILITIES } from "../src/render/capabilities.js";
 
@@ -50,6 +57,7 @@ test("useTheme returns the mounted runtime theme", () => {
   const fiber = createFiber(() => null, {}, null, null);
   fiber.environment = {
     theme,
+    setTheme: () => {},
     size: () => ({ width: 80, height: 24 }),
     onResize: () => () => {},
     capabilities: DUMB_CAPABILITIES,
@@ -70,6 +78,7 @@ test("useTerminalSize subscribes to resize events and releases the listener on c
   fiber.scheduler = () => calls.push("commit");
   fiber.environment = {
     theme: defaultTheme(),
+    setTheme: () => {},
     size: () => ({ width: 80, height: 24 }),
     onResize: (listener) => {
       listeners.add(listener);
@@ -89,7 +98,10 @@ test("useTerminalSize subscribes to resize events and releases the listener on c
   flushEffects(fiber);
   assert.equal(listeners.size, 1);
 
-  const listener = listeners.values().next().value as (size: { width: number; height: number }) => void;
+  const listener = listeners.values().next().value as (size: {
+    width: number;
+    height: number;
+  }) => void;
   listener({ width: 100, height: 30 });
   assert.deepEqual(calls, ["commit"]);
 

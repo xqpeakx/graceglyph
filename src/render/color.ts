@@ -107,7 +107,9 @@ function parseColorString(value: string): Color {
     return rgb(clamp8(+rgbMatch[1]!), clamp8(+rgbMatch[2]!), clamp8(+rgbMatch[3]!));
   }
 
-  const hslMatch = v.match(/^hsl\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?\s*\)$/);
+  const hslMatch = v.match(
+    /^hsl\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?\s*\)$/,
+  );
   if (hslMatch) {
     const [r, g, b] = hslToRgb(+hslMatch[1]!, +hslMatch[2]! / 100, +hslMatch[3]! / 100);
     return rgb(r, g, b);
@@ -204,10 +206,7 @@ export function rgbToAnsi256(r: number, g: number, b: number): number {
     return Math.round(((r - 8) / 247) * 24) + 232;
   }
   return (
-    16 +
-    36 * Math.round((r / 255) * 5) +
-    6 * Math.round((g / 255) * 5) +
-    Math.round((b / 255) * 5)
+    16 + 36 * Math.round((r / 255) * 5) + 6 * Math.round((g / 255) * 5) + Math.round((b / 255) * 5)
   );
 }
 

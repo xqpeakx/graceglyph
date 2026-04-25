@@ -153,19 +153,19 @@ export function DashboardShellApp(props: DashboardShellAppProps = {}) {
   const stacked = size.width < 94;
   const modules = props.modules ?? SHOWCASE_MODULES;
   const [store] = useState(() => props.store ?? createFileShellStateStore());
-  const [state, setState] = useState<DashboardShellState>(() => (
-    defaultShellState(modules, props.initialModuleId)
-  ));
+  const [state, setState] = useState<DashboardShellState>(() =>
+    defaultShellState(modules, props.initialModuleId),
+  );
   const [selected, setSelected] = useState(() => selectedIndexFor(modules, state.selectedModuleId));
-  const [openedModuleId, setOpenedModuleId] = useState<string | null>(() => (
-    resolveModuleId(modules, props.initialOpenModuleId)
-  ));
+  const [openedModuleId, setOpenedModuleId] = useState<string | null>(() =>
+    resolveModuleId(modules, props.initialOpenModuleId),
+  );
   const [hydrated, setHydrated] = useState(false);
   const [status, setStatus] = useState("loading shell state");
 
   const activeModule = modules[selected] ?? modules[0]!;
   const openedModule = openedModuleId
-    ? modules.find((module) => module.id === openedModuleId) ?? null
+    ? (modules.find((module) => module.id === openedModuleId) ?? null)
     : null;
   const theme = THEMES.find((item) => item.id === state.themeId) ?? THEMES[0]!;
   const listHeight = stacked
@@ -278,9 +278,9 @@ export function DashboardShellApp(props: DashboardShellAppProps = {}) {
   const pathName = openedModule ? `/apps/${openedModule.id}` : "/";
   const breadcrumbs = openedModule
     ? [
-      { label: "Showcase", path: "/" },
-      { label: openedModule.title, path: pathName },
-    ]
+        { label: "Showcase", path: "/" },
+        { label: openedModule.title, path: pathName },
+      ]
     : [{ label: "Showcase", path: "/" }];
   const commands = createShellCommands({
     modules,
@@ -363,10 +363,7 @@ export function DashboardShellApp(props: DashboardShellAppProps = {}) {
       windowBorderStyle={{ fg: theme.accent }}
       windowTitleStyle={{ fg: theme.accent, bold: true }}
     >
-      <Box
-        grow={1}
-        onKey={onWindowKey}
-      >
+      <Box grow={1} onKey={onWindowKey}>
         <Column gap={compact ? 0 : 1} grow={1}>
           {!compact && (
             <Text style={{ dim: true }}>
@@ -410,9 +407,7 @@ export function DashboardShellApp(props: DashboardShellAppProps = {}) {
             <Button onClick={launchSelected}>Open</Button>
             <Button onClick={cycleTheme}>Theme</Button>
             <Button onClick={resetState}>Reset</Button>
-            <Text style={{ dim: true }}>
-              Enter/o open in-place | t theme | r reset | {status}
-            </Text>
+            <Text style={{ dim: true }}>Enter/o open in-place | t theme | r reset | {status}</Text>
           </Row>
         </Column>
       </Box>
@@ -438,37 +433,37 @@ function createShellCommands(props: {
 }): Command[] {
   const commands: Command[] = props.openedModuleId
     ? [
-      {
-        id: "showcase.home",
-        title: "Return to showcase home",
-        group: "Showcase",
-        keys: ["f1"],
-        run: props.closeModule,
-      },
-    ]
+        {
+          id: "showcase.home",
+          title: "Return to showcase home",
+          group: "Showcase",
+          keys: ["f1"],
+          run: props.closeModule,
+        },
+      ]
     : [
-      {
-        id: "showcase.open",
-        title: "Open selected module",
-        group: "Showcase",
-        keys: ["o", "enter"],
-        run: props.launchSelected,
-      },
-      {
-        id: "showcase.theme",
-        title: "Cycle shell theme",
-        group: "Showcase",
-        keys: ["t"],
-        run: props.cycleTheme,
-      },
-      {
-        id: "showcase.reset",
-        title: "Reset shell state",
-        group: "Showcase",
-        keys: ["r"],
-        run: props.resetState,
-      },
-    ];
+        {
+          id: "showcase.open",
+          title: "Open selected module",
+          group: "Showcase",
+          keys: ["o", "enter"],
+          run: props.launchSelected,
+        },
+        {
+          id: "showcase.theme",
+          title: "Cycle shell theme",
+          group: "Showcase",
+          keys: ["t"],
+          run: props.cycleTheme,
+        },
+        {
+          id: "showcase.reset",
+          title: "Reset shell state",
+          group: "Showcase",
+          keys: ["r"],
+          run: props.resetState,
+        },
+      ];
 
   for (const [index, module] of props.modules.entries()) {
     commands.push({
@@ -486,7 +481,9 @@ function createShellCommands(props: {
   return commands;
 }
 
-export function createFileShellStateStore(filePath = defaultShellStatePath()): DashboardShellStateStore {
+export function createFileShellStateStore(
+  filePath = defaultShellStatePath(),
+): DashboardShellStateStore {
   return {
     async load(): Promise<Partial<DashboardShellState> | null> {
       try {
@@ -564,7 +561,9 @@ function ModuleDetails(props: {
       <Column gap={1} grow={1}>
         <Text style={{ bold: true }}>{props.module.command}</Text>
         <Text>{props.module.summary}</Text>
-        <Text style={{ dim: true }}>opened {count} time{count === 1 ? "" : "s"}</Text>
+        <Text style={{ dim: true }}>
+          opened {count} time{count === 1 ? "" : "s"}
+        </Text>
         <Text style={{ dim: true }}>Open renders this module inside the current app.</Text>
         <Column gap={0}>
           {props.module.features.map((feature) => (
@@ -583,7 +582,10 @@ function ShellStatePanel(props: { state: DashboardShellState; themeLabel: string
         <Text>theme: {props.themeLabel}</Text>
         <Text>selected: {props.state.selectedModuleId}</Text>
         <Text>
-          last open: {props.state.lastOpenedAt ? new Date(props.state.lastOpenedAt).toLocaleTimeString() : "never"}
+          last open:{" "}
+          {props.state.lastOpenedAt
+            ? new Date(props.state.lastOpenedAt).toLocaleTimeString()
+            : "never"}
         </Text>
         <Text style={{ dim: true }}>state persists between shell runs</Text>
       </Column>
@@ -591,10 +593,7 @@ function ShellStatePanel(props: { state: DashboardShellState; themeLabel: string
   );
 }
 
-function renderShowcaseModule(
-  module: ShowcaseModule,
-  examples: ShowcaseExampleProps | undefined,
-) {
+function renderShowcaseModule(module: ShowcaseModule, examples: ShowcaseExampleProps | undefined) {
   if (module.id === "system-monitor") return <SystemMonitorApp {...examples?.monitor} />;
   if (module.id === "log-viewer") return <LogViewerApp {...examples?.logs} />;
   if (module.id === "git-dashboard") return <GitDashboardApp {...examples?.git} />;
@@ -638,15 +637,15 @@ function mergeState(
   const forcedModuleId = resolveModuleId(modules, initialModuleId);
   if (!loaded) return forcedModuleId ? { ...fallback, selectedModuleId: forcedModuleId } : fallback;
   const moduleIds = new Set(modules.map((module) => module.id));
-  const selectedModuleId = forcedModuleId
-    ?? (
-      loaded.selectedModuleId && moduleIds.has(loaded.selectedModuleId)
-        ? loaded.selectedModuleId
-        : fallback.selectedModuleId
-    );
-  const themeId = loaded.themeId && THEMES.some((theme) => theme.id === loaded.themeId)
-    ? loaded.themeId
-    : fallback.themeId;
+  const selectedModuleId =
+    forcedModuleId ??
+    (loaded.selectedModuleId && moduleIds.has(loaded.selectedModuleId)
+      ? loaded.selectedModuleId
+      : fallback.selectedModuleId);
+  const themeId =
+    loaded.themeId && THEMES.some((theme) => theme.id === loaded.themeId)
+      ? loaded.themeId
+      : fallback.themeId;
   return {
     selectedModuleId,
     themeId,
@@ -655,13 +654,19 @@ function mergeState(
   };
 }
 
-function resolveModuleId(modules: readonly ShowcaseModule[], moduleId: string | undefined): string | null {
+function resolveModuleId(
+  modules: readonly ShowcaseModule[],
+  moduleId: string | undefined,
+): string | null {
   if (!moduleId) return null;
   return modules.some((module) => module.id === moduleId) ? moduleId : null;
 }
 
 function selectedIndexFor(modules: readonly ShowcaseModule[], moduleId: string): number {
-  return Math.max(0, modules.findIndex((module) => module.id === moduleId));
+  return Math.max(
+    0,
+    modules.findIndex((module) => module.id === moduleId),
+  );
 }
 
 function defaultShellStatePath(): string {
@@ -670,10 +675,12 @@ function defaultShellStatePath(): string {
 }
 
 function isMissingFile(error: unknown): boolean {
-  return typeof error === "object"
-    && error !== null
-    && "code" in error
-    && (error as { code?: string }).code === "ENOENT";
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "ENOENT"
+  );
 }
 
 function messageOf(error: unknown): string {

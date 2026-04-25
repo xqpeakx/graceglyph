@@ -82,14 +82,7 @@ test("effect: cleanup runs before re-run and on disposal", () => {
     setCount(1);
     setCount(2);
     dispose();
-    assert.deepEqual(log, [
-      "run 0",
-      "cleanup 0",
-      "run 1",
-      "cleanup 1",
-      "run 2",
-      "cleanup 2",
-    ]);
+    assert.deepEqual(log, ["run 0", "cleanup 0", "run 1", "cleanup 1", "run 2", "cleanup 2"]);
   });
 });
 

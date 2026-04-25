@@ -37,12 +37,7 @@ export class Rect {
     const y = Math.max(this.y, other.y);
     const right = Math.min(this.right, other.right);
     const bottom = Math.min(this.bottom, other.bottom);
-    return new Rect(
-      x,
-      y,
-      Math.max(0, right - x),
-      Math.max(0, bottom - y),
-    );
+    return new Rect(x, y, Math.max(0, right - x), Math.max(0, bottom - y));
   }
 
   translate(dx: number, dy: number): Rect {

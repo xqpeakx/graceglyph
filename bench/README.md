@@ -17,12 +17,12 @@ npm run bench -- table         # filter by substring
 
 Targets (see `ROADMAP.md` §10):
 
-| metric                          | target |
-|---------------------------------|--------|
-| static-frame paint p50          | <8 ms  |
-| static-frame diff p99           | <16 ms |
-| table-scroll p50                | <4 ms  |
-| resize-storm p50                | <2 ms  |
+| metric                 | target |
+| ---------------------- | ------ |
+| static-frame paint p50 | <8 ms  |
+| static-frame diff p99  | <16 ms |
+| table-scroll p50       | <4 ms  |
+| resize-storm p50       | <2 ms  |
 
 These are floors, not ceilings. We expect to beat them on modern hardware.
 The CI bench runs on a fixed runner so absolute numbers are comparable
