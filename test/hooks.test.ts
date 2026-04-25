@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createFiber } from "../src/runtime/fiber.js";
 import { cleanupEffects, flushEffects, useState, useTerminalSize, useTheme, withFiber } from "../src/runtime/hooks.js";
 import { defaultTheme } from "../src/theme/theme.js";
+import { DUMB_CAPABILITIES } from "../src/render/capabilities.js";
 
 test("state updates schedule through the owning fiber scheduler", () => {
   const calls: string[] = [];
@@ -51,6 +52,7 @@ test("useTheme returns the mounted runtime theme", () => {
     theme,
     size: () => ({ width: 80, height: 24 }),
     onResize: () => () => {},
+    capabilities: DUMB_CAPABILITIES,
   };
 
   let value = null;
@@ -75,6 +77,7 @@ test("useTerminalSize subscribes to resize events and releases the listener on c
         listeners.delete(listener);
       };
     },
+    capabilities: DUMB_CAPABILITIES,
   };
 
   let size = null;

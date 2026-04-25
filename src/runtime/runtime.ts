@@ -49,6 +49,9 @@ export class Runtime {
   private onData?: (chunk: Buffer | string) => void;
   private readonly devtoolsEnabled: boolean;
   private devtoolsVisible = false;
+  private readonly eventLog: string[] = [];
+  private hoveredFiber: Fiber | null = null;
+  private activeFiber: Fiber | null = null;
   private sigintHandler?: () => void;
   private sigtermHandler?: () => void;
   private resizeCleanup?: () => void;
@@ -65,6 +68,7 @@ export class Runtime {
       theme: this.theme,
       size: () => this.terminal.size(),
       onResize: (listener) => this.terminal.onResize(listener),
+      capabilities: this.terminal.capabilities,
     };
   }
 
@@ -194,9 +198,14 @@ export class Runtime {
         this.layoutDirty = false;
       }
       const focused = this.focus.current();
-      paintTree(this.hostRoot, { buffer, focusedFiber: focused?.fiber ?? null });
+      paintTree(this.hostRoot, {
+        buffer,
+        focusedFiber: focused?.fiber ?? null,
+        hoveredFiber: this.hoveredFiber,
+        activeFiber: this.activeFiber,
+      });
       if (this.devtoolsEnabled && this.devtoolsVisible) {
-        paintInspector(buffer, this.hostRoot, focused);
+        paintInspector(buffer, this.hostRoot, focused, this.eventLog);
         this.renderer.setCursor(null);
       } else {
         if (focused && isEditableHost(focused)) {
@@ -232,6 +241,7 @@ export class Runtime {
   // -- Input dispatch ---------------------------------------------------------
 
   private dispatch(ev: InputEvent): void {
+    this.recordInputEvent(ev);
     if (ev.type === "resize") return;
     if (ev.type === "key") return this.dispatchKey(ev);
     if (ev.type === "mouse") return this.dispatchMouse(ev);
@@ -267,6 +277,10 @@ export class Runtime {
     let f: Fiber | null = focused.fiber;
     while (f) {
       const props = f.props as BoxProps;
+      if (props.disabled) {
+        f = f.parent;
+        continue;
+      }
       if (typeof props.onKey === "function") {
         if (props.onKey(ev) === true) return;
       }
@@ -280,34 +294,56 @@ export class Runtime {
     }
   }
 
+  private recordInputEvent(ev: InputEvent): void {
+    const label = ev.type === "key"
+      ? `key ${ev.ctrl ? "C-" : ""}${ev.alt ? "M-" : ""}${ev.shift ? "S-" : ""}${ev.name}${ev.char ? `:${ev.char}` : ""}`
+      : ev.type === "mouse"
+        ? `mouse ${ev.button} ${ev.action} @${ev.x},${ev.y}`
+        : `resize ${ev.width}x${ev.height}`;
+    this.eventLog.push(label);
+    if (this.eventLog.length > 30) this.eventLog.splice(0, this.eventLog.length - 30);
+  }
+
   private dispatchMouse(ev: MouseEvent): void {
     if (!this.hostRoot) return;
     const scope = this.focus.scope();
     const hit = scope
       ? hitTest(scope, ev.x, ev.y)
       : hitTest(this.hostRoot, ev.x, ev.y);
-    if (!hit) return;
+    if (!hit) {
+      if (this.hoveredFiber || this.activeFiber) {
+        this.hoveredFiber = null;
+        this.activeFiber = null;
+        this.scheduleCommit();
+      }
+      return;
+    }
+
+    const interactive = nearestInteractive(hit);
+    this.updateHover(interactive);
 
     if (ev.action === "press" && ev.button === "left") {
-      this.focus.focus(hit);
-      if (isEditableHost(hit)) {
-        const state = hit.editableState ?? {
-          cursor: String(hit.props.value ?? "").length,
+      const focusTarget = nearestFocusable(hit);
+      this.focus.focus(focusTarget);
+      this.activeFiber = interactive?.fiber ?? null;
+      if (focusTarget && isEditableHost(focusTarget)) {
+        const state = focusTarget.editableState ?? {
+          cursor: String(focusTarget.props.value ?? "").length,
           scrollX: 0,
           scrollY: 0,
           preferredColumn: null,
           pendingValue: null,
         };
-        hit.editableState = state;
-        commitEditableState(state, String(hit.props.value ?? ""));
+        focusTarget.editableState = state;
+        commitEditableState(state, String(focusTarget.props.value ?? ""));
         moveCursorToPoint(
           state,
-          String(hit.props.value ?? ""),
-          ev.x - hit.layout.x,
-          ev.y - hit.layout.y,
-          hit.layout.width,
-          hit.layout.height,
-          hit.type === "textarea" ? "multi-line" : "single-line",
+          String(focusTarget.props.value ?? ""),
+          ev.x - focusTarget.layout.x,
+          ev.y - focusTarget.layout.y,
+          focusTarget.layout.width,
+          focusTarget.layout.height,
+          focusTarget.type === "textarea" ? "multi-line" : "single-line",
         );
       }
       this.scheduleCommit();
@@ -320,15 +356,30 @@ export class Runtime {
         if (props.onMouse(ev) === true) return;
       }
       if (
+        !props.disabled &&
         typeof props.onClick === "function" &&
         ev.action === "release" &&
         ev.button === "left"
       ) {
         props.onClick();
+        this.activeFiber = null;
+        this.scheduleCommit();
         return;
       }
       f = f.parent;
     }
+
+    if (ev.action === "release" && this.activeFiber) {
+      this.activeFiber = null;
+      this.scheduleCommit();
+    }
+  }
+
+  private updateHover(host: HostNode | null): void {
+    const next = host?.fiber ?? null;
+    if (this.hoveredFiber === next) return;
+    this.hoveredFiber = next;
+    this.scheduleCommit();
   }
 
   private withFatalBoundary<T>(phase: string, fn: () => T): T {
@@ -440,6 +491,7 @@ function handleEditableKey(
   commit: () => void,
 ): boolean {
   const props = host.props as unknown as InputProps;
+  if (props.disabled) return false;
   const committedValue = String(props.value ?? "");
   const state = host.editableState ?? {
     cursor: committedValue.length,
@@ -471,6 +523,32 @@ function handleEditableKey(
 
 function isEditableHost(host: HostNode): boolean {
   return host.type === "input" || host.type === "textarea";
+}
+
+function isFocusableHost(host: HostNode): boolean {
+  return host.props.disabled !== true && (isEditableHost(host) || host.props.focusable === true);
+}
+
+function nearestFocusable(host: HostNode): HostNode | null {
+  for (let current: HostNode | null = host; current; current = current.parent) {
+    if (isFocusableHost(current)) return current;
+  }
+  return null;
+}
+
+function nearestInteractive(host: HostNode): HostNode | null {
+  for (let current: HostNode | null = host; current; current = current.parent) {
+    if (current.props.disabled === true) continue;
+    if (
+      isEditableHost(current)
+      || current.props.focusable === true
+      || typeof current.props.onClick === "function"
+      || typeof current.props.onMouse === "function"
+    ) {
+      return current;
+    }
+  }
+  return null;
 }
 
 function isAncestor(parent: Fiber, child: Fiber): boolean {

@@ -8,7 +8,7 @@ import type {
   ZenElement,
 } from "./runtime/element.js";
 import type { KeyEvent } from "./input/keys.js";
-import { useTheme } from "./runtime/hooks.js";
+import { useCapabilities, useTheme } from "./runtime/hooks.js";
 
 /**
  * Built-in components. Deliberately thin — each one is a handful of lines
@@ -118,28 +118,108 @@ export function Text(props: TextProps): ZenElement {
   return h("text", props as Record<string, unknown>, props.children);
 }
 
+// -- <Link> -------------------------------------------------------------------
+export interface LinkProps {
+  /** Destination URL. Required for OSC 8 emission and footnote fallback. */
+  href: string;
+  /**
+   * Visible label. Falls back to `href` when omitted, matching common HTML
+   * authoring expectations.
+   */
+  children?: unknown;
+  /** Optional in-app handler. Fires on Enter / Space / mouse click. */
+  onClick?: () => void;
+  /**
+   * When true, the URL is appended in parentheses even if the terminal
+   * supports OSC 8. Useful for printable output.
+   */
+  showHref?: boolean;
+  style?: Partial<TextProps["style"]>;
+  focusedStyle?: Partial<TextProps["style"]>;
+}
+
+/**
+ * Hyperlink component. Emits styled (underlined, theme-colored) text and,
+ * on terminals that advertise OSC 8 support, marks the cells as a clickable
+ * hyperlink. On terminals that lack OSC 8, the URL renders as a parenthetical
+ * footnote so it remains discoverable.
+ */
+export function Link(props: LinkProps): ZenElement {
+  const theme = useTheme();
+  const caps = useCapabilities();
+  const label = props.children ?? props.href;
+  const hasNativeLink = caps.hyperlinks;
+  const showFootnote = props.showHref ?? !hasNativeLink;
+
+  const text = showFootnote ? `${label} (${props.href})` : String(label);
+
+  return h(
+    "text",
+    {
+      onClick: props.onClick,
+      style: { ...theme.link.normal, ...(props.style ?? {}) },
+      focusedStyle: { ...theme.link.focused, ...(props.focusedStyle ?? {}) },
+      // The runtime ignores unknown text props today; a follow-up pass will
+      // teach the renderer to wrap these cells in OSC 8 when caps.hyperlinks
+      // is true. The capability flag is already detected and threaded.
+      "data-href": props.href,
+      focusable: props.onClick != null,
+    } as Record<string, unknown>,
+    text,
+  );
+}
+
 // -- <Button> -----------------------------------------------------------------
 export interface ButtonProps {
   onClick?: () => void;
   style?: BoxStyle;
   focusedStyle?: BoxStyle;
+  hoveredStyle?: BoxStyle;
+  activeStyle?: BoxStyle;
+  disabledStyle?: BoxStyle;
+  loadingStyle?: BoxStyle;
+  errorStyle?: BoxStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
   children?: unknown;
 }
 
 export function Button(props: ButtonProps): ZenElement {
   const theme = useTheme();
-  const { onClick, children, style, focusedStyle } = props;
+  const {
+    onClick,
+    children,
+    style,
+    focusedStyle,
+    hoveredStyle,
+    activeStyle,
+    disabledStyle,
+    loadingStyle,
+    errorStyle,
+    disabled = false,
+    loading = false,
+    error = false,
+  } = props;
   // The box becomes focusable; the runtime translates Enter/Space into onClick.
   return h(
     "box",
     {
-      focusable: true,
+      focusable: !disabled,
+      disabled,
+      loading,
+      error,
       border: true,
       padding: [0, 1],
       direction: "row",
-      onClick,
+      onClick: disabled || loading ? undefined : onClick,
       style: mergeBoxStyle(theme.button.normal, style),
       focusedStyle: mergeBoxStyle(theme.button.focused, focusedStyle),
+      hoveredStyle: mergeBoxStyle(theme.button.hovered, hoveredStyle),
+      activeStyle: mergeBoxStyle(theme.button.active, activeStyle),
+      disabledStyle: mergeBoxStyle(theme.button.disabled, disabledStyle),
+      loadingStyle: mergeBoxStyle(theme.button.loading, loadingStyle),
+      errorStyle: mergeBoxStyle(theme.button.error, errorStyle),
     } as BoxProps,
     h("text", {}, children),
   );
@@ -157,7 +237,15 @@ export interface TextInputProps {
   grow?: number;
   style?: BoxStyle;
   focusedStyle?: BoxStyle;
+  hoveredStyle?: BoxStyle;
+  activeStyle?: BoxStyle;
+  disabledStyle?: BoxStyle;
+  loadingStyle?: BoxStyle;
+  errorStyle?: BoxStyle;
   placeholderStyle?: BoxStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
 }
 
 export function TextInput(props: TextInputProps): ZenElement {
@@ -166,6 +254,11 @@ export function TextInput(props: TextInputProps): ZenElement {
     ...props,
     style: mergeBoxStyle(theme.input.normal, props.style),
     focusedStyle: mergeBoxStyle(theme.input.focused, props.focusedStyle),
+    hoveredStyle: mergeBoxStyle(theme.input.hovered, props.hoveredStyle),
+    activeStyle: props.activeStyle,
+    disabledStyle: mergeBoxStyle(theme.input.disabled, props.disabledStyle),
+    loadingStyle: mergeBoxStyle(theme.input.loading, props.loadingStyle),
+    errorStyle: mergeBoxStyle(theme.input.error, props.errorStyle),
     placeholderStyle: mergeBoxStyle(theme.input.placeholder, props.placeholderStyle),
   } as unknown as Record<string, unknown>);
 }
@@ -179,6 +272,11 @@ export function TextArea(props: TextAreaProps): ZenElement {
     ...props,
     style: mergeBoxStyle(theme.input.normal, props.style),
     focusedStyle: mergeBoxStyle(theme.input.focused, props.focusedStyle),
+    hoveredStyle: mergeBoxStyle(theme.input.hovered, props.hoveredStyle),
+    activeStyle: props.activeStyle,
+    disabledStyle: mergeBoxStyle(theme.input.disabled, props.disabledStyle),
+    loadingStyle: mergeBoxStyle(theme.input.loading, props.loadingStyle),
+    errorStyle: mergeBoxStyle(theme.input.error, props.errorStyle),
     placeholderStyle: mergeBoxStyle(theme.input.placeholder, props.placeholderStyle),
   } as unknown as Record<string, unknown>);
 }
@@ -197,11 +295,18 @@ export interface ListProps<T> {
   render: (item: T, index: number, selected: boolean) => ZenElement | string;
   width?: number;
   height?: number;
+  disabled?: boolean;
+  rowStyle?: BoxStyle;
+  rowFocusedStyle?: BoxStyle;
+  rowHoveredStyle?: BoxStyle;
+  rowActiveStyle?: BoxStyle;
+  rowDisabledStyle?: BoxStyle;
 }
 
 export function List<T>(props: ListProps<T>): ZenElement {
   const theme = useTheme();
   const onKey = (ev: KeyEvent): boolean | void => {
+    if (props.disabled) return false;
     if (ev.name === "up") {
       if (props.selected > 0) props.onChange(props.selected - 1);
       return true;
@@ -238,7 +343,7 @@ export function List<T>(props: ListProps<T>): ZenElement {
     const i = start + offset;
     const isSel = i === props.selected;
     const rendered = props.render(item, i, isSel);
-    const rowStyle = isSel ? theme.list.selected : theme.list.normal;
+    const rowStyle = mergeBoxStyle(isSel ? theme.list.selected : theme.list.normal, props.rowStyle);
     const content = typeof rendered === "string"
       ? h("text", { style: rowStyle } as TextProps, rendered.length > 0 ? rendered : " ")
       : rendered;
@@ -247,7 +352,17 @@ export function List<T>(props: ListProps<T>): ZenElement {
       {
         direction: "row",
         height: 1,
+        disabled: props.disabled,
         style: rowStyle,
+        focusedStyle: props.rowFocusedStyle,
+        hoveredStyle: mergeBoxStyle(theme.list.hovered, props.rowHoveredStyle),
+        activeStyle: mergeBoxStyle(theme.list.active, props.rowActiveStyle),
+        disabledStyle: mergeBoxStyle(theme.list.disabled, props.rowDisabledStyle),
+        onClick: () => {
+          if (props.disabled) return;
+          props.onChange(i);
+          props.onSelect?.(i, item);
+        },
       } as BoxProps,
       content,
     );
@@ -257,6 +372,7 @@ export function List<T>(props: ListProps<T>): ZenElement {
     "box",
     {
       focusable: true,
+      disabled: props.disabled,
       direction: "column",
       width: props.width,
       height: props.height,

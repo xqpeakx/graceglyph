@@ -12,6 +12,7 @@ import {
   Window,
   ansi,
   h,
+  useCommand,
   useEffect,
   useState,
   useTerminalSize,
@@ -176,6 +177,48 @@ export function SystemMonitorApp(props: SystemMonitorAppProps = {}) {
     }
     return false;
   }
+
+  useCommand({
+    id: "system-monitor.pause",
+    title: paused ? "Resume polling" : "Pause polling",
+    group: "System monitor",
+    keys: ["space"],
+    run: () => setPaused((value) => !value),
+  }, [paused]);
+  useCommand({
+    id: "system-monitor.refresh",
+    title: "Refresh metrics",
+    group: "System monitor",
+    keys: ["u"],
+    run: () => setRefreshToken((value) => value + 1),
+  }, []);
+  useCommand({
+    id: "system-monitor.sort-cpu",
+    title: "Sort processes by CPU",
+    group: "System monitor",
+    keys: ["c"],
+    run: () => {
+      setSortKey("cpu");
+      setDescending(true);
+    },
+  }, []);
+  useCommand({
+    id: "system-monitor.sort-memory",
+    title: "Sort processes by memory",
+    group: "System monitor",
+    keys: ["m"],
+    run: () => {
+      setSortKey("memory");
+      setDescending(true);
+    },
+  }, []);
+  useCommand({
+    id: "system-monitor.reverse",
+    title: "Reverse process sort",
+    group: "System monitor",
+    keys: ["r"],
+    run: () => setDescending((value) => !value),
+  }, []);
 
   const statusLine = buildStatusLine({
     snapshot,

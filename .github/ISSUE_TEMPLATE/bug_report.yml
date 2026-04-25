@@ -1,0 +1,58 @@
+name: Bug report
+description: Report something that doesn't work the way it should
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please fill in as much as you can — minimal
+        reproductions get fixed fastest.
+  - type: input
+    id: version
+    attributes:
+      label: graceglyph version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: e.g. 20.11.0
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal emulator and OS
+      placeholder: e.g. iTerm2 3.5 / macOS 14.4
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: |
+        Smallest possible code sample. A single .tsx file is ideal.
+        If the bug is visual, paste the output of `app.snapshot()` from a
+        `renderTestApp` test.
+      render: tsx
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots, asciinema links, related issues.

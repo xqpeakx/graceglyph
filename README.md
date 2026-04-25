@@ -10,6 +10,7 @@ Supported package entrypoints are:
 - `graceglyph`
 - `graceglyph/jsx-runtime`
 - `graceglyph/jsx-dev-runtime`
+- `graceglyph/testing`
 
 Deep imports into internal source files are not part of the supported API.
 
@@ -22,6 +23,8 @@ Early, but actively hardened. Current focus:
 - Typed props and events
 - Multiline `TextArea`
 - Tree inspector (`F12`)
+- App shell, command palette, help overlay, and toasts
+- Terminal testkit and project templates
 - Watch-mode examples
 - Automated runtime and onboarding smoke coverage
 
@@ -29,19 +32,26 @@ Early, but actively hardened. Current focus:
 
 ```bash
 npm install
-npm run example:monitor
+npm run example:showcase
 ```
 
-`example:monitor` is the flagship demo. It exercises live updates, multi-panel
-layout, keyboard navigation, sorting, filtering, and dense data rendering in
-one screen.
+`example:showcase` is the single example application. Its home screen houses
+the system monitor, log viewer, git dashboard, API explorer, file manager, and
+smaller component demos in one running TUI. Open a module from the list, then
+press `Escape` or `F1` to return home.
 
 Useful keys on first run:
 
 - `Tab` / `Shift+Tab`: move focus
 - `Enter`: activate buttons and selected list items
+- `Escape` / `F1`: return to the showcase home screen from a module
+- `:`: open the command palette
+- `?`: open the active shortcut/help overlay
 - `Ctrl+C`: exit
 - `F12`: open the inspector and warning panel
+
+Mouse input works across the same controls: click buttons, list rows, fields,
+tabs, filters, and the in-module Home control.
 
 ## Install
 
@@ -104,20 +114,16 @@ For automatic JSX without `h(...)` boilerplate, use:
 Run the bundled examples:
 
 ```bash
-npm run example:monitor
-npm run example:hello
-npm run example:form
-npm run example:todo
-npm run example:explorer
+npm run example:showcase
 ```
+
+The other `example:*` scripts are compatibility shortcuts into the same
+showcase application with that module opened first.
 
 Use watch mode while iterating:
 
 ```bash
-npm run dev:monitor
-npm run dev:hello
-npm run dev:todo
-npm run dev:explorer
+npm run dev:showcase
 ```
 
 `Ctrl+C` exits. `Tab` / `Shift+Tab` cycles focus. `F12` toggles the inspector.
@@ -127,10 +133,10 @@ npm run dev:explorer
 If you want to validate whether graceglyph feels pleasant fast, this is the
 short path:
 
-1. Run `npm run dev:monitor`.
-2. Change one metric panel title or accent in `examples/system-monitor.tsx`.
-3. Edit the default refresh cadence or key hints.
-4. Filter the process list and change the sort shortcuts.
+1. Run `npm run dev:showcase`.
+2. Open the system monitor from the showcase list.
+3. Change one metric panel title or accent in `examples/system-monitor.tsx`.
+4. Edit the default refresh cadence or key hints.
 5. Resize the terminal and toggle `F12` to inspect the tree and warnings.
 
 If that loop feels awkward, the framework still needs work.
@@ -140,28 +146,100 @@ If that loop feels awkward, the framework still needs work.
 Current built-ins:
 
 - `App`
+- `AppShell`
 - `Window`
 - `Panel`
 - `Row`
 - `Column`
+- `Grid`
+- `Stack`
+- `SplitPane`
+- `ScrollView`
 - `Text`
 - `TextInput`
 - `TextArea`
 - `Button`
 - `List`
 - `Modal`
+- `Router`
+- `Route`
+- `Tabs`
+- `CommandPalette`
+- `HelpOverlay`
+- `ToastViewport`
 
 Everything composes down to four host primitives: `box`, `text`, `input`, and `textarea`.
 
+## App Shell
+
+Graceglyph includes shell primitives for full terminal applications, not just
+single-screen widgets:
+
+- `AppShell`: window chrome, breadcrumbs, `Escape` back navigation, command palette, help overlay, and toasts
+- `Router` / `Route`: declarative route selection inside the terminal
+- `Tabs`: mouse and keyboard reachable tab controls
+- `useCommand` / `useCommands` / `useHotkeys`: a global command registry that can drive menus, help, and shortcuts
+- `useAsync`, `useInterval`, `useDebouncedValue`, `usePersistentState`, `useFocusWithin`, `useClipboard`, `useMouse`: app-building hooks for common terminal UI state
+- `Button`, `List`, `TextInput`, `TextArea`, and host boxes support consistent `focused`, `hovered`, `active`, `disabled`, `loading`, and `error` states
+
+`F12` opens devtools with layout boxes, focus path, render counts, recent input
+events, and layout warnings.
+
+## Testing
+
+Use `graceglyph/testing` to test terminal apps without private fixtures:
+
+```tsx
+import test from "node:test";
+import assert from "node:assert/strict";
+import { renderTestApp } from "graceglyph/testing";
+import { AppRoot } from "../src/main.js";
+
+test("main flow", async () => {
+  const app = renderTestApp(<AppRoot />, { width: 100, height: 28 });
+  try {
+    await app.press(":");
+    await app.type("refresh");
+    await app.press("enter");
+    assert.match(app.snapshot(), /refreshed/);
+    app.assertNoLayoutWarnings();
+  } finally {
+    app.stop();
+  }
+});
+```
+
+The testkit can snapshot terminal frames, simulate keyboard and mouse flows,
+resize the terminal, and assert that the inspector has no layout warnings.
+
+## Templates
+
+Project templates are available through the `create-graceglyph` CLI:
+
+```bash
+npm create graceglyph@latest my-app -- --template dashboard
+npm create graceglyph@latest logs -- --template log-viewer
+```
+
+Available templates:
+
+- `dashboard`: app shell, tabs, metrics, commands, and persisted state
+- `cli-tool`: interactive command runner with async loading/error/retry state
+- `log-viewer`: streaming logs with filtering and pause/resume controls
+- `crud-app`: list/detail editor with persistent records
+
 ## Examples
 
-- `example:monitor`: flagship system monitor with live CPU, memory, disk, network, and process panels
-- `example:hello`: composer flow with templates, textarea editing, preview, and modal UX
-- `example:form`: smallest useful controlled-form flow with list selection
-- `example:todo`: list management, keyboard shortcuts, and confirmation modal
-- `example:explorer`: async filesystem loading and preview panes
+`example:showcase` is the single example app. It contains:
 
-`example:monitor` uses native counters and process tables when the host
+- system monitor: live CPU, memory, disk, network, and process panels
+- log viewer: live multi-file stream with text/regex filtering and severity highlighting
+- git dashboard: status, staging, history, and diff preview panes
+- API explorer: request editing, saved collections, response timing, headers, and JSON preview
+- file manager: directory navigation, preview panes, rename, copy, and delete flows
+- composer, form, and todo demos for editing, inputs, lists, modals, and basic state
+
+The system monitor uses native counters and process tables when the host
 provides them, and degrades to safe fallbacks when a command is unavailable.
 
 ## Editing
@@ -229,6 +307,89 @@ developer terms instead of leaving the terminal in a weird state.
 
 If a layout feels off, run an example in watch mode, resize the terminal, and
 toggle the inspector while moving focus with `Tab`.
+
+## Terminal capabilities
+
+graceglyph detects terminal capabilities at startup (truecolor, OSC 8
+hyperlinks, synchronized output, bracketed paste, focus reporting, kitty
+graphics, sixel, iTerm2 inline images, extended underline styles) and
+adapts the render output accordingly. Override or inspect them via
+`detectCapabilities()` and the `useCapabilities()` hook:
+
+```tsx
+import { useCapabilities, Link, render, App } from "graceglyph";
+
+function Footer() {
+  const caps = useCapabilities();
+  return (
+    <App>
+      <Link href="https://graceglyph.dev">Docs</Link>
+      <Text>color: {caps.color}, hyperlinks: {String(caps.hyperlinks)}</Text>
+    </App>
+  );
+}
+```
+
+Force a specific profile with `FORCE_COLOR=truecolor` or disable color
+output with `NO_COLOR=1`. Both follow the conventional environment
+variables.
+
+## Reactive primitives
+
+graceglyph also exposes a fine-grained reactivity API alongside the
+hooks-style runtime. These are the primitives the framework will move
+to as its primary authoring model (see [ADR-0001](./docs/adr/0001-signal-runtime.md)):
+
+```ts
+import {
+  createSignal,
+  createMemo,
+  createEffect,
+  createResource,
+  batch,
+  untrack,
+  createRoot,
+  onCleanup,
+} from "graceglyph";
+
+const dispose = createRoot((dispose) => {
+  const [count, setCount] = createSignal(0);
+  const doubled = createMemo(() => count() * 2);
+
+  createEffect(() => {
+    console.log("count:", count(), "doubled:", doubled());
+  });
+
+  batch(() => {
+    setCount(1);
+    setCount(2); // effect runs once for the batch
+  });
+
+  return dispose;
+});
+```
+
+`createResource` wraps an async fetcher in a signal-shaped object with
+`loading`, `error`, `state`, and `refetch`:
+
+```ts
+const [userId, setUserId] = createSignal(1);
+const user = createResource(userId, (id) => fetch(`/users/${id}`).then((r) => r.json()));
+
+createEffect(() => {
+  if (user.loading()) console.log("loading…");
+  else if (user.error()) console.error(user.error());
+  else console.log(user());
+});
+```
+
+The hooks API (`useState`, `useEffect`, …) remains supported and will
+continue to work through the 0.x line. Mix-and-match is fine.
+
+## Roadmap
+
+The path to v1.0 is tracked in [`ROADMAP.md`](./ROADMAP.md). Architectural
+decisions live under [`docs/adr/`](./docs/adr/).
 
 ## Customizing
 

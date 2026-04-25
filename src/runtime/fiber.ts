@@ -2,6 +2,7 @@ import type { HostNode } from "./host.js";
 import type { ElementType } from "./element.js";
 import type { Theme } from "../theme/theme.js";
 import type { Size } from "../layout/rect.js";
+import type { Capabilities } from "../render/capabilities.js";
 
 export type FiberScheduler = (fiber: Fiber) => void;
 
@@ -20,6 +21,7 @@ export interface FiberEnvironment {
   theme: Theme;
   size: () => Size;
   onResize: (listener: (size: Size) => void) => () => void;
+  capabilities: Capabilities;
 }
 
 export interface Fiber {
@@ -37,6 +39,9 @@ export interface Fiber {
   dirty: boolean;
   /** True once the fiber has produced output at least once. */
   mounted: boolean;
+  /** Devtools metadata for component render inspection. */
+  renderCount: number;
+  lastRenderMs: number;
 }
 
 export function createFiber(
@@ -57,5 +62,7 @@ export function createFiber(
     scheduler: parent?.scheduler ?? (() => {}),
     dirty: true,
     mounted: false,
+    renderCount: 0,
+    lastRenderMs: 0,
   };
 }

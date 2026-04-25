@@ -41,6 +41,8 @@ export class Renderer {
     let styleSet = false;
     let lastPos: { x: number; y: number } | null = null;
 
+    const sync = this.terminal.capabilities?.synchronizedOutput ?? false;
+    if (sync) out.push(AnsiSeq.beginSynchronized);
     out.push(AnsiSeq.hideCursor);
 
     if (this.clearPending) {
@@ -76,6 +78,8 @@ export class Renderer {
       out.push(AnsiSeq.hideCursor);
       this.cursorVisible = false;
     }
+
+    if (sync) out.push(AnsiSeq.endSynchronized);
 
     if (out.length > 0) this.terminal.write(out.join(""));
   }

@@ -28,9 +28,31 @@ export {
   useRef,
   useMemo,
   useCallback,
+  useCapabilities,
   useTerminalSize,
   useTheme,
 } from "./runtime/hooks.js";
+
+// Reactive primitives (signal-based authoring path; see ADR-0001).
+export {
+  batch,
+  createEffect,
+  createMemo,
+  createResource,
+  createRoot,
+  createSignal,
+  onCleanup,
+  untrack,
+} from "./reactive/index.js";
+export type {
+  Accessor,
+  Resource,
+  ResourceFetcherInfo,
+  ResourceOptions,
+  ResourceState,
+  Setter,
+  SignalOptions,
+} from "./reactive/index.js";
 
 // Built-in components
 export {
@@ -38,6 +60,7 @@ export {
   Box,
   Button,
   Column,
+  Link,
   List,
   Modal,
   Panel,
@@ -50,12 +73,53 @@ export {
 } from "./components.js";
 export type {
   ButtonProps,
+  LinkProps,
   ListProps,
   ModalProps,
   PanelProps,
   TextInputProps,
   WindowProps,
 } from "./components.js";
+
+export {
+  AppShell,
+  Breadcrumbs,
+  CommandPalette,
+  Grid,
+  HelpOverlay,
+  Router,
+  Route,
+  ScrollView,
+  SplitPane,
+  Stack,
+  Tabs,
+  ToastViewport,
+  registerCommand,
+  useAsync,
+  useClipboard,
+  useCommand,
+  useCommands,
+  useDebouncedValue,
+  useFocusWithin,
+  useHotkeys,
+  useInterval,
+  useMouse,
+  usePersistentState,
+} from "./app-shell.js";
+export type {
+  AppShellProps,
+  AsyncState,
+  BreadcrumbItem,
+  Command,
+  CommandPaletteProps,
+  HelpOverlayProps,
+  MouseState,
+  RouteProps,
+  RouterProps,
+  TabItem,
+  TabsProps,
+  ToastMessage,
+} from "./app-shell.js";
 
 // Input types (for consumer event handlers)
 export type {
@@ -79,3 +143,38 @@ export * from "./render/style.js";
 export { stringWidth } from "./render/unicode.js";
 export type { Theme } from "./theme/theme.js";
 export { defaultTheme, darkTheme } from "./theme/theme.js";
+export type {
+  Capabilities,
+  CapabilityOverrides,
+  ColorDepth,
+} from "./render/capabilities.js";
+export {
+  detectCapabilities,
+  DUMB_CAPABILITIES,
+  FULL_CAPABILITIES,
+} from "./render/capabilities.js";
+export {
+  parseColor,
+  downgrade,
+  rgbToAnsi16,
+  rgbToAnsi256,
+} from "./render/color.js";
+export type { ColorInput } from "./render/color.js";
+
+export {
+  TestInput,
+  TestOutput,
+  assertNoLayoutWarnings,
+  collectLayoutWarnings,
+  keySequence,
+  mouseSequence,
+  renderTestApp,
+  settle,
+  snapshotTerminalFrame,
+} from "./testing.js";
+export type {
+  KeyboardFlowOptions,
+  MouseFlowEvent,
+  RenderTestAppOptions,
+  TestApp,
+} from "./testing.js";

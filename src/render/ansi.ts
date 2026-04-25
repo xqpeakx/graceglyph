@@ -2,6 +2,8 @@ import { Color, Style } from "./style.js";
 
 const ESC = "\x1b";
 export const CSI = `${ESC}[`;
+const OSC = `${ESC}]`;
+const ST = `${ESC}\\`;
 
 export const AnsiSeq = {
   clearScreen: `${CSI}2J`,
@@ -9,10 +11,25 @@ export const AnsiSeq = {
   showCursor: `${CSI}?25h`,
   enterAltScreen: `${CSI}?1049h`,
   exitAltScreen: `${CSI}?1049l`,
-  enableMouse: `${CSI}?1000h${CSI}?1002h${CSI}?1006h`,
-  disableMouse: `${CSI}?1006l${CSI}?1002l${CSI}?1000l`,
+  enableMouse: `${CSI}?1000h${CSI}?1002h${CSI}?1003h${CSI}?1006h`,
+  disableMouse: `${CSI}?1006l${CSI}?1003l${CSI}?1002l${CSI}?1000l`,
+  enableBracketedPaste: `${CSI}?2004h`,
+  disableBracketedPaste: `${CSI}?2004l`,
+  enableFocusReporting: `${CSI}?1004h`,
+  disableFocusReporting: `${CSI}?1004l`,
+  beginSynchronized: `${CSI}?2026h`,
+  endSynchronized: `${CSI}?2026l`,
   reset: `${CSI}0m`,
 } as const;
+
+/**
+ * Emit an OSC 8 hyperlink wrapper around `text`. Caller is responsible for
+ * checking `caps.hyperlinks` before using.
+ */
+export function hyperlink(url: string, text: string, id?: string): string {
+  const params = id ? `id=${id}` : "";
+  return `${OSC}8;${params};${url}${ST}${text}${OSC}8;;${ST}`;
+}
 
 export function cursorTo(x: number, y: number): string {
   // ANSI uses 1-based coordinates; we convert from our 0-based model.

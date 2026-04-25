@@ -249,6 +249,8 @@ function layoutNode(node: HostNode, container: Rect): void {
 export interface PaintContext {
   buffer: ScreenBuffer;
   focusedFiber: Fiber | null;
+  hoveredFiber?: Fiber | null;
+  activeFiber?: Fiber | null;
 }
 
 export function paintTree(root: HostNode, ctx: PaintContext): void {
@@ -262,7 +264,13 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
   if (layout.width === 0 || layout.height === 0) return;
 
   const focused = ctx.focusedFiber === node.fiber;
-  const fillStyle = applyBoxStyle(applyBoxStyle(DefaultStyle, props.style), focused ? props.focusedStyle : undefined);
+  const hovered = ctx.hoveredFiber === node.fiber;
+  const active = ctx.activeFiber === node.fiber;
+  const fillStyle = stateStyle(applyBoxStyle(DefaultStyle, props.style), props, {
+    focused,
+    hovered,
+    active,
+  });
 
   if (node.type === "text") {
     // Paint background first if given so wide strings with short area align.
@@ -393,6 +401,21 @@ function applyBoxStyle(base: Style, patch: BoxProps["style"]): Style {
     underline: patch.underline ?? base.underline,
     inverse: patch.inverse ?? base.inverse,
   });
+}
+
+function stateStyle(
+  base: Style,
+  props: BoxProps & InputProps & TextAreaProps,
+  state: { focused: boolean; hovered: boolean; active: boolean },
+): Style {
+  let next = base;
+  if (state.hovered) next = applyBoxStyle(next, props.hoveredStyle);
+  if (state.focused) next = applyBoxStyle(next, props.focusedStyle);
+  if (state.active) next = applyBoxStyle(next, props.activeStyle);
+  if (props.loading) next = applyBoxStyle(next, props.loadingStyle);
+  if (props.error) next = applyBoxStyle(next, props.errorStyle);
+  if (props.disabled) next = applyBoxStyle(next, props.disabledStyle);
+  return next;
 }
 
 function ensureEditableState(node: HostNode, value: string): EditableState {

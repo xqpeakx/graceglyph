@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 
-import { Button, Modal, h, type KeyEvent, useState } from "../src/index.js";
+import { Button, List, Modal, h, type KeyEvent, useState } from "../src/index.js";
 import { AnsiSeq } from "../src/render/ansi.js";
 import { Runtime } from "../src/runtime/runtime.js";
 
@@ -226,6 +226,43 @@ test("runtime integration flows", async (t) => {
 
     assert.deepEqual(clicks, ["left", "right"]);
     assert.equal(harness.runtime.focus.current()?.layout.x, 5);
+  });
+
+  await t.test("mouse clicks focus list ancestors and activate rows", async (t) => {
+    const events: string[] = [];
+
+    function ListHarness() {
+      const [selected, setSelected] = useState(0);
+      return h(List, {
+        items: ["alpha", "beta", "gamma"],
+        selected,
+        onChange: setSelected,
+        onSelect: (_index: number, item: string) => events.push(`open:${item}`),
+        height: 3,
+        render: (item: string) => item,
+      });
+    }
+
+    const harness = createHarness(h(ListHarness, {}), {
+      width: 20,
+      height: 5,
+      devtools: false,
+    });
+    t.after(() => harness.runtime.stop());
+
+    harness.runtime.run();
+    await settleRuntime();
+
+    harness.input.emitData(mousePress(0, 1) + mouseRelease(0, 1));
+    await settleRuntime();
+
+    assert.deepEqual(events, ["open:beta"]);
+    assert.equal(harness.runtime.focus.current()?.layout.height, 3);
+
+    harness.input.emitData("\r");
+    await settleRuntime();
+
+    assert.deepEqual(events, ["open:beta", "open:beta"]);
   });
 
   await t.test("cursor placement follows grapheme-aware viewport math", async (t) => {

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roadmap
+    url: https://github.com/<owner>/graceglyph/blob/main/ROADMAP.md
+    about: Read the v1.0 plan before opening larger feature requests.
+  - name: Security
+    url: https://github.com/<owner>/graceglyph/blob/main/SECURITY.md
+    about: Do not file public issues for security vulnerabilities.

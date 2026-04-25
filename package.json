@@ -5,6 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "create-graceglyph": "./dist/create.js",
+    "graceglyph-create": "./dist/create.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -17,6 +21,10 @@
     "./jsx-dev-runtime": {
       "types": "./dist/jsx-dev-runtime.d.ts",
       "import": "./dist/jsx-dev-runtime.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "files": [
@@ -28,16 +36,34 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",
-    "dev:monitor": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/system-monitor.tsx",
-    "dev:hello": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
-    "dev:todo": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
-    "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
-    "example:monitor": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/system-monitor.tsx",
-    "example:hello": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
-    "example:form": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/form.tsx",
-    "example:todo": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
-    "example:explorer": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
-    "test": "node --test --loader ts-node/esm test/*.test.ts"
+    "dev:showcase": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx",
+    "dev:monitor": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx system-monitor",
+    "dev:logs": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx log-viewer",
+    "dev:git": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx git-dashboard",
+    "dev:api": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx api-explorer",
+    "dev:files": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
+    "dev:hello": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx hello",
+    "dev:form": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx form",
+    "dev:todo": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx todo",
+    "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
+    "example:showcase": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx",
+    "example:monitor": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx system-monitor",
+    "example:logs": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx log-viewer",
+    "example:git": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx git-dashboard",
+    "example:api": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx api-explorer",
+    "example:files": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
+    "example:shell": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx",
+    "example:hello": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx hello",
+    "example:form": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx form",
+    "example:todo": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx todo",
+    "example:explorer": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
+    "test": "node --test --loader ts-node/esm test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "bench": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts"
   },
   "engines": {
     "node": ">=18"
@@ -53,7 +79,10 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "eslint": "^9.10.0",
+    "prettier": "^3.3.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.6.0"
   }
 }

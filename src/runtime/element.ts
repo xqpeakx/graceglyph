@@ -129,6 +129,19 @@ export interface BoxProps {
   style?: BoxStyle;
   /** Style applied on top of `style` when the box is focused. */
   focusedStyle?: BoxStyle;
+  /** Style applied on top of `style` when terminal mouse tracking hovers this box. */
+  hoveredStyle?: BoxStyle;
+  /** Style applied on top of `style` while this box is being pressed. */
+  activeStyle?: BoxStyle;
+  /** Style applied when disabled is true. Disabled hosts are skipped by focus and click dispatch. */
+  disabledStyle?: BoxStyle;
+  /** Style applied when loading is true. */
+  loadingStyle?: BoxStyle;
+  /** Style applied when error is true. */
+  errorStyle?: BoxStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
   /** Border/frame override used when `border` is true. */
   borderStyle?: BoxStyle;
   /** Title override used when `title` is present. */
@@ -169,7 +182,15 @@ export interface InputProps {
   grow?: number;
   style?: BoxStyle;
   focusedStyle?: BoxStyle;
+  hoveredStyle?: BoxStyle;
+  activeStyle?: BoxStyle;
+  disabledStyle?: BoxStyle;
+  loadingStyle?: BoxStyle;
+  errorStyle?: BoxStyle;
   placeholderStyle?: BoxStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
 }
 
 export interface TextAreaProps {
@@ -183,5 +204,13 @@ export interface TextAreaProps {
   grow?: number;
   style?: BoxStyle;
   focusedStyle?: BoxStyle;
+  hoveredStyle?: BoxStyle;
+  activeStyle?: BoxStyle;
+  disabledStyle?: BoxStyle;
+  loadingStyle?: BoxStyle;
+  errorStyle?: BoxStyle;
   placeholderStyle?: BoxStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
 }

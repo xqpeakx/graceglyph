@@ -75,7 +75,8 @@ export class FocusManager {
 }
 
 function walk(node: HostNode, out: HostNode[]): void {
-  const focusable = node.type === "input" || node.type === "textarea" || node.props.focusable === true;
+  const disabled = node.props.disabled === true;
+  const focusable = !disabled && (node.type === "input" || node.type === "textarea" || node.props.focusable === true);
   if (focusable) out.push(node);
   for (const c of node.children) walk(c, out);
 }

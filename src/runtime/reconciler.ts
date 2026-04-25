@@ -26,6 +26,7 @@ function isHostType(t: unknown): t is HostType {
  * starting from them; we re-run from the root for simplicity and correctness).
  */
 export function reconcile(fiber: Fiber): void {
+  const started = now();
   fiber.dirty = false;
 
   if (isHostType(fiber.type)) {
@@ -53,6 +54,8 @@ export function reconcile(fiber: Fiber): void {
   }
 
   fiber.mounted = true;
+  fiber.renderCount += 1;
+  fiber.lastRenderMs = Math.max(0, now() - started);
 }
 
 function reconcileChildren(
@@ -126,6 +129,10 @@ export function unmount(fiber: Fiber): void {
 function clearChildren(fiber: Fiber): void {
   for (const child of fiber.children) unmount(child);
   fiber.children = [];
+}
+
+function now(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
 // -- Host tree construction ---------------------------------------------------

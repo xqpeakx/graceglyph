@@ -1,15 +1,19 @@
 /** @jsx h */
 
-import { promises as fs } from "node:fs";
+import { constants as fsConstants, promises as fs } from "node:fs";
 import * as path from "node:path";
 import {
   App,
+  Button,
   Column,
   List,
+  Modal,
   Row,
   Text,
+  TextInput,
   Window,
   h,
+  useCommand,
   useEffect,
   useState,
   useTerminalSize,
@@ -23,16 +27,28 @@ interface Entry {
   size: number;
 }
 
-export function ExplorerApp() {
+type FileAction = "rename" | "copy" | "delete";
+type FileSortMode = "name" | "type" | "size";
+
+export interface ExplorerAppProps {
+  initialCwd?: string;
+}
+
+export function ExplorerApp(props: ExplorerAppProps = {}) {
   const size = useTerminalSize();
   const stacked = size.width < 76;
-  const [cwd, setCwd] = useState(process.cwd());
+  const compact = stacked && size.height < 23;
+  const [cwd, setCwd] = useState(props.initialCwd ?? process.cwd());
   const [refreshToken, setRefreshToken] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selected, setSelected] = useState(0);
   const [previewLines, setPreviewLines] = useState<string[]>(["Loading..."]);
   const [previewSelected, setPreviewSelected] = useState(0);
   const [status, setStatus] = useState("Loading directory...");
+  const [action, setAction] = useState<FileAction | null>(null);
+  const [actionValue, setActionValue] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
+  const [sortMode, setSortMode] = useState<FileSortMode>("name");
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +63,7 @@ export function ExplorerApp() {
         }
 
         for (const name of names) {
-          if (name.startsWith(".")) continue;
+          if (!showHidden && name.startsWith(".")) continue;
           try {
             const stats = await fs.stat(path.join(cwd, name));
             loaded.push({ name, isDir: stats.isDirectory(), size: stats.size });
@@ -56,12 +72,7 @@ export function ExplorerApp() {
           }
         }
 
-        loaded.sort((left, right) => {
-          if (left.name === "..") return -1;
-          if (right.name === "..") return 1;
-          if (left.isDir !== right.isDir) return left.isDir ? -1 : 1;
-          return left.name.localeCompare(right.name);
-        });
+        loaded.sort((left, right) => compareEntries(left, right, sortMode));
 
         if (cancelled) return;
         setEntries(loaded);
@@ -78,7 +89,7 @@ export function ExplorerApp() {
     return () => {
       cancelled = true;
     };
-  }, [cwd, refreshToken]);
+  }, [cwd, refreshToken, showHidden, sortMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +168,29 @@ export function ExplorerApp() {
       setRefreshToken((value) => value + 1);
       return true;
     }
+    if (event.name !== "char" || !event.char) return false;
+
+    const key = event.char.toLowerCase();
+    if (key === "r") {
+      openAction("rename");
+      return true;
+    }
+    if (key === "y") {
+      openAction("copy");
+      return true;
+    }
+    if (key === "d") {
+      openAction("delete");
+      return true;
+    }
+    if (key === ".") {
+      setShowHidden((value) => !value);
+      return true;
+    }
+    if (key === "s") {
+      setSortMode((value) => nextSortMode(value));
+      return true;
+    }
     return false;
   }
 
@@ -166,20 +200,135 @@ export function ExplorerApp() {
     setCwd(path.resolve(cwd, entry.name));
   }
 
-  const listHeight = stacked
-    ? Math.max(3, Math.min(7, Math.floor((size.height - 14) / 2)))
+  function activeEntry(): Entry | null {
+    const entry = entries[selected] ?? null;
+    if (!entry || entry.name === "..") return null;
+    return entry;
+  }
+
+  function openAction(next: FileAction): void {
+    const entry = activeEntry();
+    if (!entry) {
+      setStatus("Select a file or directory first.");
+      return;
+    }
+    setAction(next);
+    setActionValue(next === "copy" ? copyName(entry.name) : entry.name);
+  }
+
+  async function performAction(): Promise<void> {
+    const entry = activeEntry();
+    if (!entry || !action) return;
+
+    const source = path.resolve(cwd, entry.name);
+    try {
+      if (action === "delete") {
+        await fs.rm(source, { recursive: true, force: false });
+        setStatus(`Deleted ${entry.name}`);
+      } else {
+        const target = resolveTarget(cwd, actionValue);
+        if (action === "rename") {
+          await fs.rename(source, target);
+          setStatus(`Renamed ${entry.name} to ${path.basename(target)}`);
+        } else {
+          await copyEntry(source, target);
+          setStatus(`Copied ${entry.name} to ${path.basename(target)}`);
+        }
+      }
+      setAction(null);
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setStatus(`${action} failed: ${messageOf(error)}`);
+    }
+  }
+
+  useCommand({
+    id: "file-manager.parent",
+    title: "Go to parent directory",
+    group: "File manager",
+    keys: ["backspace"],
+    run: () => {
+      const parent = path.dirname(cwd);
+      if (parent !== cwd) setCwd(parent);
+    },
+  }, [cwd]);
+  useCommand({
+    id: "file-manager.reload",
+    title: "Reload directory",
+    group: "File manager",
+    keys: ["f5"],
+    run: () => setRefreshToken((value) => value + 1),
+  }, []);
+  useCommand({
+    id: "file-manager.rename",
+    title: "Rename selected entry",
+    group: "File manager",
+    keys: ["r"],
+    run: () => openAction("rename"),
+  }, [entries, selected]);
+  useCommand({
+    id: "file-manager.copy",
+    title: "Copy selected entry",
+    group: "File manager",
+    keys: ["y"],
+    run: () => openAction("copy"),
+  }, [entries, selected]);
+  useCommand({
+    id: "file-manager.delete",
+    title: "Delete selected entry",
+    group: "File manager",
+    keys: ["d"],
+    run: () => openAction("delete"),
+  }, [entries, selected]);
+  useCommand({
+    id: "file-manager.hidden",
+    title: showHidden ? "Hide dotfiles" : "Show dotfiles",
+    group: "File manager",
+    keys: ["."],
+    run: () => setShowHidden((value) => !value),
+  }, [showHidden]);
+  useCommand({
+    id: "file-manager.sort",
+    title: "Cycle file sort",
+    group: "File manager",
+    keys: ["s"],
+    run: () => setSortMode((value) => nextSortMode(value)),
+  }, []);
+
+  const listHeight = compact
+    ? Math.max(4, Math.min(8, size.height - 10))
+    : stacked
+      ? Math.max(3, Math.min(7, Math.floor((size.height - 14) / 2)))
     : Math.max(6, Math.min(14, size.height - 12));
 
   return (
     <App>
-      <Window title="Explorer" grow={1} onKey={onWindowKey}>
-        <Column gap={1} grow={1}>
+      <Window title="Explorer" grow={1} padding={compact ? 0 : 1} onKey={onWindowKey}>
+        <Column gap={compact ? 0 : 1} grow={1}>
           <Text>{cwd}</Text>
           <Text style={{ dim: true }}>
-            {entries.length} entries · {status} · Backspace: up · F5: reload · F12: inspector
+            {entries.length} entries · {status} · sort {sortMode} · {showHidden ? "hidden shown" : "hidden off"} · r/y/d actions
           </Text>
 
           {stacked ? (
+            compact ? (
+              <Column gap={0} grow={1}>
+                <Text>Entries</Text>
+                <List
+                  items={entries}
+                  selected={selected}
+                  onChange={setSelected}
+                  onSelect={openEntry}
+                  height={listHeight}
+                  render={(entry) => (
+                    entry.isDir
+                      ? `${entry.name}/`
+                      : `${entry.name} · ${formatSize(entry.size)}`
+                  )}
+                />
+                <Text style={{ dim: true }}>{previewLines[0] ?? "(no preview)"}</Text>
+              </Column>
+            ) : (
             <Column gap={1} grow={1}>
               <Text>Entries</Text>
               <List
@@ -204,6 +353,7 @@ export function ExplorerApp() {
                 render={(line) => line}
               />
             </Column>
+            )
           ) : (
             <Row gap={2} grow={1}>
               <Column width={38} gap={1}>
@@ -234,6 +384,46 @@ export function ExplorerApp() {
               </Column>
             </Row>
           )}
+
+          {!compact && (
+            <Row gap={1}>
+              <Button onClick={() => openAction("rename")}>Rename</Button>
+              <Button onClick={() => openAction("copy")}>Copy</Button>
+              <Button onClick={() => openAction("delete")}>Delete</Button>
+              <Button onClick={() => setRefreshToken((value) => value + 1)}>Reload</Button>
+              <Button onClick={() => setShowHidden((value) => !value)}>
+                {showHidden ? "Hide dotfiles" : "Show dotfiles"}
+              </Button>
+              <Button onClick={() => setSortMode((value) => nextSortMode(value))}>
+                Sort {sortMode}
+              </Button>
+            </Row>
+          )}
+
+          {action && (
+            <Modal
+              title={actionTitle(action)}
+              width={46}
+              height={action === "delete" ? 7 : 8}
+              onDismiss={() => setAction(null)}
+            >
+              <Column gap={1}>
+                <Text>{actionPrompt(action, activeEntry()?.name ?? "")}</Text>
+                {action !== "delete" && (
+                  <TextInput
+                    value={actionValue}
+                    onChange={setActionValue}
+                    onSubmit={() => void performAction()}
+                    placeholder="target name"
+                  />
+                )}
+                <Row gap={1}>
+                  <Button onClick={() => setAction(null)}>Cancel</Button>
+                  <Button onClick={() => void performAction()}>{actionButton(action)}</Button>
+                </Row>
+              </Column>
+            </Modal>
+          )}
         </Column>
       </Window>
     </App>
@@ -254,12 +444,75 @@ function formatSize(size: number): string {
   return `${(size / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
+function compareEntries(left: Entry, right: Entry, sortMode: FileSortMode): number {
+  if (left.name === "..") return -1;
+  if (right.name === "..") return 1;
+
+  if (sortMode === "type" && left.isDir !== right.isDir) {
+    return left.isDir ? -1 : 1;
+  }
+  if (sortMode === "size" && left.size !== right.size) {
+    return right.size - left.size;
+  }
+  return left.name.localeCompare(right.name);
+}
+
+function nextSortMode(mode: FileSortMode): FileSortMode {
+  if (mode === "name") return "type";
+  if (mode === "type") return "size";
+  return "name";
+}
+
 function isBinary(buffer: Buffer): boolean {
   const limit = Math.min(buffer.length, 4096);
   for (let index = 0; index < limit; index++) {
     if (buffer[index] === 0) return true;
   }
   return false;
+}
+
+function copyName(name: string): string {
+  const extension = path.extname(name);
+  const stem = extension ? name.slice(0, -extension.length) : name;
+  return extension ? `${stem}.copy${extension}` : `${name}.copy`;
+}
+
+function actionTitle(action: FileAction): string {
+  if (action === "rename") return "Rename entry";
+  if (action === "copy") return "Copy entry";
+  return "Delete entry";
+}
+
+function actionPrompt(action: FileAction, name: string): string {
+  if (action === "rename") return `Rename ${name}`;
+  if (action === "copy") return `Copy ${name}`;
+  return `Delete ${name}? This cannot be undone.`;
+}
+
+function actionButton(action: FileAction): string {
+  if (action === "rename") return "Rename";
+  if (action === "copy") return "Copy";
+  return "Delete";
+}
+
+function resolveTarget(cwd: string, value: string): string {
+  const targetName = value.trim();
+  if (targetName.length === 0) throw new Error("target name is required");
+  const target = path.resolve(cwd, targetName);
+  const root = path.resolve(cwd);
+  if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
+    throw new Error("target must stay in the current directory");
+  }
+  return target;
+}
+
+async function copyEntry(source: string, target: string): Promise<void> {
+  const stats = await fs.stat(source);
+  if (stats.isDirectory()) {
+    await fs.cp(source, target, { recursive: true, errorOnExist: true, force: false });
+    return;
+  }
+  await fs.copyFile(source, target, fsConstants.COPYFILE_EXCL);
 }
 
 function messageOf(error: unknown): string {

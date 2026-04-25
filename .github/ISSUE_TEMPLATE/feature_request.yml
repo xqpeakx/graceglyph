@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a new component, primitive, or capability
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it awkward today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: API sketch is welcome. Don't worry about getting it perfect.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: input
+    id: roadmap
+    attributes:
+      label: Related roadmap section
+      placeholder: e.g. §6 Component library

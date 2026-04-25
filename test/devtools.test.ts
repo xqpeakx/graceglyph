@@ -24,10 +24,13 @@ test("inspector includes focused node and layout details", () => {
 
   layoutTree(host, new Rect(0, 0, 40, 10));
   const focused = host.children[1] ?? null;
-  const lines = inspectTree(host, focused);
+  const lines = inspectTree(host, focused, ["key char:s", "mouse left press @1,2"]);
   const output = lines.join("\n");
 
   assert.match(output, /Inspector/);
   assert.match(output, /title="Root"/);
-  assert.match(output, /> input @1,2 38x1 value="draft"/);
+  assert.match(output, /focus path: box > input/);
+  assert.match(output, /events:/);
+  assert.match(output, /key char:s/);
+  assert.match(output, /> input @1,2 38x1 value="draft".*renders=1/);
 });

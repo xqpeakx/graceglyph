@@ -1,0 +1,4 @@
+dist/
+node_modules/
+coverage/
+src/render/unicode-width.generated.ts

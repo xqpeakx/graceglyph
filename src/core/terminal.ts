@@ -1,11 +1,21 @@
 import { AnsiSeq } from "../render/ansi.js";
 import { Size } from "../layout/rect.js";
+import {
+  detectCapabilities,
+  type Capabilities,
+  type CapabilityOverrides,
+} from "../render/capabilities.js";
 
 export interface TerminalOptions {
   input?: NodeJS.ReadStream;
   output?: NodeJS.WriteStream;
   useAltScreen?: boolean;
   mouse?: boolean;
+  /**
+   * Override or supply terminal capabilities. When omitted they are
+   * detected from the environment.
+   */
+  capabilities?: Capabilities | CapabilityOverrides;
 }
 
 /**
@@ -16,6 +26,7 @@ export interface TerminalOptions {
 export class Terminal {
   readonly input: NodeJS.ReadStream;
   readonly output: NodeJS.WriteStream;
+  readonly capabilities: Capabilities;
   private readonly useAltScreen: boolean;
   private readonly mouse: boolean;
   private started = false;
@@ -27,6 +38,7 @@ export class Terminal {
     this.output = opts.output ?? process.stdout;
     this.useAltScreen = opts.useAltScreen ?? true;
     this.mouse = opts.mouse ?? true;
+    this.capabilities = resolveCapabilities(this.output, opts.capabilities);
   }
 
   size(): Size {
@@ -46,6 +58,12 @@ export class Terminal {
     if (this.useAltScreen) this.output.write(AnsiSeq.enterAltScreen);
     this.output.write(AnsiSeq.hideCursor);
     if (this.mouse) this.output.write(AnsiSeq.enableMouse);
+    if (this.capabilities.bracketedPaste) {
+      this.output.write(AnsiSeq.enableBracketedPaste);
+    }
+    if (this.capabilities.focusReporting) {
+      this.output.write(AnsiSeq.enableFocusReporting);
+    }
     this.output.write(AnsiSeq.clearScreen);
 
     this.resizeHandler = () => {
@@ -61,6 +79,12 @@ export class Terminal {
     if (this.resizeHandler) {
       this.output.off("resize", this.resizeHandler);
       this.resizeHandler = undefined;
+    }
+    if (this.capabilities.focusReporting) {
+      this.output.write(AnsiSeq.disableFocusReporting);
+    }
+    if (this.capabilities.bracketedPaste) {
+      this.output.write(AnsiSeq.disableBracketedPaste);
     }
     if (this.mouse) this.output.write(AnsiSeq.disableMouse);
     this.output.write(AnsiSeq.showCursor);
@@ -80,4 +104,18 @@ export class Terminal {
     this.resizeListeners.add(listener);
     return () => this.resizeListeners.delete(listener);
   }
+}
+
+function resolveCapabilities(
+  output: NodeJS.WriteStream,
+  override: TerminalOptions["capabilities"],
+): Capabilities {
+  if (override && "color" in override && "isTTY" in override) {
+    // Fully-formed Capabilities object — use as-is.
+    return override as Capabilities;
+  }
+  return detectCapabilities({
+    output,
+    overrides: (override as CapabilityOverrides | undefined) ?? undefined,
+  });
 }

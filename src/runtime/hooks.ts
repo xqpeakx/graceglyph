@@ -2,6 +2,7 @@ import type { Fiber, FiberEnvironment, Hook } from "./fiber.js";
 import { attachFiberToError, formatComponentStack } from "./diagnostics.js";
 import type { Theme } from "../theme/theme.js";
 import type { Size } from "../layout/rect.js";
+import type { Capabilities } from "../render/capabilities.js";
 
 let currentFiber: Fiber | null = null;
 let hookIndex = 0;
@@ -87,6 +88,10 @@ export function useCallback<T extends (...args: any[]) => any>(fn: T, deps: unkn
 
 export function useTheme(): Theme {
   return getEnvironment().theme;
+}
+
+export function useCapabilities(): Capabilities {
+  return getEnvironment().capabilities;
 }
 
 export function useTerminalSize(): Size {

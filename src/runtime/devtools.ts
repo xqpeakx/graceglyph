@@ -58,6 +58,7 @@ const treeStyle: Style = {
 export function inspectTree(
   root: HostNode,
   focused: HostNode | null,
+  events: readonly string[] = [],
   maxLines = Number.MAX_SAFE_INTEGER,
 ): string[] {
   const lines: string[] = [];
@@ -66,8 +67,13 @@ export function inspectTree(
   lines.push("F12 toggle");
   if (focused) lines.push(`focus: ${describeNode(focused)}`);
   else lines.push("focus: (none)");
+  if (focused) lines.push(`focus path: ${focusPath(focused)}`);
   lines.push(`warnings: ${warnings.length}`);
   for (const warning of warnings) lines.push(`! ${warning}`);
+  if (events.length > 0) {
+    lines.push("events:");
+    for (const event of events.slice(-5)) lines.push(`  ${event}`);
+  }
   lines.push("");
   collectTree(root, focused, 0, lines, maxLines);
   return lines.slice(0, maxLines);
@@ -77,6 +83,7 @@ export function paintInspector(
   buffer: ScreenBuffer,
   root: HostNode,
   focused: HostNode | null,
+  events: readonly string[] = [],
 ): void {
   if (buffer.width < 28 || buffer.height < 8) return;
 
@@ -86,7 +93,7 @@ export function paintInspector(
   drawFrame(buffer, area);
 
   const content = area.inset(1);
-  const lines = buildLines(root, focused, content.height);
+  const lines = buildLines(root, focused, events, content.height);
   for (let i = 0; i < lines.length && i < content.height; i++) {
     buffer.writeText(
       content.x,
@@ -101,14 +108,18 @@ export function paintInspector(
 function buildLines(
   root: HostNode,
   focused: HostNode | null,
+  events: readonly string[],
   height: number,
 ): InspectorLine[] {
-  const raw = inspectTree(root, focused, Math.max(0, height));
+  const raw = inspectTree(root, focused, events, Math.max(0, height));
   return raw.map((text, index) => {
     if (index === 0) return { text, style: headerStyle };
     if (index === 1) return { text, style: hintStyle };
     if (text.startsWith("focus:")) return { text, style: detailStyle };
+    if (text.startsWith("focus path:")) return { text, style: detailStyle };
     if (text.startsWith("warnings:")) return { text, style: detailStyle };
+    if (text.startsWith("events:")) return { text, style: detailStyle };
+    if (text.startsWith("  ")) return { text, style: hintStyle };
     if (text.startsWith("!")) return { text, style: warningStyle };
     if (text.length === 0) return { text, style: panelStyle };
     if (text.startsWith(">")) return { text, style: focusStyle };
@@ -148,7 +159,21 @@ function describeNode(node: HostNode): string {
     parts.push(`value=${quote(preview(String(props.value ?? "")))}`);
   }
 
+  const fiber = node.fiber;
+  if (fiber.renderCount > 0) {
+    parts.push(`renders=${fiber.renderCount}`);
+    if (fiber.lastRenderMs >= 8) parts.push(`slow=${fiber.lastRenderMs.toFixed(1)}ms`);
+  }
+
   return parts.join(" ");
+}
+
+function focusPath(node: HostNode): string {
+  const names: string[] = [];
+  for (let current: HostNode | null = node; current; current = current.parent) {
+    names.push(current.type);
+  }
+  return names.reverse().join(" > ");
 }
 
 function drawFrame(buffer: ScreenBuffer, area: Rect): void {

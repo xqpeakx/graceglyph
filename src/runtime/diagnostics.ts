@@ -133,6 +133,9 @@ function validateBoxProps(fiber: Fiber, props: DiagnosticProps): void {
   validateOptionalBoolean(fiber, "border", props.border);
   validateOptionalBoolean(fiber, "focusable", props.focusable);
   validateOptionalBoolean(fiber, "overlay", props.overlay);
+  validateOptionalBoolean(fiber, "disabled", props.disabled);
+  validateOptionalBoolean(fiber, "loading", props.loading);
+  validateOptionalBoolean(fiber, "error", props.error);
   validateOptionalEnum(fiber, "focusScope", props.focusScope, ["contain"]);
   validateOptionalString(fiber, "title", props.title);
   validateOptionalFunction(fiber, "onKey", props.onKey);
@@ -143,6 +146,11 @@ function validateBoxProps(fiber: Fiber, props: DiagnosticProps): void {
   validateOptionalPadding(fiber, props.padding);
   validateOptionalStyle(fiber, props.style);
   validateOptionalStyle(fiber, props.focusedStyle);
+  validateOptionalStyle(fiber, props.hoveredStyle);
+  validateOptionalStyle(fiber, props.activeStyle);
+  validateOptionalStyle(fiber, props.disabledStyle);
+  validateOptionalStyle(fiber, props.loadingStyle);
+  validateOptionalStyle(fiber, props.errorStyle);
   validateOptionalStyle(fiber, props.borderStyle);
   validateOptionalStyle(fiber, props.titleStyle);
   if (props.title !== undefined && props.border !== true) {
@@ -164,8 +172,16 @@ function validateInputProps(fiber: Fiber, props: DiagnosticProps): void {
   validateOptionalFunction(fiber, "onBlur", props.onBlur);
   validateOptionalInteger(fiber, "width", props.width);
   validateOptionalNumber(fiber, "grow", props.grow);
+  validateOptionalBoolean(fiber, "disabled", props.disabled);
+  validateOptionalBoolean(fiber, "loading", props.loading);
+  validateOptionalBoolean(fiber, "error", props.error);
   validateOptionalStyle(fiber, props.style);
   validateOptionalStyle(fiber, props.focusedStyle);
+  validateOptionalStyle(fiber, props.hoveredStyle);
+  validateOptionalStyle(fiber, props.activeStyle);
+  validateOptionalStyle(fiber, props.disabledStyle);
+  validateOptionalStyle(fiber, props.loadingStyle);
+  validateOptionalStyle(fiber, props.errorStyle);
   validateOptionalStyle(fiber, props.placeholderStyle);
   if (props.children !== undefined) {
     throw invalidPropError(fiber, "children", "undefined", props.children);
@@ -181,8 +197,16 @@ function validateTextAreaProps(fiber: Fiber, props: DiagnosticProps): void {
   validateOptionalInteger(fiber, "width", props.width);
   validateOptionalInteger(fiber, "height", props.height);
   validateOptionalNumber(fiber, "grow", props.grow);
+  validateOptionalBoolean(fiber, "disabled", props.disabled);
+  validateOptionalBoolean(fiber, "loading", props.loading);
+  validateOptionalBoolean(fiber, "error", props.error);
   validateOptionalStyle(fiber, props.style);
   validateOptionalStyle(fiber, props.focusedStyle);
+  validateOptionalStyle(fiber, props.hoveredStyle);
+  validateOptionalStyle(fiber, props.activeStyle);
+  validateOptionalStyle(fiber, props.disabledStyle);
+  validateOptionalStyle(fiber, props.loadingStyle);
+  validateOptionalStyle(fiber, props.errorStyle);
   validateOptionalStyle(fiber, props.placeholderStyle);
   if (props.children !== undefined) {
     throw invalidPropError(fiber, "children", "undefined", props.children);

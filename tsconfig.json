@@ -22,15 +22,5 @@
     "jsxFragmentFactory": "Fragment"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "examples",
-    "test",
-    "src/widgets",
-    "src/core/application.ts",
-    "src/core/events.ts",
-    "src/input/focus.ts",
-    "src/theme"
-  ]
+  "exclude": ["node_modules", "dist", "examples", "test", "bench"]
 }
