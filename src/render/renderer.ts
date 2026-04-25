@@ -12,6 +12,7 @@ export class Renderer {
   private back: ScreenBuffer;
   private cursorVisible = false;
   private cursorPos: { x: number; y: number } | null = null;
+  private clearPending = false;
 
   constructor(private readonly terminal: Terminal) {
     const { width, height } = terminal.size();
@@ -22,6 +23,7 @@ export class Renderer {
   resize(width: number, height: number): void {
     this.front.resize(width, height);
     this.back.resize(width, height);
+    this.clearPending = true;
   }
 
   beginFrame(): ScreenBuffer {
@@ -40,6 +42,14 @@ export class Renderer {
     let lastPos: { x: number; y: number } | null = null;
 
     out.push(AnsiSeq.hideCursor);
+
+    if (this.clearPending) {
+      out.push(AnsiSeq.reset);
+      out.push(AnsiSeq.clearScreen);
+      out.push(cursorTo(0, 0));
+      lastPos = { x: 0, y: 0 };
+      this.clearPending = false;
+    }
 
     for (const { x, y, cell } of this.back.diff(this.front)) {
       if (cell.width === 0) continue; // trailing half of wide cell
@@ -73,5 +83,6 @@ export class Renderer {
   /** Force a full repaint on next flush (e.g. after resize or alt-screen toggle). */
   invalidate(): void {
     this.front.clear();
+    this.clearPending = true;
   }
 }
