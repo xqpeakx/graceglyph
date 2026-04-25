@@ -21,7 +21,6 @@
   },
   "files": [
     "dist",
-    "src",
     "README.md",
     "LICENSE"
   ],
@@ -29,9 +28,11 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",
+    "dev:monitor": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/system-monitor.tsx",
     "dev:hello": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
     "dev:todo": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",
     "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/explorer.tsx",
+    "example:monitor": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/system-monitor.tsx",
     "example:hello": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/hello.tsx",
     "example:form": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/form.tsx",
     "example:todo": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/todo.tsx",

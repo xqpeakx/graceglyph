@@ -5,6 +5,14 @@ components, row/column layout, typed props and events, and a built-in
 inspector so building terminal UI feels closer to building a modern app than
 fighting manual coordinates.
 
+Supported package entrypoints are:
+
+- `graceglyph`
+- `graceglyph/jsx-runtime`
+- `graceglyph/jsx-dev-runtime`
+
+Deep imports into internal source files are not part of the supported API.
+
 ## Status
 
 Early, but actively hardened. Current focus:
@@ -21,11 +29,11 @@ Early, but actively hardened. Current focus:
 
 ```bash
 npm install
-npm run example:hello
+npm run example:monitor
 ```
 
-`example:hello` is the flagship demo. It exercises list navigation,
-single-line input, multiline editing, live preview, and modal presentation in
+`example:monitor` is the flagship demo. It exercises live updates, multi-panel
+layout, keyboard navigation, sorting, filtering, and dense data rendering in
 one screen.
 
 Useful keys on first run:
@@ -96,6 +104,7 @@ For automatic JSX without `h(...)` boilerplate, use:
 Run the bundled examples:
 
 ```bash
+npm run example:monitor
 npm run example:hello
 npm run example:form
 npm run example:todo
@@ -105,6 +114,7 @@ npm run example:explorer
 Use watch mode while iterating:
 
 ```bash
+npm run dev:monitor
 npm run dev:hello
 npm run dev:todo
 npm run dev:explorer
@@ -117,10 +127,10 @@ npm run dev:explorer
 If you want to validate whether graceglyph feels pleasant fast, this is the
 short path:
 
-1. Run `npm run dev:hello`.
-2. Change the window title in `examples/hello.tsx`.
-3. Edit the default subject/body strings.
-4. Replace one button action with your own state update.
+1. Run `npm run dev:monitor`.
+2. Change one metric panel title or accent in `examples/system-monitor.tsx`.
+3. Edit the default refresh cadence or key hints.
+4. Filter the process list and change the sort shortcuts.
 5. Resize the terminal and toggle `F12` to inspect the tree and warnings.
 
 If that loop feels awkward, the framework still needs work.
@@ -145,10 +155,14 @@ Everything composes down to four host primitives: `box`, `text`, `input`, and `t
 
 ## Examples
 
-- `example:hello`: flagship composer flow with templates, textarea editing, preview, and modal UX
+- `example:monitor`: flagship system monitor with live CPU, memory, disk, network, and process panels
+- `example:hello`: composer flow with templates, textarea editing, preview, and modal UX
 - `example:form`: smallest useful controlled-form flow with list selection
 - `example:todo`: list management, keyboard shortcuts, and confirmation modal
 - `example:explorer`: async filesystem loading and preview panes
+
+`example:monitor` uses native counters and process tables when the host
+provides them, and degrades to safe fallbacks when a command is unavailable.
 
 ## Editing
 
