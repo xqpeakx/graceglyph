@@ -1,4 +1,6 @@
-- graceglyph
+╔═╗┬─┐┌─┐┌─┐┌─┐╔═╗┬ ┬ ┬┌─┐┬ ┬
+║ ╦├┬┘├─┤│  ├┤ ║ ╦│ └┬┘├─┘├─┤
+╚═╝┴└─┴ ┴└─┘└─┘╚═╝┴─┘┴ ┴  ┴ ┴
 
 Graceglyph is a TUI framework for Node and TypeScript. It uses declarative
 components, row/column layout, typed props and events, and a built-in
