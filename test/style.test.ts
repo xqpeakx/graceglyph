@@ -80,7 +80,7 @@ test("style.merge uses last-write-wins semantics", () => {
 
 test("built-in themes expose the roadmap theme set and token namespaces", () => {
   assert.deepEqual(Object.keys(builtInThemes).sort(), [...themeNames].sort());
-  assert.equal(themeNames.length, 8);
+  assert.equal(themeNames.length, 9);
 
   for (const name of themeNames) {
     const theme = getTheme(name);

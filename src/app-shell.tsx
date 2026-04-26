@@ -44,11 +44,57 @@ export interface RouterProps {
 
 export function Router(props: RouterProps): ZenElement {
   const routes = normalizeChildren(props.children).filter(isElement);
-  const route = routes.find(
-    (child) => child.type === Route && (child.props as unknown as RouteProps).path === props.path,
-  );
-  if (!route) return h(Fragment, {}, props.fallback ?? null);
-  return h(Fragment, {}, (route.props as unknown as RouteProps).children);
+  const path = normalizePath(props.path);
+  for (const route of routes) {
+    const match = matchRoute(route, path, "");
+    if (match !== null) return h("box", { direction: "column" } as BoxProps, match);
+  }
+  return h(Fragment, {}, props.fallback ?? null);
+}
+
+function matchRoute(
+  route: ZenElement,
+  path: string,
+  basePath: string,
+): Array<ZenElement | string> | null {
+  if (route.type !== Route) return null;
+
+  const props = route.props as unknown as RouteProps;
+  const routePath = joinRoutePath(basePath, props.path);
+  if (!isPathMatchOrPrefix(path, routePath)) return null;
+
+  const children = normalizeChildren(props.children);
+  const nestedRoutes = children.filter((child) => isElement(child) && child.type === Route);
+  const shellChildren = children.filter((child) => !(isElement(child) && child.type === Route));
+
+  for (const child of nestedRoutes) {
+    const nested = matchRoute(child as ZenElement, path, routePath);
+    if (nested !== null) return [...shellChildren, ...nested];
+  }
+
+  if (path === routePath) {
+    return shellChildren.length > 0 ? shellChildren : normalizeChildren(props.children);
+  }
+
+  return null;
+}
+
+function joinRoutePath(basePath: string, routePath: string): string {
+  if (routePath.startsWith("/")) return normalizePath(routePath);
+  if (routePath.length === 0 || routePath === ".") return normalizePath(basePath || "/");
+  return normalizePath(`${basePath}/${routePath}`);
+}
+
+function normalizePath(path: string): string {
+  const withSlash = path.startsWith("/") ? path : `/${path}`;
+  const collapsed = withSlash.replace(/\/+/g, "/");
+  return collapsed.length > 1 ? collapsed.replace(/\/$/, "") : collapsed;
+}
+
+function isPathMatchOrPrefix(path: string, prefix: string): boolean {
+  if (path === prefix) return true;
+  if (prefix === "/") return path.startsWith("/");
+  return path.startsWith(`${prefix}/`);
 }
 
 export interface TabItem {
@@ -109,8 +155,23 @@ export interface Command {
   id: string;
   title: string;
   group?: string;
+  scope?: string;
   keys?: readonly string[];
   run: () => void;
+}
+
+export interface CommandRegistrationOptions {
+  scope?: string;
+}
+
+export interface HotkeyOptions {
+  /** Max delay between strokes in a chord. Defaults to 1000ms. */
+  timeoutMs?: number;
+}
+
+interface HotkeyBuffer {
+  keys: string[];
+  lastAt: number;
 }
 
 type CommandListener = () => void;
@@ -118,22 +179,32 @@ type CommandListener = () => void;
 const commandRegistry = new Map<string, Command>();
 const commandListeners = new Set<CommandListener>();
 
-export function registerCommand(command: Command): () => void {
-  commandRegistry.set(command.id, command);
+export function registerCommand(
+  command: Command,
+  options: CommandRegistrationOptions = {},
+): () => void {
+  const registered = options.scope
+    ? { ...command, scope: command.scope ?? options.scope }
+    : command;
+  commandRegistry.set(registered.id, registered);
   emitCommandChange();
   return () => {
-    if (commandRegistry.get(command.id) === command) {
-      commandRegistry.delete(command.id);
+    if (commandRegistry.get(registered.id) === registered) {
+      commandRegistry.delete(registered.id);
       emitCommandChange();
     }
   };
 }
 
-export function useCommand(command: Command, deps: unknown[] = []): void {
-  useEffect(() => registerCommand(command), [command.id, ...deps]);
+export function useCommand(
+  command: Command,
+  deps: unknown[] = [],
+  options: CommandRegistrationOptions = {},
+): void {
+  useEffect(() => registerCommand(command, options), [command.id, options.scope, ...deps]);
 }
 
-export function useCommands(): readonly Command[] {
+export function useCommands(scope?: string | readonly string[]): readonly Command[] {
   const [version, setVersion] = useState(0);
   useEffect(() => {
     const listener = () => setVersion((value) => value + 1);
@@ -142,14 +213,10 @@ export function useCommands(): readonly Command[] {
       commandListeners.delete(listener);
     };
   }, []);
+  const scopes = normalizeScopes(scope);
   return useMemo(
-    () =>
-      Array.from(commandRegistry.values()).sort(
-        (left, right) =>
-          (left.group ?? "").localeCompare(right.group ?? "") ||
-          left.title.localeCompare(right.title),
-      ),
-    [version],
+    () => sortCommands(filterCommandsByScope(commandRegistry.values(), scopes)),
+    [version, scopes.join("\0")],
   );
 }
 
@@ -157,10 +224,11 @@ export interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   commands?: readonly Command[];
+  scope?: string | readonly string[];
 }
 
 export function CommandPalette(props: CommandPaletteProps): ZenElement | null {
-  const registered = useCommands();
+  const registered = useCommands(props.scope);
   const commands = props.commands ?? registered;
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
@@ -213,10 +281,11 @@ export interface HelpOverlayProps {
   open: boolean;
   onClose: () => void;
   commands?: readonly Command[];
+  scope?: string | readonly string[];
 }
 
 export function HelpOverlay(props: HelpOverlayProps): ZenElement | null {
-  const registered = useCommands();
+  const registered = useCommands(props.scope);
   const commands = props.commands ?? registered;
   const [selected, setSelected] = useState(0);
   const lines =
@@ -293,6 +362,7 @@ export interface AppShellProps {
   onNavigate: (path: string) => void;
   breadcrumbs?: readonly BreadcrumbItem[];
   commands?: readonly Command[];
+  commandScope?: string | readonly string[];
   toasts?: readonly ToastMessage[];
   onDismissToast?: (id: string) => void;
   padding?: BoxProps["padding"];
@@ -306,7 +376,7 @@ export interface AppShellProps {
 export function AppShell(props: AppShellProps): ZenElement {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const registered = useCommands();
+  const registered = useCommands(props.commandScope);
   const commands = mergeCommands(registered, props.commands ?? []);
 
   const shellCommands = useMemo<Command[]>(
@@ -336,6 +406,7 @@ export function AppShell(props: AppShellProps): ZenElement {
     ],
     [commands],
   );
+  const runShellHotkey = useHotkeys(shellCommands);
 
   function goBack(): void {
     const crumbs = props.breadcrumbs ?? [];
@@ -347,6 +418,8 @@ export function AppShell(props: AppShellProps): ZenElement {
     <App>
       <Column
         grow={1}
+        focusable
+        accessibilityLabel={props.title}
         onKey={(event) => {
           if (event.name === "escape") {
             goBack();
@@ -360,7 +433,7 @@ export function AppShell(props: AppShellProps): ZenElement {
             setHelpOpen(true);
             return true;
           }
-          return runHotkey(shellCommands, event);
+          return runShellHotkey(event);
         }}
       >
         {props.chrome === false ? (
@@ -384,8 +457,14 @@ export function AppShell(props: AppShellProps): ZenElement {
           open={paletteOpen}
           onClose={() => setPaletteOpen(false)}
           commands={shellCommands}
+          scope={props.commandScope}
         />
-        <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} commands={shellCommands} />
+        <HelpOverlay
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          commands={shellCommands}
+          scope={props.commandScope}
+        />
         <ToastViewport toasts={props.toasts ?? []} onDismiss={props.onDismissToast} />
       </Column>
     </App>
@@ -584,8 +663,16 @@ export function ScrollView(props: {
   );
 }
 
-export function useHotkeys(commands: readonly Command[]): (event: KeyEvent) => boolean | void {
-  return useCallback((event: KeyEvent) => runHotkey(commands, event), [commands]);
+export function useHotkeys(
+  commands: readonly Command[],
+  options: HotkeyOptions = {},
+): (event: KeyEvent) => boolean | void {
+  const chordRef = useRef<HotkeyBuffer>({ keys: [], lastAt: 0 });
+  const timeoutMs = options.timeoutMs ?? 1000;
+  return useCallback(
+    (event: KeyEvent) => runHotkey(commands, event, chordRef.current, timeoutMs),
+    [commands, timeoutMs],
+  );
 }
 
 export function useInterval(callback: () => void, delayMs: number | null): void {
@@ -745,6 +832,25 @@ function mergeCommands(registered: readonly Command[], explicit: readonly Comman
   return Array.from(merged.values());
 }
 
+function normalizeScopes(scope: string | readonly string[] | undefined): readonly string[] {
+  if (scope === undefined) return [];
+  return typeof scope === "string" ? [scope] : scope;
+}
+
+function filterCommandsByScope(commands: Iterable<Command>, scopes: readonly string[]): Command[] {
+  const list = Array.from(commands);
+  if (scopes.length === 0) return list;
+  const allowed = new Set(scopes);
+  return list.filter((command) => command.scope === undefined || allowed.has(command.scope));
+}
+
+function sortCommands(commands: Iterable<Command>): Command[] {
+  return Array.from(commands).sort(
+    (left, right) =>
+      (left.group ?? "").localeCompare(right.group ?? "") || left.title.localeCompare(right.title),
+  );
+}
+
 function filterCommands(commands: readonly Command[], query: string): Command[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return [...commands];
@@ -763,26 +869,130 @@ function formatCommand(command: Command): string {
   return `${group}${command.title}${keys}`;
 }
 
-function runHotkey(commands: readonly Command[], event: KeyEvent): boolean {
+function runHotkey(
+  commands: readonly Command[],
+  event: KeyEvent,
+  buffer?: HotkeyBuffer,
+  timeoutMs = 1000,
+): boolean {
+  if (!buffer) return runSingleStrokeHotkey(commands, event);
+
+  const now = Date.now();
+  const current = buffer.keys.length > 0 && now - buffer.lastAt <= timeoutMs ? buffer.keys : [];
+  const result = matchHotkey(commands, event, current);
+
+  if (result.kind === "run") {
+    buffer.keys = [];
+    buffer.lastAt = 0;
+    result.command.run();
+    return true;
+  }
+
+  if (result.kind === "prefix") {
+    buffer.keys = [...current, keyTokenFromEvent(event)];
+    buffer.lastAt = now;
+    return true;
+  }
+
+  if (current.length > 0) {
+    buffer.keys = [];
+    buffer.lastAt = 0;
+    return runHotkey(commands, event, buffer, timeoutMs);
+  }
+
+  return false;
+}
+
+function keyMatches(key: string, event: KeyEvent): boolean {
+  const parsed = parseKeyStroke(key);
+  const keyName = parsed.key;
+  const wantsCtrl = parsed.ctrl;
+  const wantsAlt = parsed.alt;
+  const wantsShift = parsed.shift;
+  if (wantsCtrl !== event.ctrl || wantsAlt !== event.alt) return false;
+  if (wantsShift && !event.shift) return false;
+  if (event.name === "char") return event.char?.toLowerCase() === keyName;
+  return event.name === keyName;
+}
+
+function runSingleStrokeHotkey(commands: readonly Command[], event: KeyEvent): boolean {
   for (const command of commands) {
-    if (!command.keys?.some((key) => keyMatches(key, event))) continue;
+    if (
+      !command.keys?.some((key) => splitKeySequence(key).length === 1 && keyMatches(key, event))
+    ) {
+      continue;
+    }
     command.run();
     return true;
   }
   return false;
 }
 
-function keyMatches(key: string, event: KeyEvent): boolean {
-  const normalized = key.toLowerCase();
-  const parts = normalized.split("+");
-  const keyName = parts[parts.length - 1] ?? "";
-  const wantsCtrl = parts.includes("ctrl") || parts.includes("control");
-  const wantsAlt = parts.includes("alt") || parts.includes("meta");
-  const wantsShift = parts.includes("shift");
-  if (wantsCtrl !== event.ctrl || wantsAlt !== event.alt) return false;
-  if (wantsShift && !event.shift) return false;
-  if (event.name === "char") return event.char?.toLowerCase() === keyName;
-  return event.name === keyName;
+function matchHotkey(
+  commands: readonly Command[],
+  event: KeyEvent,
+  current: readonly string[],
+): { kind: "none" } | { kind: "prefix" } | { kind: "run"; command: Command } {
+  let hasPrefix = false;
+  for (const command of commands) {
+    for (const key of command.keys ?? []) {
+      const sequence = splitKeySequence(key);
+      if (sequence.length <= current.length) continue;
+      if (!current.every((token, index) => token === normalizeKeyStroke(sequence[index]!))) {
+        continue;
+      }
+      if (!keyMatches(sequence[current.length]!, event)) continue;
+      if (sequence.length === current.length + 1) return { kind: "run", command };
+      hasPrefix = true;
+    }
+  }
+  return hasPrefix ? { kind: "prefix" } : { kind: "none" };
+}
+
+function splitKeySequence(key: string): string[] {
+  return key
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0);
+}
+
+function normalizeKeyStroke(stroke: string): string {
+  const parsed = parseKeyStroke(stroke);
+  return [
+    parsed.ctrl ? "ctrl" : null,
+    parsed.alt ? "alt" : null,
+    parsed.shift ? "shift" : null,
+    parsed.key,
+  ]
+    .filter(Boolean)
+    .join("+");
+}
+
+function parseKeyStroke(stroke: string): {
+  ctrl: boolean;
+  alt: boolean;
+  shift: boolean;
+  key: string;
+} {
+  const parts = stroke
+    .toLowerCase()
+    .split("+")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const key = parts[parts.length - 1] ?? "";
+  return {
+    ctrl: parts.includes("ctrl") || parts.includes("control"),
+    alt: parts.includes("alt") || parts.includes("meta"),
+    shift: parts.includes("shift"),
+    key,
+  };
+}
+
+function keyTokenFromEvent(event: KeyEvent): string {
+  const key = event.name === "char" ? (event.char?.toLowerCase() ?? "") : event.name;
+  return [event.ctrl ? "ctrl" : null, event.alt ? "alt" : null, event.shift ? "shift" : null, key]
+    .filter(Boolean)
+    .join("+");
 }
 
 function toastColor(tone: ToastMessage["tone"]) {

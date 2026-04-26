@@ -44,6 +44,94 @@ export interface Theme {
   };
   link: { normal: Style; focused: Style; visited: Style };
   statusBar: Style;
+  checkbox: {
+    normal: Style;
+    focused: Style;
+    checked: Style;
+    checkedFocused: Style;
+    disabled: Style;
+  };
+  switch: {
+    track: Style;
+    trackOn: Style;
+    thumb: Style;
+    thumbOn: Style;
+    focused: Style;
+    disabled: Style;
+  };
+  progress: {
+    track: Style;
+    fill: Style;
+    indeterminate: Style;
+    label: Style;
+  };
+  spinner: Style;
+  sparkline: Style;
+  badge: {
+    neutral: Style;
+    info: Style;
+    success: Style;
+    warning: Style;
+    danger: Style;
+  };
+  tag: {
+    normal: Style;
+    focused: Style;
+    removable: Style;
+  };
+  divider: Style;
+  kbd: Style;
+  table: { header: Style; row: Style; rowSelected: Style; rowAlt: Style };
+  tree: { guide: Style; node: Style };
+  accordion: { header: Style; headerOpen: Style };
+  stepper: { pending: Style; active: Style; complete: Style; connector: Style };
+  pagination: { normal: Style; active: Style; disabled: Style };
+  tooltip: Style;
+  code: {
+    base: Style;
+    keyword: Style;
+    string: Style;
+    number: Style;
+    comment: Style;
+    punctuation: Style;
+    boolean: Style;
+    null: Style;
+    function: Style;
+  };
+  diff: {
+    base: Style;
+    add: Style;
+    remove: Style;
+    hunk: Style;
+    meta: Style;
+    context: Style;
+  };
+  log: {
+    base: Style;
+    debug: Style;
+    info: Style;
+    warn: Style;
+    error: Style;
+    timestamp: Style;
+    paused: Style;
+  };
+  avatar: { base: Style; accent: Style };
+  card: { base: Style; header: Style };
+  chart: {
+    axis: Style;
+    grid: Style;
+    series: Style;
+    seriesAlt: Style;
+    pointer: Style;
+    label: Style;
+  };
+  notification: {
+    info: Style;
+    success: Style;
+    warning: Style;
+    danger: Style;
+  };
+  formField: { label: Style; description: Style; error: Style };
 }
 
 interface SemanticPalette {
@@ -74,6 +162,7 @@ export const themeNames = [
   "nord",
   "dracula",
   "gruvbox",
+  "tarnished",
 ] as const;
 
 export type BuiltInThemeName = (typeof themeNames)[number];
@@ -208,6 +297,124 @@ export function defaultTheme(): Theme {
       visited: mk({ fg: ansi(5), underline: true }),
     },
     statusBar: mk({ fg: ansi(0), bg: ansi(7) }),
+    checkbox: {
+      normal: mk(),
+      focused: mk({ fg: ansi(4), bold: true }),
+      checked: mk({ fg: ansi(2), bold: true }),
+      checkedFocused: mk({ fg: ansi(15), bg: ansi(2), bold: true }),
+      disabled: mk({ dim: true }),
+    },
+    switch: {
+      track: mk({ fg: ansi(8) }),
+      trackOn: mk({ fg: ansi(2) }),
+      thumb: mk({ fg: ansi(7) }),
+      thumbOn: mk({ fg: ansi(15), bold: true }),
+      focused: mk({ fg: ansi(4), bold: true }),
+      disabled: mk({ dim: true }),
+    },
+    progress: {
+      track: mk({ fg: ansi(8) }),
+      fill: mk({ fg: ansi(2) }),
+      indeterminate: mk({ fg: ansi(4) }),
+      label: mk({ dim: true }),
+    },
+    spinner: mk({ fg: ansi(4), bold: true }),
+    sparkline: mk({ fg: ansi(4) }),
+    badge: {
+      neutral: mk({ fg: ansi(0), bg: ansi(7), bold: true }),
+      info: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      success: mk({ fg: ansi(15), bg: ansi(2), bold: true }),
+      warning: mk({ fg: ansi(0), bg: ansi(3), bold: true }),
+      danger: mk({ fg: ansi(15), bg: ansi(1), bold: true }),
+    },
+    tag: {
+      normal: mk({ fg: ansi(0), bg: ansi(7) }),
+      focused: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      removable: mk({ fg: ansi(1), bold: true }),
+    },
+    divider: mk({ fg: ansi(8) }),
+    kbd: mk({ fg: ansi(0), bg: ansi(7), bold: true }),
+    table: {
+      header: mk({ fg: ansi(15), bg: ansi(8), bold: true }),
+      row: mk(),
+      rowSelected: mk({ inverse: true }),
+      rowAlt: mk({ dim: true }),
+    },
+    tree: {
+      guide: mk({ fg: ansi(8) }),
+      node: mk(),
+    },
+    accordion: {
+      header: mk({ fg: ansi(7), bold: true }),
+      headerOpen: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+    },
+    stepper: {
+      pending: mk({ fg: ansi(8) }),
+      active: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      complete: mk({ fg: ansi(2), bold: true }),
+      connector: mk({ fg: ansi(8) }),
+    },
+    pagination: {
+      normal: mk({ fg: ansi(7) }),
+      active: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      disabled: mk({ fg: ansi(8), dim: true }),
+    },
+    tooltip: mk({ fg: ansi(0), bg: ansi(11) }),
+    code: {
+      base: mk(),
+      keyword: mk({ fg: ansi(5), bold: true }),
+      string: mk({ fg: ansi(2) }),
+      number: mk({ fg: ansi(3) }),
+      comment: mk({ fg: ansi(8), italic: true }),
+      punctuation: mk({ fg: ansi(7) }),
+      boolean: mk({ fg: ansi(3), bold: true }),
+      null: mk({ fg: ansi(8) }),
+      function: mk({ fg: ansi(4), bold: true }),
+    },
+    diff: {
+      base: mk(),
+      add: mk({ fg: ansi(2) }),
+      remove: mk({ fg: ansi(1) }),
+      hunk: mk({ fg: ansi(6) }),
+      meta: mk({ fg: ansi(8), bold: true }),
+      context: mk({ dim: true }),
+    },
+    log: {
+      base: mk(),
+      debug: mk({ fg: ansi(8) }),
+      info: mk({ fg: ansi(6) }),
+      warn: mk({ fg: ansi(3), bold: true }),
+      error: mk({ fg: ansi(1), bold: true }),
+      timestamp: mk({ fg: ansi(8) }),
+      paused: mk({ fg: ansi(3), bold: true }),
+    },
+    avatar: {
+      base: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      accent: mk({ fg: ansi(0), bg: ansi(6), bold: true }),
+    },
+    card: {
+      base: mk(),
+      header: mk({ bold: true }),
+    },
+    chart: {
+      axis: mk({ fg: ansi(8) }),
+      grid: mk({ fg: ansi(8), dim: true }),
+      series: mk({ fg: ansi(4) }),
+      seriesAlt: mk({ fg: ansi(5) }),
+      pointer: mk({ fg: ansi(3), bold: true }),
+      label: mk({ dim: true }),
+    },
+    notification: {
+      info: mk({ fg: ansi(15), bg: ansi(4), bold: true }),
+      success: mk({ fg: ansi(15), bg: ansi(2), bold: true }),
+      warning: mk({ fg: ansi(0), bg: ansi(3), bold: true }),
+      danger: mk({ fg: ansi(15), bg: ansi(1), bold: true }),
+    },
+    formField: {
+      label: mk({ bold: true }),
+      description: mk({ dim: true }),
+      error: mk({ fg: ansi(1), bold: true }),
+    },
   };
 }
 
@@ -253,6 +460,124 @@ function makeSemanticTheme(name: BuiltInThemeName, palette: SemanticPalette): Th
       visited: mk({ fg: c(palette.visited), underline: true }),
     },
     statusBar: mk({ fg: c(palette.primaryText), bg: c(palette.primary) }),
+    checkbox: {
+      normal: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+      focused: mk({ fg: c(palette.primary), bg: c(palette.background), bold: true }),
+      checked: mk({ fg: c(palette.success), bg: c(palette.background), bold: true }),
+      checkedFocused: mk({ fg: c(palette.primaryText), bg: c(palette.success), bold: true }),
+      disabled: mk({ fg: c(palette.disabled), bg: c(palette.background), dim: true }),
+    },
+    switch: {
+      track: mk({ fg: c(palette.muted), bg: c(palette.panel) }),
+      trackOn: mk({ fg: c(palette.success), bg: c(palette.panel) }),
+      thumb: mk({ fg: c(palette.foreground), bg: c(palette.panel) }),
+      thumbOn: mk({ fg: c(palette.primaryText), bg: c(palette.success), bold: true }),
+      focused: mk({ fg: c(palette.primary), bg: c(palette.background), bold: true }),
+      disabled: mk({ fg: c(palette.disabled), bg: c(palette.panel), dim: true }),
+    },
+    progress: {
+      track: mk({ fg: c(palette.muted), bg: c(palette.panel) }),
+      fill: mk({ fg: c(palette.success), bg: c(palette.panel) }),
+      indeterminate: mk({ fg: c(palette.primary), bg: c(palette.panel) }),
+      label: mk({ fg: c(palette.muted), bg: c(palette.background), dim: true }),
+    },
+    spinner: mk({ fg: c(palette.primary), bg: c(palette.background), bold: true }),
+    sparkline: mk({ fg: c(palette.primary), bg: c(palette.background) }),
+    badge: {
+      neutral: mk({ fg: c(palette.primaryText), bg: c(palette.muted), bold: true }),
+      info: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      success: mk({ fg: c(palette.primaryText), bg: c(palette.success), bold: true }),
+      warning: mk({ fg: c(palette.primaryText), bg: c(palette.warning), bold: true }),
+      danger: mk({ fg: c(palette.primaryText), bg: c(palette.danger), bold: true }),
+    },
+    tag: {
+      normal: mk({ fg: c(palette.foreground), bg: c(palette.panel) }),
+      focused: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      removable: mk({ fg: c(palette.danger), bg: c(palette.panel), bold: true }),
+    },
+    divider: mk({ fg: c(palette.border), bg: c(palette.background) }),
+    kbd: mk({ fg: c(palette.foreground), bg: c(palette.panel), bold: true }),
+    table: {
+      header: mk({ fg: c(palette.primaryText), bg: c(palette.panel), bold: true }),
+      row: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+      rowSelected: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      rowAlt: mk({ fg: c(palette.foreground), bg: c(palette.surface) }),
+    },
+    tree: {
+      guide: mk({ fg: c(palette.border), bg: c(palette.background) }),
+      node: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+    },
+    accordion: {
+      header: mk({ fg: c(palette.foreground), bg: c(palette.panel), bold: true }),
+      headerOpen: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+    },
+    stepper: {
+      pending: mk({ fg: c(palette.muted), bg: c(palette.background) }),
+      active: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      complete: mk({ fg: c(palette.success), bg: c(palette.background), bold: true }),
+      connector: mk({ fg: c(palette.border), bg: c(palette.background) }),
+    },
+    pagination: {
+      normal: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+      active: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      disabled: mk({ fg: c(palette.disabled), bg: c(palette.background), dim: true }),
+    },
+    tooltip: mk({ fg: c(palette.primaryText), bg: c(palette.warning) }),
+    code: {
+      base: mk({ fg: c(palette.foreground), bg: c(palette.surface) }),
+      keyword: mk({ fg: c(palette.accent), bg: c(palette.surface), bold: true }),
+      string: mk({ fg: c(palette.success), bg: c(palette.surface) }),
+      number: mk({ fg: c(palette.warning), bg: c(palette.surface) }),
+      comment: mk({ fg: c(palette.muted), bg: c(palette.surface), italic: true }),
+      punctuation: mk({ fg: c(palette.muted), bg: c(palette.surface) }),
+      boolean: mk({ fg: c(palette.warning), bg: c(palette.surface), bold: true }),
+      null: mk({ fg: c(palette.muted), bg: c(palette.surface) }),
+      function: mk({ fg: c(palette.primary), bg: c(palette.surface), bold: true }),
+    },
+    diff: {
+      base: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+      add: mk({ fg: c(palette.success), bg: c(palette.background) }),
+      remove: mk({ fg: c(palette.danger), bg: c(palette.background) }),
+      hunk: mk({ fg: c(palette.accent), bg: c(palette.background), bold: true }),
+      meta: mk({ fg: c(palette.muted), bg: c(palette.background), bold: true }),
+      context: mk({ fg: c(palette.muted), bg: c(palette.background) }),
+    },
+    log: {
+      base: mk({ fg: c(palette.foreground), bg: c(palette.background) }),
+      debug: mk({ fg: c(palette.muted), bg: c(palette.background) }),
+      info: mk({ fg: c(palette.accent), bg: c(palette.background) }),
+      warn: mk({ fg: c(palette.warning), bg: c(palette.background), bold: true }),
+      error: mk({ fg: c(palette.danger), bg: c(palette.background), bold: true }),
+      timestamp: mk({ fg: c(palette.muted), bg: c(palette.background) }),
+      paused: mk({ fg: c(palette.warning), bg: c(palette.background), bold: true }),
+    },
+    avatar: {
+      base: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      accent: mk({ fg: c(palette.primaryText), bg: c(palette.accent), bold: true }),
+    },
+    card: {
+      base: mk({ fg: c(palette.foreground), bg: c(palette.surface) }),
+      header: mk({ fg: c(palette.primary), bg: c(palette.surface), bold: true }),
+    },
+    chart: {
+      axis: mk({ fg: c(palette.border), bg: c(palette.background) }),
+      grid: mk({ fg: c(palette.border), bg: c(palette.background), dim: true }),
+      series: mk({ fg: c(palette.primary), bg: c(palette.background) }),
+      seriesAlt: mk({ fg: c(palette.accent), bg: c(palette.background) }),
+      pointer: mk({ fg: c(palette.warning), bg: c(palette.background), bold: true }),
+      label: mk({ fg: c(palette.muted), bg: c(palette.background), dim: true }),
+    },
+    notification: {
+      info: mk({ fg: c(palette.primaryText), bg: c(palette.primary), bold: true }),
+      success: mk({ fg: c(palette.primaryText), bg: c(palette.success), bold: true }),
+      warning: mk({ fg: c(palette.primaryText), bg: c(palette.warning), bold: true }),
+      danger: mk({ fg: c(palette.primaryText), bg: c(palette.danger), bold: true }),
+    },
+    formField: {
+      label: mk({ fg: c(palette.foreground), bg: c(palette.background), bold: true }),
+      description: mk({ fg: c(palette.muted), bg: c(palette.background), dim: true }),
+      error: mk({ fg: c(palette.danger), bg: c(palette.background), bold: true }),
+    },
   };
 }
 
@@ -400,6 +725,27 @@ const PALETTES: Record<BuiltInThemeName, SemanticPalette> = {
     visited: "#d3869b",
     selection: "#665c54",
     disabled: "#7c6f64",
+  },
+  // High-contrast amber-on-black palette designed for splash screens and
+  // ASCII-art canvases. Inspired by the "tarnished gold" feel — most ANSI
+  // terminals render this faithfully even on 256-color or 16-color modes.
+  tarnished: {
+    foreground: "#d4a256",
+    background: "#0a0805",
+    surface: "#120e08",
+    panel: "#1a140a",
+    border: "#a87d3d",
+    muted: "#7a5a2c",
+    primary: "#f5c46a",
+    primaryText: "#0a0805",
+    accent: "#e8b85c",
+    success: "#c9a14a",
+    warning: "#f0c870",
+    danger: "#c0413a",
+    link: "#f5c46a",
+    visited: "#a87d3d",
+    selection: "#3d2f1a",
+    disabled: "#5a4324",
   },
 };
 

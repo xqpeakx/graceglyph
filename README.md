@@ -146,34 +146,28 @@ If that loop feels awkward, the framework still needs work.
 
 ## Components
 
-Current built-ins:
+Current built-ins cover the core host wrappers, application shell, controls,
+data display, feedback, and visualization layers:
 
-- `App`
-- `AppShell`
-- `Window`
-- `Panel`
-- `Row`
-- `Column`
-- `Grid`
-- `Dock`
-- `DockSlot`
-- `Stack`
-- `SplitPane`
-- `ScrollView`
-- `Text`
-- `TextInput`
-- `TextArea`
-- `Button`
-- `List`
-- `Modal`
-- `Router`
-- `Route`
-- `Tabs`
-- `CommandPalette`
-- `HelpOverlay`
-- `ToastViewport`
+- Structure: `App`, `Window`, `Panel`, `Card`, `Box`, `Row`, `Column`, `Grid`,
+  `Dock`, `DockSlot`, `Stack`, `SplitPane`, `ScrollView`, `Sidebar`, `TopBar`,
+  `BottomBar`, `StatusBar`, `Divider`, `Spacer`
+- Actions and inputs: `Button`, `IconButton`, `ToggleButton`, `ButtonGroup`,
+  `TextInput`, `TextArea`, `NumberInput`, `PasswordInput`, `MaskedInput`,
+  `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `RangeSlider`, `Select`,
+  `Combobox`, `Autocomplete`, `MultiSelect`, `DatePicker`, `TimePicker`
+- Display and feedback: `Text`, `List`, `Table`, `Tree`, `Accordion`,
+  `Stepper`, `Pagination`, `Badge`, `Tag`, `Chip`, `Pill`, `Avatar`,
+  `ProgressBar`, `ProgressRing`, `Spinner`, `Skeleton`, `Sparkline`,
+  `EmptyState`, `Tooltip`, `Notifications`, `Kbd`, `KeyHints`
+- Forms and flow: `Form`, `FormField`, `ErrorMessage`, `Wizard`,
+  `ErrorBoundary`, `Suspense`, `Calendar`
+- App shell: `AppShell`, `Router`, `Route`, `Tabs`, `CommandPalette`,
+  `HelpOverlay`, `ToastViewport`
+- Visualization: `Code`, `JSONViewer`, `DiffView`, `LogStream`
 
 Everything composes down to four host primitives: `box`, `text`, `input`, and `textarea`.
+The §6 component-library gate is tracked in `docs/component-library.md`.
 
 ## Layout
 
@@ -274,9 +268,9 @@ Graceglyph includes shell primitives for full terminal applications, not just
 single-screen widgets:
 
 - `AppShell`: window chrome, breadcrumbs, `Escape` back navigation, command palette, help overlay, and toasts
-- `Router` / `Route`: declarative route selection inside the terminal
+- `Router` / `Route`: declarative route selection inside the terminal, including nested route shells
 - `Tabs`: mouse and keyboard reachable tab controls
-- `useCommand` / `useCommands` / `useHotkeys`: a global command registry that can drive menus, help, and shortcuts
+- `useCommand` / `useCommands` / `useHotkeys`: a scoped command registry with single-stroke and chord hotkeys
 - `useAsync`, `useInterval`, `useDebouncedValue`, `usePersistentState`, `useFocusWithin`, `useClipboard`, `useMouse`: app-building hooks for common terminal UI state
 - `Button`, `List`, `TextInput`, `TextArea`, and host boxes support consistent `focused`, `hovered`, `active`, `disabled`, `loading`, and `error` states
 

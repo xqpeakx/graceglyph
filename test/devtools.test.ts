@@ -13,7 +13,12 @@ test("inspector includes focused node and layout details", () => {
     "box",
     { border: true, title: "Root", direction: "column" },
     h("text", {}, "hello"),
-    h("input", { value: "draft", onChange: () => {} }),
+    h("input", {
+      value: "draft",
+      onChange: () => {},
+      accessibilityLabel: "Search query",
+      accessibilityDescription: "Filters the visible rows",
+    }),
   );
 
   const root = createFiber(tree.type, tree.props, tree.key, null);
@@ -32,6 +37,8 @@ test("inspector includes focused node and layout details", () => {
   assert.match(output, /focus path: box > input/);
   assert.match(output, /events:/);
   assert.match(output, /key char:s/);
+  assert.match(output, /a11y="Search query"/);
+  assert.match(output, /desc="Filters the visible/);
   assert.match(output, /> input @1,2 38x1 value="draft".*renders=1/);
 });
 

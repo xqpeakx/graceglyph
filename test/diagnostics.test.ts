@@ -26,6 +26,22 @@ test("invalid host props fail with a clear diagnostic", () => {
   );
 });
 
+test("invalid accessibility metadata fails with a clear diagnostic", () => {
+  const root = createFiber(
+    "box",
+    {
+      accessibilityLabel: 42,
+    } as unknown as Record<string, unknown>,
+    null,
+    null,
+  );
+
+  assert.throws(
+    () => reconcile(root),
+    /invalid prop "accessibilityLabel" on <box>; expected a string, got 42 \(number\)/,
+  );
+});
+
 test("fatal runtime errors include a component stack", () => {
   function Bomb(): never {
     throw new Error("boom");

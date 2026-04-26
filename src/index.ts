@@ -3,6 +3,7 @@ import "./jsx.js";
 // -- Public API ---------------------------------------------------------------
 export { h, Fragment } from "./runtime/element.js";
 export type {
+  AccessibilityProps,
   BoxProps,
   BoxBreakpointPatch,
   BoxBreakpoints,
@@ -41,6 +42,8 @@ export {
   useMemo,
   useCallback,
   useCapabilities,
+  useFrame,
+  useMotion,
   useSetTheme,
   useTerminalSize,
   useTheme,
@@ -70,29 +73,241 @@ export type {
 // Built-in components
 export {
   App,
+  Badge,
   Box,
   Button,
+  ButtonGroup,
+  Checkbox,
   Column,
+  Divider,
+  Kbd,
   Link,
   List,
   Modal,
+  NumberInput,
   Panel,
+  PasswordInput,
+  ProgressBar,
+  RadioGroup,
+  RangeSlider,
   Row,
+  Select,
+  Skeleton,
+  Slider,
   Spacer,
+  Sparkline,
+  Spinner,
+  SPINNER_FRAMES,
+  Switch,
+  Tag,
   Text,
   TextArea,
   TextInput,
+  ToggleButton,
   Window,
 } from "./components.js";
 export type {
+  BadgeProps,
+  BadgeVariant,
+  ButtonGroupProps,
   ButtonProps,
+  CheckboxProps,
+  DividerProps,
+  KbdProps,
   LinkProps,
   ListProps,
   ModalProps,
+  NumberInputProps,
   PanelProps,
+  PasswordInputProps,
+  ProgressBarProps,
+  RadioGroupProps,
+  RadioOption,
+  RangeSliderProps,
+  SelectOption,
+  SelectProps,
+  SkeletonProps,
+  SliderProps,
+  SparklineProps,
+  SpinnerProps,
+  SpinnerVariant,
+  SwitchProps,
+  TagProps,
   TextInputProps,
+  ToggleButtonProps,
   WindowProps,
 } from "./components.js";
+
+export {
+  Accordion,
+  EmptyState,
+  Pagination,
+  Stepper,
+  Table,
+  Tooltip,
+  Tree,
+} from "./components-data.js";
+export type {
+  AccordionItem,
+  AccordionProps,
+  EmptyStateProps,
+  PaginationProps,
+  StepperProps,
+  StepperStep,
+  TableColumn,
+  TableProps,
+  TableSortDirection,
+  TableSortState,
+  TooltipPlacement,
+  TooltipProps,
+  TreeNode,
+  TreeProps,
+} from "./components-data.js";
+
+export { Code, DiffView, JSONViewer, LogStream, parseUnifiedDiff } from "./components-viz.js";
+export type {
+  CodeProps,
+  DiffLine,
+  DiffLineKind,
+  DiffViewProps,
+  JSONViewerProps,
+  LogEntry,
+  LogLevel,
+  LogStreamProps,
+} from "./components-viz.js";
+export type { CodeLanguage, CodeToken, CodeTokenKind } from "./highlight/index.js";
+export { highlight, tokensByLine } from "./highlight/index.js";
+
+export {
+  Avatar,
+  BottomBar,
+  Card,
+  Chip,
+  IconButton,
+  KeyHints,
+  Notifications,
+  Pill,
+  ProgressRing,
+  Sidebar,
+  StatusBar,
+  TopBar,
+} from "./components-chrome.js";
+export type {
+  AvatarProps,
+  CardProps,
+  ChipProps,
+  IconButtonProps,
+  KeyHint,
+  KeyHintsProps,
+  NotificationItem,
+  NotificationKind,
+  NotificationsProps,
+  PillProps,
+  ProgressRingProps,
+  SlotProps,
+  StatusBarProps,
+} from "./components-chrome.js";
+
+export {
+  Autocomplete,
+  Combobox,
+  ErrorBoundary,
+  ErrorMessage,
+  Form,
+  FormField,
+  MaskedInput,
+  MultiSelect,
+  Suspense,
+  Wizard,
+} from "./components-forms.js";
+export type {
+  AutocompleteProps,
+  ComboboxOption,
+  ComboboxProps,
+  ErrorBoundaryProps,
+  ErrorMessageProps,
+  FormFieldProps,
+  FormProps,
+  MaskedInputProps,
+  MultiSelectOption,
+  MultiSelectProps,
+  SuspenseProps,
+  WizardProps,
+  WizardStep,
+} from "./components-forms.js";
+
+export { Calendar, DatePicker, TimePicker } from "./components-temporal.js";
+export type { CalendarProps, DatePickerProps, TimePickerProps } from "./components-temporal.js";
+
+export { autoDomain, BarChart, Gauge, Heatmap, Histogram, LineChart } from "./components-charts.js";
+export type {
+  AxisDomain,
+  BarChartProps,
+  BarDatum,
+  GaugeProps,
+  HeatmapProps,
+  HistogramProps,
+  LineChartProps,
+  LineSeries,
+} from "./components-charts.js";
+
+export { Markdown, parseMarkdown } from "./components-markdown.js";
+export type { MarkdownProps } from "./components-markdown.js";
+
+export { FilePicker, PathBreadcrumbs } from "./components-files.js";
+export type {
+  FileEntry,
+  FilePickerProps,
+  PathBreadcrumbsProps,
+} from "./components-files.js";
+
+export {
+  AsciiArt,
+  Banner,
+  BigText,
+  SplashScreen,
+  figletBlock,
+} from "./components-ascii.js";
+export type {
+  AsciiArtProps,
+  BannerProps,
+  BigTextProps,
+  SplashScreenProps,
+} from "./components-ascii.js";
+
+export { Stream, Transition } from "./components-motion.js";
+export type {
+  StreamProps,
+  TransitionPreset,
+  TransitionProps,
+} from "./components-motion.js";
+export {
+  createMotion,
+  easings,
+  motion,
+  spring,
+} from "./runtime/motion.js";
+export type {
+  Easing,
+  EasingName,
+  MotionHandle,
+  MotionOptions,
+  SpringOptions,
+} from "./runtime/motion.js";
+export {
+  frameSchedulerActive,
+  frameSubscriberCount,
+  subscribeFrame,
+} from "./runtime/frame.js";
+export type { FrameCallback } from "./runtime/frame.js";
+
+export { DataGrid, Popover } from "./components-overlay.js";
+export type {
+  DataGridColumn,
+  DataGridProps,
+  PopoverPlacement,
+  PopoverProps,
+} from "./components-overlay.js";
 
 export {
   AppShell,
@@ -126,11 +341,13 @@ export type {
   AsyncState,
   BreadcrumbItem,
   Command,
+  CommandRegistrationOptions,
   CommandPaletteProps,
   DockProps,
   DockSlotProps,
   GridProps,
   HelpOverlayProps,
+  HotkeyOptions,
   MouseState,
   RouteProps,
   RouterProps,

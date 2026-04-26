@@ -1,7 +1,7 @@
 import { Rect } from "../layout/rect.js";
 import { ScreenBuffer } from "../render/buffer.js";
 import { DefaultStyle, Style, mergeStyle } from "../render/style.js";
-import { clipColumns, stringWidth, truncateColumns } from "../render/unicode.js";
+import { clipColumns, splitGraphemes, stringWidth, truncateColumns } from "../render/unicode.js";
 import type { StyleResolveContext } from "../style/index.js";
 import type { Theme } from "../theme/theme.js";
 import { matchingBreakpointValues } from "../theme/breakpoints.js";
@@ -949,7 +949,8 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
       const state = ensureEditableState(node, value);
       const visible =
         getVisibleLines(state, value, layout.width, layout.height, "single-line")[0] ?? "";
-      buffer.writeText(layout.x, layout.y, visible, base, layout);
+      const painted = props.mask ? maskGraphemes(visible, props.mask) : visible;
+      buffer.writeText(layout.x, layout.y, painted, base, layout);
     }
     return;
   }
@@ -1047,6 +1048,20 @@ export function textOf(children: unknown): string {
 function truncate(s: string, width: number, mode: "truncate" | "clip"): string {
   if (mode === "clip") return clipColumns(s, width);
   return truncateColumns(s, width);
+}
+
+/**
+ * Replace each visible grapheme with `mask`, repeated proportionally to the
+ * grapheme's terminal width so masked output preserves cursor alignment.
+ */
+function maskGraphemes(value: string, mask: string): string {
+  if (!mask) return value;
+  let out = "";
+  for (const grapheme of splitGraphemes(value)) {
+    const width = Math.max(1, grapheme.width);
+    out += mask.repeat(width);
+  }
+  return out;
 }
 
 function applyBoxStyle(

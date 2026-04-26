@@ -14,6 +14,8 @@ import { performance } from "node:perf_hooks";
 import { staticFrame } from "./scenarios/static-frame.js";
 import { tableScroll } from "./scenarios/table-scroll.js";
 import { resizeStorm } from "./scenarios/resize-storm.js";
+import { logStream } from "./scenarios/log-stream.js";
+import { inputStorm } from "./scenarios/input-storm.js";
 
 export interface BenchCase {
   name: string;
@@ -30,17 +32,20 @@ export class Bench {
   }
 }
 
-interface Result {
+export interface Result {
   name: string;
   samples: number;
   meanMs: number;
   medianMs: number;
+  p50Ms: number;
+  p95Ms: number;
   p99Ms: number;
   minMs: number;
   maxMs: number;
+  rssKb: number;
 }
 
-async function runCase(c: BenchCase): Promise<Result> {
+export async function runCase(c: BenchCase): Promise<Result> {
   const iterations = c.iterations ?? 200;
   const warmup = c.warmup ?? Math.max(10, Math.floor(iterations * 0.1));
 
@@ -54,14 +59,22 @@ async function runCase(c: BenchCase): Promise<Result> {
   }
   samples.sort((a, b) => a - b);
 
+  const memory = process.memoryUsage();
+
+  const pick = (p: number): number =>
+    samples[Math.min(samples.length - 1, Math.floor(samples.length * p))] ?? 0;
+
   return {
     name: c.name,
     samples: samples.length,
     meanMs: mean(samples),
-    medianMs: samples[Math.floor(samples.length / 2)] ?? 0,
-    p99Ms: samples[Math.floor(samples.length * 0.99)] ?? 0,
+    medianMs: pick(0.5),
+    p50Ms: pick(0.5),
+    p95Ms: pick(0.95),
+    p99Ms: pick(0.99),
     minMs: samples[0] ?? 0,
     maxMs: samples[samples.length - 1] ?? 0,
+    rssKb: Math.round(memory.rss / 1024),
   };
 }
 
@@ -75,12 +88,24 @@ function format(n: number): string {
   return n < 1 ? n.toFixed(3) : n.toFixed(2);
 }
 
-async function main(): Promise<void> {
-  const filter = process.argv.slice(2).join(" ").trim().toLowerCase();
-  const bench = new Bench();
+/** Register every shipped scenario on `bench`. Exposed so tests can drive
+ *  the same suite without going through CLI argv. */
+export function registerAllScenarios(bench: Bench): void {
   staticFrame(bench);
   tableScroll(bench);
   resizeStorm(bench);
+  logStream(bench);
+  inputStorm(bench);
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const jsonMode = args.includes("--json");
+  const filterArgs = args.filter((a) => a !== "--json");
+  const filter = filterArgs.join(" ").trim().toLowerCase();
+
+  const bench = new Bench();
+  registerAllScenarios(bench);
 
   const cases = filter
     ? bench.cases.filter((c) => c.name.toLowerCase().includes(filter))
@@ -94,28 +119,59 @@ async function main(): Promise<void> {
 
   const results: Result[] = [];
   for (const c of cases) {
-    process.stdout.write(`running ${c.name}... `);
+    if (!jsonMode) process.stdout.write(`running ${c.name}... `);
     const r = await runCase(c);
     results.push(r);
-    console.log(`${format(r.medianMs)} ms median`);
+    if (!jsonMode) console.log(`${format(r.medianMs)} ms p50`);
+  }
+
+  if (jsonMode) {
+    console.log(
+      JSON.stringify(
+        {
+          node: process.versions.node,
+          platform: process.platform,
+          arch: process.arch,
+          results,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
   }
 
   console.log("");
-  console.log("name".padEnd(40), "samples", " mean", "median", "  p99", "  min", "  max");
+  console.log(
+    "name".padEnd(40),
+    "samples",
+    "  p50",
+    "  p95",
+    "  p99",
+    "  max",
+    " RSS-MB",
+  );
   for (const r of results) {
     console.log(
       r.name.padEnd(40),
       String(r.samples).padStart(7),
-      format(r.meanMs).padStart(5),
-      format(r.medianMs).padStart(6),
+      format(r.p50Ms).padStart(5),
+      format(r.p95Ms).padStart(5),
       format(r.p99Ms).padStart(5),
-      format(r.minMs).padStart(5),
       format(r.maxMs).padStart(5),
+      (r.rssKb / 1024).toFixed(1).padStart(7),
     );
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isMain =
+  typeof import.meta?.url === "string" &&
+  process.argv[1] !== undefined &&
+  import.meta.url === `file://${process.argv[1]}`;
+
+if (isMain) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

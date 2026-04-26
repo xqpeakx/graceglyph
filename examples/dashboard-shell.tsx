@@ -25,6 +25,8 @@ import type { KeyEvent } from "../src/index.js";
 import { ApiExplorerApp } from "./api-explorer.js";
 import type { ApiExplorerAppProps } from "./api-explorer.js";
 import { runExample } from "./_entry.js";
+import { ComponentsGalleryApp } from "./components-gallery.js";
+import { TarnishedSplashApp } from "./tarnished-splash.js";
 import { ExplorerApp } from "./explorer.js";
 import type { ExplorerAppProps } from "./explorer.js";
 import { FormApp } from "./form.js";
@@ -138,6 +140,30 @@ export const SHOWCASE_MODULES: readonly ShowcaseModule[] = [
     category: "basics",
     summary: "Keyboard-first list management with modal confirmation.",
     features: ["list updates", "keyboard shortcuts", "modal flow", "stateful UI"],
+  },
+  {
+    id: "components",
+    title: "Component gallery",
+    command: "showcase://components",
+    category: "library",
+    summary:
+      "Tour of the built-in framework library across forms, data, chrome, visualization, and temporal inputs.",
+    features: [
+      "form primitives",
+      "data display",
+      "application chrome",
+      "visualization",
+      "temporal inputs",
+    ],
+  },
+  {
+    id: "tarnished",
+    title: "Tarnished splash",
+    command: "showcase://tarnished",
+    category: "art",
+    summary:
+      "Gold-on-black splash screen with ASCII art, block-letter title, and decorated panels.",
+    features: ["BigText", "AsciiArt", "Banner", "tarnished theme"],
   },
 ] as const;
 
@@ -602,6 +628,8 @@ function renderShowcaseModule(module: ShowcaseModule, examples: ShowcaseExampleP
   if (module.id === "hello") return <HelloApp />;
   if (module.id === "form") return <FormApp />;
   if (module.id === "todo") return <TodoApp />;
+  if (module.id === "components") return <ComponentsGalleryApp />;
+  if (module.id === "tarnished") return <TarnishedSplashApp />;
 
   return (
     <App>

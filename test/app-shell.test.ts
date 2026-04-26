@@ -43,6 +43,36 @@ test("router selects a route by path and falls back cleanly", async () => {
   }
 });
 
+test("router composes nested routes with parent shells", async () => {
+  const harness = renderWithFakeTty(
+    h(
+      Router,
+      { path: "/settings/profile", fallback: h("text", {}, "missing") },
+      h(
+        Route,
+        { path: "/settings", title: "Settings" },
+        h("text", {}, "settings shell"),
+        h(Route, { path: "profile", title: "Profile" }, h("text", {}, "profile pane")),
+      ),
+    ),
+    {
+      width: 50,
+      height: 8,
+      runtime: { devtools: false },
+    },
+  );
+
+  try {
+    await waitFor(() => screenText(harness.handle).includes("profile pane"));
+    const text = screenText(harness.handle);
+    assert.match(text, /settings shell/);
+    assert.doesNotMatch(text, /missing/);
+    assert.deepEqual(runtimeWarnings(harness.handle), []);
+  } finally {
+    harness.handle.stop();
+  }
+});
+
 test("command palette exposes registered commands and runs them by keyboard", async () => {
   let runs = 0;
   const cleanup = registerCommand({
@@ -70,6 +100,46 @@ test("command palette exposes registered commands and runs them by keyboard", as
   } finally {
     harness.handle.stop();
     cleanup();
+  }
+});
+
+test("command palette filters registered commands by scope", async () => {
+  const cleanupApp = registerCommand(
+    {
+      id: "app.sync",
+      title: "Sync workspace",
+      group: "App",
+      run: () => undefined,
+    },
+    { scope: "workspace" },
+  );
+  const cleanupAdmin = registerCommand(
+    {
+      id: "admin.rotate",
+      title: "Rotate keys",
+      group: "Admin",
+      run: () => undefined,
+    },
+    { scope: "admin" },
+  );
+
+  const harness = renderWithFakeTty(
+    h(CommandPalette, { open: true, onClose: () => {}, scope: "workspace" }),
+    {
+      width: 80,
+      height: 20,
+      runtime: { devtools: false },
+    },
+  );
+
+  try {
+    await waitFor(() => screenText(harness.handle).includes("Sync workspace"));
+    assert.doesNotMatch(screenText(harness.handle), /Rotate keys/);
+    assert.deepEqual(runtimeWarnings(harness.handle), []);
+  } finally {
+    harness.handle.stop();
+    cleanupApp();
+    cleanupAdmin();
   }
 });
 
@@ -116,6 +186,48 @@ test("app shell handles command hotkeys and escape breadcrumb navigation", async
 
     harness.input.emitData("\x1b");
     await waitFor(() => screenText(harness.handle).includes("/ saved"));
+    assert.deepEqual(runtimeWarnings(harness.handle), []);
+  } finally {
+    harness.handle.stop();
+  }
+});
+
+test("app shell handles chord command hotkeys", async () => {
+  function ShellHarness() {
+    const [status, setStatus] = useState("idle");
+    return h(
+      AppShell,
+      {
+        title: "Shell",
+        path: "/",
+        onNavigate: () => undefined,
+        commands: [
+          {
+            id: "nav.home",
+            title: "Go home",
+            group: "Navigation",
+            keys: ["g g"],
+            run: () => setStatus("home"),
+          },
+        ],
+      },
+      h("text", {}, status),
+    );
+  }
+
+  const harness = renderWithFakeTty(h(ShellHarness, {}), {
+    width: 80,
+    height: 20,
+    runtime: { devtools: false },
+  });
+
+  try {
+    await waitFor(() => screenText(harness.handle).includes("idle"));
+    harness.input.emitData("g");
+    await settleRuntime();
+    assert.match(screenText(harness.handle), /idle/);
+    harness.input.emitData("g");
+    await waitFor(() => screenText(harness.handle).includes("home"));
     assert.deepEqual(runtimeWarnings(harness.handle), []);
   } finally {
     harness.handle.stop();

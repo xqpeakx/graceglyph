@@ -190,19 +190,31 @@ export function applyEditableKey(
       state.preferredColumn = null;
       break;
     case "up":
-      if (opts.mode === "single-line") break;
+      if (opts.mode === "single-line") {
+        handled = false;
+        break;
+      }
       moveCursorByLines(state, value, -1);
       break;
     case "down":
-      if (opts.mode === "single-line") break;
+      if (opts.mode === "single-line") {
+        handled = false;
+        break;
+      }
       moveCursorByLines(state, value, 1);
       break;
     case "pageup":
-      if (opts.mode === "single-line") break;
+      if (opts.mode === "single-line") {
+        handled = false;
+        break;
+      }
       moveCursorByLines(state, value, -Math.max(1, opts.height - 1));
       break;
     case "pagedown":
-      if (opts.mode === "single-line") break;
+      if (opts.mode === "single-line") {
+        handled = false;
+        break;
+      }
       moveCursorByLines(state, value, Math.max(1, opts.height - 1));
       break;
     case "backspace":

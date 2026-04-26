@@ -107,6 +107,13 @@ export interface StyleResolver {
 
 export type StyleLike = BoxStyle | StyleResolver;
 
+export interface AccessibilityProps {
+  /** Stable semantic label for inspectors, recordings, and assistive adapters. */
+  accessibilityLabel?: string;
+  /** Longer semantic description when the visible label is not enough. */
+  accessibilityDescription?: string;
+}
+
 export type FlexDirection = "row" | "column";
 export type FlexAlign = "start" | "center" | "end" | "stretch";
 export type FlexJustify = "start" | "center" | "end" | "between" | "around";
@@ -174,7 +181,7 @@ export interface BoxLayoutProps {
 export type BoxBreakpointPatch = Partial<BoxLayoutProps>;
 export type BoxBreakpoints = BreakpointMap<BoxBreakpointPatch>;
 
-export interface BoxProps extends BoxLayoutProps {
+export interface BoxProps extends BoxLayoutProps, AccessibilityProps {
   /** Layout-only responsive overrides keyed by theme breakpoint or comparator. */
   breakpoints?: BoxBreakpoints;
   /** Title rendered into the top border (border must be true). */
@@ -215,7 +222,7 @@ export interface BoxProps extends BoxLayoutProps {
   children?: unknown;
 }
 
-export interface TextProps {
+export interface TextProps extends AccessibilityProps {
   /** Text color / weight. */
   style?: StyleLike;
   /** Wrap mode: truncate (default) or clip. */
@@ -223,7 +230,7 @@ export interface TextProps {
   children?: unknown;
 }
 
-export interface InputProps {
+export interface InputProps extends AccessibilityProps {
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
@@ -243,9 +250,16 @@ export interface InputProps {
   disabled?: boolean;
   loading?: boolean;
   error?: boolean;
+  /**
+   * When set, every grapheme of the rendered value is replaced by this glyph
+   * before painting. The underlying value (and editable cursor positions)
+   * are untouched, so backspace/arrow keys behave normally. Use a single
+   * narrow grapheme like "•" or "*".
+   */
+  mask?: string;
 }
 
-export interface TextAreaProps {
+export interface TextAreaProps extends AccessibilityProps {
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;

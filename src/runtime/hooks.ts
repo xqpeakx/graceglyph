@@ -3,6 +3,8 @@ import { attachFiberToError, formatComponentStack } from "./diagnostics.js";
 import type { Theme } from "../theme/theme.js";
 import type { Size } from "../layout/rect.js";
 import type { Capabilities } from "../render/capabilities.js";
+import { subscribeFrame, type FrameCallback } from "./frame.js";
+import { createMotion, type MotionHandle, type MotionOptions } from "./motion.js";
 
 let currentFiber: Fiber | null = null;
 let hookIndex = 0;
@@ -109,6 +111,48 @@ export function useTerminalSize(): Size {
   );
 
   return size;
+}
+
+/**
+ * Subscribe to the shared 60Hz frame loop while this fiber is mounted. The
+ * callback receives `delta`, `now`, and `tick` from the scheduler. Auto-
+ * unsubscribes on unmount.
+ */
+export function useFrame(callback: FrameCallback, deps: unknown[] = []): void {
+  useEffect(() => subscribeFrame(callback), deps);
+}
+
+/**
+ * Drive a tween from the shared frame loop. Returns the current value;
+ * change `target` to animate. Useful for opacity, layout offsets, etc.
+ */
+export function useMotion<T extends number | readonly number[] | string>(
+  target: T,
+  options?: MotionOptions,
+): T {
+  const handle = useRef<MotionHandle<T> | null>(null);
+  const last = useRef<T>(target);
+  const [value, setValue] = useState<T>(target);
+
+  useEffect(() => {
+    const m = createMotion<T>(target, options);
+    handle.current = m;
+    last.current = target;
+    const unsubscribe = m.subscribe((v) => setValue(v));
+    return () => {
+      unsubscribe();
+      m.dispose();
+      handle.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (handle.current && !Object.is(last.current, target)) {
+    handle.current.animateTo(target);
+    last.current = target;
+  }
+
+  return value;
 }
 
 export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void {

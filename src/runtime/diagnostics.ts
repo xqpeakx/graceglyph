@@ -138,6 +138,7 @@ function innerSpace(
 }
 
 function validateBoxProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateAccessibilityProps(fiber, props);
   validateOptionalEnum(fiber, "display", props.display, ["box", "none"]);
   validateOptionalEnum(fiber, "layout", props.layout, ["flex", "grid", "dock"]);
   validateOptionalEnum(fiber, "direction", props.direction, ["row", "column"]);
@@ -284,11 +285,13 @@ function validateBreakpointPatch(
 }
 
 function validateTextProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateAccessibilityProps(fiber, props);
   validateOptionalEnum(fiber, "wrap", props.wrap, ["truncate", "clip"]);
   validateOptionalStyle(fiber, props.style);
 }
 
 function validateInputProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateAccessibilityProps(fiber, props);
   validateRequiredString(fiber, "value", props.value);
   validateRequiredFunction(fiber, "onChange", props.onChange);
   validateOptionalString(fiber, "placeholder", props.placeholder);
@@ -314,6 +317,7 @@ function validateInputProps(fiber: Fiber, props: DiagnosticProps): void {
 }
 
 function validateTextAreaProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateAccessibilityProps(fiber, props);
   validateRequiredString(fiber, "value", props.value);
   validateRequiredFunction(fiber, "onChange", props.onChange);
   validateOptionalString(fiber, "placeholder", props.placeholder);
@@ -336,6 +340,11 @@ function validateTextAreaProps(fiber: Fiber, props: DiagnosticProps): void {
   if (props.children !== undefined) {
     throw invalidPropError(fiber, "children", "undefined", props.children);
   }
+}
+
+function validateAccessibilityProps(fiber: Fiber, props: DiagnosticProps): void {
+  validateOptionalString(fiber, "accessibilityLabel", props.accessibilityLabel);
+  validateOptionalString(fiber, "accessibilityDescription", props.accessibilityDescription);
 }
 
 function validateOptionalPadding(fiber: Fiber, padding: Edges | undefined, prop = "padding"): void {

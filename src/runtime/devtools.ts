@@ -170,6 +170,13 @@ function describeNode(node: HostNode): string {
     parts.push(`value=${quote(preview(String(props.value ?? "")))}`);
   }
 
+  if (props.accessibilityLabel) {
+    parts.push(`a11y=${quote(preview(props.accessibilityLabel))}`);
+  }
+  if (props.accessibilityDescription) {
+    parts.push(`desc=${quote(preview(props.accessibilityDescription))}`);
+  }
+
   const fiber = node.fiber;
   if (fiber.renderCount > 0) {
     parts.push(`renders=${fiber.renderCount}`);
