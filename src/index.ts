@@ -301,6 +301,15 @@ export {
 } from "./runtime/frame.js";
 export type { FrameCallback } from "./runtime/frame.js";
 
+export { createPluginRegistry, definePlugin } from "./plugin.js";
+export type {
+  GraceglyphPlugin,
+  PluginContext,
+  PluginMiddleware,
+  PluginRegistry,
+  PluginRenderInfo,
+} from "./plugin.js";
+
 export { DataGrid, Popover } from "./components-overlay.js";
 export type {
   DataGridColumn,

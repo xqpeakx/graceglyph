@@ -12,6 +12,61 @@ ships with a migration note in this file.
 
 ### Added
 
+- §14 plugin protocol shipped. `src/plugin.ts` exposes
+  `GraceglyphPlugin`, `createPluginRegistry`, and `definePlugin`.
+  Plugins contribute components, themes, commands, render middleware,
+  and an optional `setup(context)` hook with a teardown thunk. Resolution
+  follows last-registration-wins; commands aggregate and dedupe by id;
+  middleware runs in registration order with per-plugin error isolation
+  (a thrown middleware function logs and the chain continues with the
+  prior node). `registry.activate()` returns a single LIFO disposer that
+  runs `setup` cleanups and then unregisters every plugin command.
+- 9 new node:test cases in `test/plugin.test.ts` covering id
+  validation, dedupe-on-replace, theme/component last-write-wins,
+  command aggregation, setup/cleanup ordering, middleware threading,
+  and error survival. Public exports: `createPluginRegistry`,
+  `definePlugin`, `GraceglyphPlugin`, `PluginRegistry`, `PluginContext`,
+  `PluginMiddleware`, `PluginRenderInfo`. Full suite: 278 pass, 0 fail;
+  tsc --noEmit clean; build green.
+- §13 flagship apps — final three binaries:
+  - `gg-files` — real directory browser via `fs.readdir` + `fs.stat`.
+    Sorts directories first; preview pane reads the first 8 KB of any
+    text file (binary buffers are flagged via NUL-byte sniff). `--all`
+    shows dotfiles. `PathBreadcrumbs` lets the user jump back to any
+    parent in one click.
+  - `gg-git` — shells out to `git status --porcelain`, `branch
+    --show-current`, `rev-list --left-right --count`, `diff`, and
+    `log` via `execFile`. Tabs route between Status / Diff / Log;
+    `parseUnifiedDiff` powers the diff pane.
+  - `gg-chat` — pluggable streaming chat client. `echoModel` reflects
+    the user's input token-by-token via `Stream`-style consumption.
+    Real providers swap into a single `ChatModel` interface — the
+    renderer is provider-agnostic.
+- 10 new node:test cases covering byte/text formatting, directory
+  listing sort + hidden filter, porcelain parsing edge cases, argv
+  handling for all three apps, and echoModel iteration shape.
+  `bin` entries: `gg-files`, `gg-git`, `gg-chat`. Helper npm scripts:
+  `app:gg-files`, `app:gg-git`, `app:gg-chat`. Full suite: 269 pass,
+  0 fail; tsc --noEmit clean; build green. **§13 complete** — all
+  five flagship apps ship from the main package.
+- §13 flagship apps — first two binaries ship as part of the main package:
+  - `gg-logs` (apps/gg-logs/index.tsx) — real `tail -f` over fs.watch.
+    Accepts one or more file paths via argv, supports substring/`/regex/`
+    filtering, severity inference from log shapes (DEBUG/INFO/WARN/ERROR),
+    ISO-8601 timestamp extraction, pause/resume, and theme override.
+  - `gg-monitor` (apps/gg-monitor/index.tsx) — live CPU / memory / load
+    average dashboard built on `os.cpus()` / `os.totalmem()` /
+    `os.loadavg()`. Per-core BarChart, CPU history Sparkline, threshold-
+    aware Gauges, and human-readable byte / uptime formatting.
+- New `bin` entries: `gg-logs` and `gg-monitor` in package.json so the
+  binaries land in `node_modules/.bin` once the package publishes. Helper
+  npm scripts `app:gg-logs` and `app:gg-monitor` for development.
+- Pure helpers (`parseLine`, `parseArgs`, `deltaUtil`, `snapshot`)
+  exported from each app for unit-test consumption.
+- 10 new node:test cases in `test/apps.test.ts` covering log parsing,
+  argv handling, severity inference, ISO timestamp pickup, CPU delta
+  math, and SystemSnapshot shape. Full suite: 259 pass, 0 fail; tsc
+  --noEmit clean; build green.
 - §11 `create-graceglyph` now ships the full six-template lineup the roadmap
   calls for. Existing `dashboard`, `cli-tool`, `log-viewer`, `crud-app` plus:
   - `chat` — streaming chat UI driven by `<Stream>` consuming an async

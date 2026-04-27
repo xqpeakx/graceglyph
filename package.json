@@ -7,7 +7,12 @@
   "types": "dist/index.d.ts",
   "bin": {
     "create-graceglyph": "./dist/create.js",
-    "graceglyph-create": "./dist/create.js"
+    "graceglyph-create": "./dist/create.js",
+    "gg-logs": "./dist/apps/gg-logs/index.js",
+    "gg-monitor": "./dist/apps/gg-monitor/index.js",
+    "gg-files": "./dist/apps/gg-files/index.js",
+    "gg-git": "./dist/apps/gg-git/index.js",
+    "gg-chat": "./dist/apps/gg-chat/index.js"
   },
   "exports": {
     ".": {
@@ -48,6 +53,11 @@
     "dev:explorer": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
     "dev:components": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx components",
     "dev:tarnished": "node --watch --experimental-specifier-resolution=node --loader ts-node/esm examples/tarnished-splash.tsx",
+    "app:gg-logs": "node --experimental-specifier-resolution=node --loader ts-node/esm apps/gg-logs/index.tsx",
+    "app:gg-monitor": "node --experimental-specifier-resolution=node --loader ts-node/esm apps/gg-monitor/index.tsx",
+    "app:gg-files": "node --experimental-specifier-resolution=node --loader ts-node/esm apps/gg-files/index.tsx",
+    "app:gg-git": "node --experimental-specifier-resolution=node --loader ts-node/esm apps/gg-git/index.tsx",
+    "app:gg-chat": "node --experimental-specifier-resolution=node --loader ts-node/esm apps/gg-chat/index.tsx",
     "example:showcase": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx",
     "example:monitor": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx system-monitor",
     "example:logs": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx log-viewer",
