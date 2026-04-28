@@ -7,7 +7,7 @@ import { render } from "./runtime/render.js";
 import type { RuntimeOptions } from "./runtime/runtime.js";
 import type { ZenElement } from "./runtime/element.js";
 import { collectInspectorWarnings } from "./runtime/diagnostics.js";
-import type { HostNode } from "./runtime/host.js";
+import { textOf, type HostNode } from "./runtime/host.js";
 
 export interface RenderTestAppOptions {
   width?: number;
@@ -89,6 +89,9 @@ export interface TestApp {
   frame(): string;
   snapshot(): string;
   snapshotAnsi(): string;
+  getByLabel(label: string | RegExp): TestLocator;
+  getByRole(role: TestRole, options?: { name?: string | RegExp }): TestLocator;
+  queryAllByRole(role: TestRole, options?: { name?: string | RegExp }): TestLocator[];
   warnings(): string[];
   assertNoLayoutWarnings(): void;
   press(key: string, options?: KeyboardFlowOptions): Promise<void>;
@@ -119,6 +122,24 @@ export function renderTestApp(element: ZenElement, options: RenderTestAppOptions
     frame: () => snapshotTerminalFrame(handle),
     snapshot: () => snapshotTerminalFrame(handle),
     snapshotAnsi: () => snapshotTerminalAnsi(app),
+    getByLabel: (label) => {
+      const root = hostRoot(handle);
+      const match = findNodes(root, (node) => labelMatches(accessibilityLabel(node), label))[0];
+      if (!match) throw new Error(`unable to find node by label: ${String(label)}`);
+      return toLocator(match);
+    },
+    getByRole: (role, options) => {
+      const match = queryLocatorsByRole(handle, role, options)[0];
+      if (!match) {
+        throw new Error(
+          options?.name
+            ? `unable to find role "${role}" with name ${String(options.name)}`
+            : `unable to find role "${role}"`,
+        );
+      }
+      return match;
+    },
+    queryAllByRole: (role, options) => queryLocatorsByRole(handle, role, options),
     warnings: () => collectLayoutWarnings(handle),
     assertNoLayoutWarnings: () => assertNoLayoutWarnings(handle),
     press: async (key, flowOptions) => {
@@ -187,10 +208,43 @@ export function snapshotTerminalAnsi(app: TestApp): string {
   return app.output.output();
 }
 
+export type TestRole = "button" | "textbox" | "generic";
+
+export interface TestLocator {
+  role: TestRole;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+  description?: string;
+}
+
+function queryLocatorsByRole(
+  handle: RenderHandle,
+  role: TestRole,
+  options?: { name?: string | RegExp },
+): TestLocator[] {
+  const root = hostRoot(handle);
+  const nodes = findNodes(root, (node) => {
+    if (nodeRole(node) !== role) return false;
+    if (!options?.name) return true;
+    return labelMatches(accessibilityLabel(node), options.name);
+  });
+  return nodes.map(toLocator);
+}
+
 export function collectLayoutWarnings(handle: RenderHandle | TestApp): string[] {
   const runtime = "handle" in handle ? handle.handle.runtime : handle.runtime;
   const root = (runtime as unknown as { hostRoot: HostNode | null }).hostRoot;
   return root ? collectInspectorWarnings(root) : [];
+}
+
+function hostRoot(handle: RenderHandle | TestApp): HostNode {
+  const runtime = "handle" in handle ? handle.handle.runtime : handle.runtime;
+  const root = (runtime as unknown as { hostRoot: HostNode | null }).hostRoot;
+  if (!root) throw new Error("test app has no mounted host root");
+  return root;
 }
 
 export function assertNoLayoutWarnings(handle: RenderHandle | TestApp): void {
@@ -263,4 +317,58 @@ function mouseCode(button: MouseButton, action: MouseFlowEvent["action"]): numbe
   if (button === "wheel-up") return 64;
   if (button === "wheel-down") return 65;
   return 0;
+}
+
+function findNodes(root: HostNode, predicate: (node: HostNode) => boolean): HostNode[] {
+  const matches: HostNode[] = [];
+  const stack: HostNode[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.hidden) continue;
+    if (predicate(node)) matches.push(node);
+    for (let index = node.children.length - 1; index >= 0; index--) {
+      const child = node.children[index];
+      if (child) stack.push(child);
+    }
+  }
+  return matches;
+}
+
+function nodeRole(node: HostNode): TestRole {
+  if (node.type === "input" || node.type === "textarea") return "textbox";
+  if (node.type === "box") {
+    const clickable = typeof node.props.onClick === "function";
+    const focusable = node.resolvedProps.focusable === true;
+    const bordered = node.resolvedProps.border === true;
+    const labeled = typeof node.resolvedProps.accessibilityLabel === "string";
+    if (clickable || (focusable && bordered && labeled)) return "button";
+  }
+  return "generic";
+}
+
+function accessibilityLabel(node: HostNode): string {
+  const explicit = node.resolvedProps.accessibilityLabel;
+  if (typeof explicit === "string" && explicit.length > 0) return explicit;
+  if (node.type === "text") return textOf(node.resolvedProps.children);
+  return "";
+}
+
+function labelMatches(label: string, expected: string | RegExp): boolean {
+  if (typeof expected === "string") return label === expected;
+  return expected.test(label);
+}
+
+function toLocator(node: HostNode): TestLocator {
+  return {
+    role: nodeRole(node),
+    x: node.layout.x,
+    y: node.layout.y,
+    width: node.layout.width,
+    height: node.layout.height,
+    label: accessibilityLabel(node) || undefined,
+    description:
+      typeof node.resolvedProps.accessibilityDescription === "string"
+        ? node.resolvedProps.accessibilityDescription
+        : undefined,
+  };
 }

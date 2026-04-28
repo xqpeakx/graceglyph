@@ -421,4 +421,6 @@ export type {
   MouseFlowEvent,
   RenderTestAppOptions,
   TestApp,
+  TestLocator,
+  TestRole,
 } from "./testing.js";

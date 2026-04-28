@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { Button, Row, Text, ansi, h, renderTestApp } from "../src/index.js";
+import { Button, Row, Text, TextInput, ansi, h, renderTestApp, useState } from "../src/index.js";
 import type { ScreenBuffer } from "../src/render/buffer.js";
 
 test("renderTestApp snapshots frames and simulates keyboard/mouse flows", async () => {
@@ -81,6 +81,43 @@ test("renderTestApp exposes layout warning assertions", async () => {
     await app.settle();
     assert.ok(app.warnings().length > 0);
     assert.throws(() => app.assertNoLayoutWarnings(), /layout warnings/);
+  } finally {
+    app.stop();
+  }
+});
+
+test("renderTestApp exposes role and label queries", async () => {
+  function QueryHarness() {
+    const [value, setValue] = useState("");
+    return h(
+      Row,
+      { gap: 1 },
+      h(Button, {}, "Run"),
+      h(TextInput, {
+        value,
+        onChange: setValue,
+        accessibilityLabel: "Search",
+      }),
+    );
+  }
+
+  const app = renderTestApp(h(QueryHarness, {}), {
+    width: 48,
+    height: 4,
+    runtime: { devtools: false },
+  });
+
+  try {
+    await app.settle();
+    const button = app.getByRole("button", { name: /Run/i });
+    assert.equal(button.role, "button");
+    assert.ok(button.width > 0);
+
+    const input = app.getByLabel("Search");
+    assert.equal(input.role, "textbox");
+
+    const boxes = app.queryAllByRole("generic");
+    assert.ok(boxes.length > 0);
   } finally {
     app.stop();
   }

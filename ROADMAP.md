@@ -2,6 +2,13 @@
 
 Status: draft. Owner: @cooley. Target horizon: 6–9 months to v1.0.
 
+## Implementation status (rolling)
+
+- [x] §7 route leave guards via `Route.canLeave` and `canNavigateRoute(...)`.
+- [x] §7 deep-link normalization helpers (`resolveDeepLinkPath*`) for argv/path inputs.
+- [x] §9 testkit ANSI snapshot support via `app.snapshotAnsi()`.
+- [x] §9 testkit accessibility queries via `getByRole` and `getByLabel`.
+
 This document is the plan to take graceglyph from "another Node TUI" to the
 default choice for terminal apps in TypeScript. It is opinionated on purpose.
 Where two paths exist, one is chosen and the other is named so it stays dead.

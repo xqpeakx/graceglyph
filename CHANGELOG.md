@@ -12,6 +12,38 @@ ships with a migration note in this file.
 
 ### Added
 
+- §7 navigation hardening:
+  - `Route` now accepts `canLeave?: boolean | (() => boolean)`.
+  - `canNavigateRoute(currentPath, nextPath, children)` evaluates active
+    route guard chains before allowing navigation.
+  - `AppShell` now accepts `canNavigate(currentPath, nextPath)` and applies
+    it to breadcrumb/Escape back navigation.
+  - Deep-link helpers `resolveDeepLinkPath(...)` and
+    `resolveDeepLinkPathFromArgv(...)` normalize query/hash-heavy paths and
+    skip option values while scanning argv.
+- §9 testkit DX:
+  - `renderTestApp` now exposes `snapshotAnsi()` for full ANSI regression
+    snapshots alongside plain-frame `snapshot()`.
+  - Accessibility query locators are now available:
+    `getByRole`, `queryAllByRole`, and `getByLabel`.
+  - New `TestLocator` / `TestRole` types exported from package root.
+- New test coverage in `test/app-shell.test.ts` and `test/testing.test.ts`
+  for route guard behavior, query/hash route normalization, deep-link argv
+  parsing, ANSI snapshots, and accessibility queries.
+- Persistent-state backend now prefers filesystem storage:
+  `~/.config/<app>/state.json` by default, with
+  `GRACEGLYPH_STATE_FILE`, `GRACEGLYPH_APP_ID`, and `XDG_CONFIG_HOME`
+  overrides; localStorage remains a fallback.
+- Runtime hook compatibility pass: `useState` in `src/runtime/hooks.ts`
+  stores values in a signal-backed cell internally while preserving existing
+  hook semantics and fiber scheduler behavior.
+- CI/dx alignment:
+  - Added `c8` coverage tooling and `npm run test:coverage`.
+  - CI now runs dedicated coverage and bench jobs.
+  - Bench docs updated to match actual CI behavior.
+- Bug-report typing/runtime fix in `src/runtime/bug-report.ts` restored
+  clean `npm run typecheck` by aligning inspector tree types and call shape.
+
 - §14 plugin protocol shipped. `src/plugin.ts` exposes
   `GraceglyphPlugin`, `createPluginRegistry`, and `definePlugin`.
   Plugins contribute components, themes, commands, render middleware,
