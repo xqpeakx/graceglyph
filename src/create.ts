@@ -239,14 +239,10 @@ function isMissingFile(error: unknown): boolean {
   );
 }
 
-function baseFiles(
-  ctx: TemplateContext,
-  main: string,
-  description: string,
-): TemplateFile[] {
+function baseFiles(ctx: TemplateContext, main: string, description: string): TemplateFile[] {
   const projectName = ctx.projectName;
   const themedMain = main.replace(
-    'render(<AppRoot />);',
+    "render(<AppRoot />);",
     `import { builtInThemes } from "graceglyph";\nrender(<AppRoot />).setTheme(builtInThemes["${ctx.theme}"]);`,
   );
   return [
@@ -429,14 +425,14 @@ function pluginTemplate(ctx: TemplateContext): TemplateFile[] {
       path: "src/index.ts",
       content:
         'import { definePlugin, type GraceglyphPlugin } from "graceglyph";\n\n' +
-        'export interface PluginOptions {\n  readonly greeting?: string;\n}\n\n' +
-        'export function createPlugin(options: PluginOptions = {}): GraceglyphPlugin {\n' +
+        "export interface PluginOptions {\n  readonly greeting?: string;\n}\n\n" +
+        "export function createPlugin(options: PluginOptions = {}): GraceglyphPlugin {\n" +
         "  return definePlugin({\n" +
         '    id: "example.plugin",\n' +
         "    setup() {\n" +
         '      const greeting = options.greeting ?? "hello from plugin";\n' +
         "      // register resources, commands, components, or middleware here.\n" +
-        '      return () => void greeting;\n' +
+        "      return () => void greeting;\n" +
         "    },\n" +
         "  });\n" +
         "}\n",
@@ -526,7 +522,7 @@ function componentTemplate(ctx: TemplateContext): TemplateFile[] {
       path: "src/index.tsx",
       content:
         'import { Box, Text, h, type BoxProps, type StyleLike, type ZenElement } from "graceglyph";\n\n' +
-        "export interface StatTileProps extends Omit<BoxProps, \"children\"> {\n" +
+        'export interface StatTileProps extends Omit<BoxProps, "children"> {\n' +
         "  title: string;\n" +
         "  value: string;\n" +
         "  detail?: string;\n" +
@@ -549,7 +545,7 @@ function componentTemplate(ctx: TemplateContext): TemplateFile[] {
         "    {\n" +
         "      border: true,\n" +
         "      padding: [0, 1],\n" +
-        "      direction: \"column\",\n" +
+        '      direction: "column",\n' +
         "      ...box,\n" +
         "    } as BoxProps,\n" +
         "    [\n" +
@@ -572,9 +568,9 @@ function componentTemplate(ctx: TemplateContext): TemplateFile[] {
         "  try {\n" +
         "    await app.settle();\n" +
         "    const frame = app.snapshot();\n" +
-        '    assert.match(frame, /Latency/);\n' +
-        '    assert.match(frame, /42ms/);\n' +
-        '    assert.match(frame, /p95/);\n' +
+        "    assert.match(frame, /Latency/);\n" +
+        "    assert.match(frame, /42ms/);\n" +
+        "    assert.match(frame, /p95/);\n" +
         "  } finally {\n" +
         "    app.stop();\n" +
         "  }\n" +

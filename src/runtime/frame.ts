@@ -33,7 +33,6 @@ function tick(): void {
     try {
       cb({ delta, now: elapsed, tick: tickCount });
     } catch (err) {
-       
       console.error("graceglyph: frame callback error:", err);
     }
   }
@@ -89,7 +88,6 @@ export function __testTick(deltaOverride?: number): void {
     try {
       cb({ delta, now: elapsed, tick: tickCount });
     } catch (err) {
-       
       console.error("graceglyph: frame callback error:", err);
     }
   }

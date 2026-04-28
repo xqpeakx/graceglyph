@@ -110,7 +110,10 @@ test("canNavigateRoute blocks leaving route when canLeave is false", () => {
 
 test("deep-link helpers normalize argv and query/hash paths", () => {
   assert.equal(resolveDeepLinkPath("/apps/logs?pane=tail#row-4"), "/apps/logs");
-  assert.equal(resolveDeepLinkPathFromArgv(["node", "app", "--theme", "dark", "/logs?x=1"]), "/logs");
+  assert.equal(
+    resolveDeepLinkPathFromArgv(["node", "app", "--theme", "dark", "/logs?x=1"]),
+    "/logs",
+  );
   assert.equal(resolveDeepLinkPathFromArgv(["node", "app"], "/"), "/");
 });
 

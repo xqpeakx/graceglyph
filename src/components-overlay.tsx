@@ -71,9 +71,7 @@ export function Popover(props: PopoverProps): ZenElement {
         return false;
       },
     } as BoxProps,
-    typeof props.content === "string"
-      ? h("text", {} as TextProps, props.content)
-      : props.content,
+    typeof props.content === "string" ? h("text", {} as TextProps, props.content) : props.content,
   );
 
   if (placement === "top") {
@@ -116,9 +114,7 @@ export interface DataGridProps<T> extends AccessibilityProps {
   rowKey?: (row: T, index: number) => string | number;
 }
 
-export function DataGrid<T extends Record<string, unknown>>(
-  props: DataGridProps<T>,
-): ZenElement {
+export function DataGrid<T extends Record<string, unknown>>(props: DataGridProps<T>): ZenElement {
   const [editing, setEditing] = useState<{ row: number; column: string; draft: string } | null>(
     null,
   );

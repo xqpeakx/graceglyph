@@ -220,7 +220,12 @@ test("image auto protocol prefers kitty when available", async (t) => {
     width: 40,
     height: 6,
     runtime: {
-      capabilities: { ...FULL_CAPABILITIES, kittyGraphics: true, sixel: false, iterm2Images: false },
+      capabilities: {
+        ...FULL_CAPABILITIES,
+        kittyGraphics: true,
+        sixel: false,
+        iterm2Images: false,
+      },
     },
   });
   t.after(() => harness.handle.stop());

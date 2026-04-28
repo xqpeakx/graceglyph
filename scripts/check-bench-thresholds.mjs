@@ -58,10 +58,8 @@ function main() {
   const results = parseResults(inputPath);
   const failures = checkThresholds(results);
   if (failures.length > 0) {
-     
     console.error("bench threshold check failed:");
     for (const failure of failures) {
-       
       console.error(`- ${failure}`);
     }
     process.exitCode = 1;

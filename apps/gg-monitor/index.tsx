@@ -57,12 +57,7 @@ export function deltaUtil(prev: readonly CpuSample[], curr: readonly CpuSample[]
     }
     const idleDelta = b.idle - a.idle;
     const totalDelta =
-      b.user -
-      a.user +
-      (b.nice - a.nice) +
-      (b.sys - a.sys) +
-      (b.idle - a.idle) +
-      (b.irq - a.irq);
+      b.user - a.user + (b.nice - a.nice) + (b.sys - a.sys) + (b.idle - a.idle) + (b.irq - a.irq);
     if (totalDelta <= 0) {
       out.push(0);
       continue;
@@ -124,8 +119,7 @@ function GgMonitorApp(props: GgMonitorAppProps) {
       setPrevCpu(next.cpu);
       setSnap(next.system);
       const avg =
-        next.system.cpuUtil.reduce((a, b) => a + b, 0) /
-        Math.max(1, next.system.cpuUtil.length);
+        next.system.cpuUtil.reduce((a, b) => a + b, 0) / Math.max(1, next.system.cpuUtil.length);
       setHistory((current) => {
         const updated = [...current, avg];
         return updated.length > 64 ? updated.slice(-64) : updated;
@@ -146,8 +140,7 @@ function GgMonitorApp(props: GgMonitorAppProps) {
 
   const memUsed = snap.totalMemBytes - snap.freeMemBytes;
   const memUtil = memUsed / Math.max(1, snap.totalMemBytes);
-  const avgCpu =
-    snap.cpuUtil.reduce((a, b) => a + b, 0) / Math.max(1, snap.cpuUtil.length);
+  const avgCpu = snap.cpuUtil.reduce((a, b) => a + b, 0) / Math.max(1, snap.cpuUtil.length);
 
   const cpuBars = snap.cpuUtil.map((value, index) => ({
     label: `core${index}`,
@@ -160,7 +153,9 @@ function GgMonitorApp(props: GgMonitorAppProps) {
         <Column gap={1} grow={1}>
           <Row gap={2}>
             <Box>
-              <Text>{snap.platform}/{snap.arch} · uptime {formatUptime(snap.uptimeSec)}</Text>
+              <Text>
+                {snap.platform}/{snap.arch} · uptime {formatUptime(snap.uptimeSec)}
+              </Text>
             </Box>
             <Badge variant={avgCpu > 0.9 ? "danger" : avgCpu > 0.7 ? "warning" : "info"}>
               CPU {Math.round(avgCpu * 100)}%
@@ -182,7 +177,13 @@ function GgMonitorApp(props: GgMonitorAppProps) {
             </Panel>
             <Panel title="Memory" width={36} padding={1}>
               <Column gap={1}>
-                <Gauge value={memUtil} thresholds={[0.7, 0.9]} showPercent label="used" width={20} />
+                <Gauge
+                  value={memUtil}
+                  thresholds={[0.7, 0.9]}
+                  showPercent
+                  label="used"
+                  width={20}
+                />
                 <Text style={{ dim: true }}>
                   used: {formatBytes(memUsed)} / {formatBytes(snap.totalMemBytes)}
                 </Text>

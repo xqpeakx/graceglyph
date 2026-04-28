@@ -45,7 +45,8 @@ export function PathBreadcrumbs(props: PathBreadcrumbsProps): ZenElement {
         ),
       );
     }
-    const fullPath = prefix === "/" ? `/${segment}` : prefix.length === 0 ? segment : `${prefix}${sep}${segment}`;
+    const fullPath =
+      prefix === "/" ? `/${segment}` : prefix.length === 0 ? segment : `${prefix}${sep}${segment}`;
     prefix = fullPath;
     items.push(
       h(
@@ -144,11 +145,7 @@ export function FilePicker(props: FilePickerProps): ZenElement {
       height,
       render: (row: FlatEntry, _index: number, isSel: boolean) => {
         const indent = " ".repeat(row.depth * 2);
-        const glyph = row.entry.isFile
-          ? "·"
-          : expanded[row.path]
-            ? "▾"
-            : "▸";
+        const glyph = row.entry.isFile ? "·" : expanded[row.path] ? "▾" : "▸";
         const badge = row.entry.badge ? ` ${row.entry.badge}` : "";
         return h(
           "text",

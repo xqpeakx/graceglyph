@@ -142,15 +142,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  console.log(
-    "name".padEnd(40),
-    "samples",
-    "  p50",
-    "  p95",
-    "  p99",
-    "  max",
-    " RSS-MB",
-  );
+  console.log("name".padEnd(40), "samples", "  p50", "  p95", "  p99", "  max", " RSS-MB");
   for (const r of results) {
     console.log(
       r.name.padEnd(40),

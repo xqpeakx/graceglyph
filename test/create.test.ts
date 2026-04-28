@@ -13,7 +13,11 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 async function scaffold(
   template: string,
   extraArgs: readonly string[] = [],
-): Promise<{ target: string; main: string; pkg: { name: string; scripts: Record<string, string> } }> {
+): Promise<{
+  target: string;
+  main: string;
+  pkg: { name: string; scripts: Record<string, string> };
+}> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "graceglyph-create-"));
   const target = path.join(dir, "example");
   await execFileAsync(

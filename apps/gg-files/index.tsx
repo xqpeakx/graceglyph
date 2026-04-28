@@ -29,10 +29,7 @@ export interface FileItem {
   modifiedMs: number;
 }
 
-export async function listDirectory(
-  dir: string,
-  showHidden: boolean,
-): Promise<FileItem[]> {
+export async function listDirectory(dir: string, showHidden: boolean): Promise<FileItem[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const out: FileItem[] = [];
   for (const entry of entries) {

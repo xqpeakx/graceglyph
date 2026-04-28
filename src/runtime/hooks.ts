@@ -279,7 +279,7 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
 function reportEffectError(err: unknown, fiber: Fiber): void {
   const details = err instanceof Error ? err.message : String(err);
   const stack = formatComponentStack(fiber);
-   
+
   console.error(
     stack.length > 0
       ? `graceglyph: effect error: ${details}\n${stack}`
@@ -291,7 +291,7 @@ function warnDeprecatedHook(hook: string, replacement: string): void {
   if (process.env.NODE_ENV === "test") return;
   if (warnedDeprecatedHooks.has(hook)) return;
   warnedDeprecatedHooks.add(hook);
-   
+
   console.warn(
     `graceglyph: ${hook}() is a compatibility hook slated for removal in a future 0.x minor. Prefer ${replacement}() from graceglyph/reactive.`,
   );

@@ -81,9 +81,7 @@ test("gg-git parseArgs handles --theme and a path arg", () => {
 test("gg-chat echoModel streams non-empty tokens", async () => {
   const model = echoModel({ delayMs: 0 });
   const tokens: string[] = [];
-  for await (const tok of model.stream([
-    { id: 1, role: "user", content: "hello" },
-  ])) {
+  for await (const tok of model.stream([{ id: 1, role: "user", content: "hello" }])) {
     tokens.push(tok);
   }
   assert.ok(tokens.length > 0);

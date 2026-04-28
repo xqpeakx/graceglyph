@@ -15,7 +15,14 @@ function mergeBoxStyle(base: StyleLike, override?: StyleLike): StyleLike {
 }
 
 // -- <Transition> ------------------------------------------------------------
-export type TransitionPreset = "fade" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "expand" | "bounce";
+export type TransitionPreset =
+  | "fade"
+  | "slide-up"
+  | "slide-down"
+  | "slide-left"
+  | "slide-right"
+  | "expand"
+  | "bounce";
 
 export interface TransitionProps extends AccessibilityProps {
   show: boolean;
@@ -160,7 +167,6 @@ export function Stream<T>(props: StreamProps<T>): ZenElement {
             return next.length > limit ? next.slice(-limit) : next;
           });
         } catch (err) {
-           
           console.error("graceglyph Stream: iterator error:", err);
           return;
         }

@@ -65,11 +65,7 @@ export function Markdown(props: MarkdownProps): ZenElement {
         h(
           "box",
           { key: nodes.length, direction: "row", padding: [0, 1] } as BoxProps & { key: number },
-          h(
-            "text",
-            { style: { dim: true } as StyleLike } as TextProps,
-            `▌ ${block.text}`,
-          ),
+          h("text", { style: { dim: true } as StyleLike } as TextProps, `▌ ${block.text}`),
         ),
       );
       continue;
@@ -128,11 +124,7 @@ export function Markdown(props: MarkdownProps): ZenElement {
 
 function renderInline(text: string): ZenElement {
   const tokens = tokenizeInline(text);
-  return h(
-    "text",
-    { wrap: "truncate" } as TextProps,
-    tokens.map((t) => t.text).join(""),
-  );
+  return h("text", { wrap: "truncate" } as TextProps, tokens.map((t) => t.text).join(""));
 }
 
 interface InlineToken {

@@ -89,8 +89,11 @@ export function normalizeMarkdown(source: string): string {
   const withTaskLists = source
     .replace(/^(\s*[-*]\s+)\[ \]\s+/gm, "$1☐ ")
     .replace(/^(\s*[-*]\s+)\[[xX]\]\s+/gm, "$1☑ ");
-  return withTaskLists.replace(/(^|[\s(])((https?:\/\/[^\s)]+))/g, (_, prefix: string, url: string) => {
-    if (url.includes("](")) return `${prefix}${url}`;
-    return `${prefix}[${url}](${url})`;
-  });
+  return withTaskLists.replace(
+    /(^|[\s(])((https?:\/\/[^\s)]+))/g,
+    (_, prefix: string, url: string) => {
+      if (url.includes("](")) return `${prefix}${url}`;
+      return `${prefix}[${url}](${url})`;
+    },
+  );
 }

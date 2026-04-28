@@ -47,10 +47,7 @@ test("AsciiArt preserves trailing spaces and aligns content", async (t) => {
 });
 
 test("BigText renders block-letter glyphs in five rows", async (t) => {
-  const harness = renderWithFakeTty(
-    h(BigText, { children: "GG" }),
-    { width: 16, height: 6 },
-  );
+  const harness = renderWithFakeTty(h(BigText, { children: "GG" }), { width: 16, height: 6 });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   const text = screenText(harness.handle);
@@ -63,10 +60,10 @@ test("BigText renders block-letter glyphs in five rows", async (t) => {
 });
 
 test("BigText accepts a glyph override", async (t) => {
-  const harness = renderWithFakeTty(
-    h(BigText, { children: "X", glyph: "*" }),
-    { width: 12, height: 6 },
-  );
+  const harness = renderWithFakeTty(h(BigText, { children: "X", glyph: "*" }), {
+    width: 12,
+    height: 6,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   const text = screenText(harness.handle);

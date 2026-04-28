@@ -84,7 +84,12 @@ test("renderer emits ansiPrefix before text once per prefixed cell", () => {
   const renderer = new Renderer(terminal as never);
 
   const frame = renderer.beginFrame();
-  frame.set(0, 0, { char: "A", style: DefaultStyle, width: 1, ansiPrefix: "\x1b]1337;File=foo\x07" });
+  frame.set(0, 0, {
+    char: "A",
+    style: DefaultStyle,
+    width: 1,
+    ansiPrefix: "\x1b]1337;File=foo\x07",
+  });
   frame.set(1, 0, { char: "B", style: DefaultStyle, width: 1 });
   renderer.flush();
 

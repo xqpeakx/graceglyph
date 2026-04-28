@@ -116,13 +116,7 @@ export function LineChart(props: LineChartProps): ZenElement {
     if (showAxis) {
       const value = domain.max - (y / Math.max(1, height - 1)) * span;
       const label = formatAxisLabel(value).padStart(labelWidth - 1, " ");
-      segments.push(
-        h(
-          "text",
-          { style: theme.chart.label } as TextProps,
-          `${label} `,
-        ),
-      );
+      segments.push(h("text", { style: theme.chart.label } as TextProps, `${label} `));
     }
     // Group adjacent cells with the same style for fewer text nodes.
     let runStyle: StyleLike | undefined = undefined;
@@ -130,11 +124,7 @@ export function LineChart(props: LineChartProps): ZenElement {
     const flush = () => {
       if (runText.length === 0) return;
       segments.push(
-        h(
-          "text",
-          { style: runStyle ?? theme.chart.series, wrap: "clip" } as TextProps,
-          runText,
-        ),
+        h("text", { style: runStyle ?? theme.chart.series, wrap: "clip" } as TextProps, runText),
       );
       runText = "";
     };
@@ -147,13 +137,7 @@ export function LineChart(props: LineChartProps): ZenElement {
       runText += buffer[y]![x]!;
     }
     flush();
-    rows.push(
-      h(
-        "box",
-        { key: y, direction: "row", height: 1 } as BoxProps,
-        segments,
-      ),
-    );
+    rows.push(h("box", { key: y, direction: "row", height: 1 } as BoxProps, segments));
   }
 
   if (props.xLabels && props.xLabels.length > 0) {
@@ -175,14 +159,10 @@ export function LineChart(props: LineChartProps): ZenElement {
       }
     }
     rows.push(
-      h(
-        "box",
-        { direction: "row", height: 1 } as BoxProps,
-        [
-          showAxis ? h("text", {} as TextProps, " ".repeat(labelWidth)) : null,
-          h("text", { wrap: "clip", style: theme.chart.label } as TextProps, row.slice(0, plotWidth)),
-        ],
-      ),
+      h("box", { direction: "row", height: 1 } as BoxProps, [
+        showAxis ? h("text", {} as TextProps, " ".repeat(labelWidth)) : null,
+        h("text", { wrap: "clip", style: theme.chart.label } as TextProps, row.slice(0, plotWidth)),
+      ]),
     );
   }
 
@@ -278,11 +258,7 @@ export function BarChart(props: BarChartProps): ZenElement {
         height: 1,
       } as BoxProps,
       [
-        h(
-          "text",
-          { style: theme.chart.label } as TextProps,
-          d.label.padEnd(labelWidth, " "),
-        ),
+        h("text", { style: theme.chart.label } as TextProps, d.label.padEnd(labelWidth, " ")),
         h("text", {} as TextProps, "  "),
         h(
           "text",
@@ -371,7 +347,11 @@ export function Gauge(props: GaugeProps): ZenElement {
   const filled = Math.round(value * width);
   const [warn = 0.7, danger = 0.9] = props.thresholds ?? [];
   const fillStyle =
-    value >= danger ? theme.notification.danger : value >= warn ? theme.notification.warning : theme.chart.series;
+    value >= danger
+      ? theme.notification.danger
+      : value >= warn
+        ? theme.notification.warning
+        : theme.chart.series;
   const bar = "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
   const suffix = props.showPercent ? ` ${Math.round(value * 100)}%` : "";
   const label = props.label ? `${props.label} ` : "";
@@ -410,9 +390,10 @@ export function Heatmap(props: HeatmapProps): ZenElement {
   const domain = props.domain ?? autoDomain(flat);
   const span = Math.max(1e-9, domain.max - domain.min);
 
-  const labelWidth = props.showAxis !== false && props.rowLabels
-    ? props.rowLabels.reduce((m, l) => Math.max(m, l.length), 0) + 1
-    : 0;
+  const labelWidth =
+    props.showAxis !== false && props.rowLabels
+      ? props.rowLabels.reduce((m, l) => Math.max(m, l.length), 0) + 1
+      : 0;
 
   const rowNodes = props.rows.map((row, ri) => {
     const segments: ZenElement[] = [];
@@ -427,7 +408,10 @@ export function Heatmap(props: HeatmapProps): ZenElement {
     }
     for (const [ci, value] of row.entries()) {
       const norm = clamp((value - domain.min) / span, 0, 1);
-      const glyph = HEATMAP_GLYPHS[Math.min(HEATMAP_GLYPHS.length - 1, Math.floor(norm * HEATMAP_GLYPHS.length))]!;
+      const glyph =
+        HEATMAP_GLYPHS[
+          Math.min(HEATMAP_GLYPHS.length - 1, Math.floor(norm * HEATMAP_GLYPHS.length))
+        ]!;
       segments.push(
         h(
           "text",
@@ -439,11 +423,7 @@ export function Heatmap(props: HeatmapProps): ZenElement {
         ),
       );
     }
-    return h(
-      "box",
-      { key: ri, direction: "row", height: 1 } as BoxProps,
-      segments,
-    );
+    return h("box", { key: ri, direction: "row", height: 1 } as BoxProps, segments);
   });
 
   if (props.showAxis !== false && props.colLabels && props.colLabels.length > 0) {
@@ -452,9 +432,7 @@ export function Heatmap(props: HeatmapProps): ZenElement {
     let row = "";
     for (const label of props.colLabels) row += label.slice(0, cellWidth).padEnd(cellWidth, " ");
     segments.push(h("text", { style: theme.chart.label, wrap: "clip" } as TextProps, row));
-    rowNodes.unshift(
-      h("box", { direction: "row", height: 1 } as BoxProps, segments),
-    );
+    rowNodes.unshift(h("box", { direction: "row", height: 1 } as BoxProps, segments));
   }
 
   return h(

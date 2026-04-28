@@ -12,7 +12,10 @@ function main() {
   for (const [modulePath, symbols] of exportsByModule) {
     const sourcePath = resolveSourcePath(modulePath);
     if (!sourcePath) {
-      docsByModule.set(modulePath, symbols.map((name) => ({ name, summary: "" })));
+      docsByModule.set(
+        modulePath,
+        symbols.map((name) => ({ name, summary: "" })),
+      );
       continue;
     }
     const symbolDocs = collectSymbolDocs(sourcePath);

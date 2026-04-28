@@ -153,7 +153,11 @@ const EXAMPLES: PlaygroundExample[] = [
   h(Image, { src: "/tmp/cat.png", alt: "Cat", protocol: "auto", width: 50, height: 8 })
 )`,
     render: () =>
-      h(App, {}, h(Image, { src: "/tmp/cat.png", alt: "Cat", protocol: "auto", width: 50, height: 8 })),
+      h(
+        App,
+        {},
+        h(Image, { src: "/tmp/cat.png", alt: "Cat", protocol: "auto", width: 50, height: 8 }),
+      ),
   },
 ];
 
@@ -213,7 +217,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-   
   console.error(error);
   process.exitCode = 1;
 });

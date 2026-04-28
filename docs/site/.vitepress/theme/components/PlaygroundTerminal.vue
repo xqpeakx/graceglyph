@@ -28,7 +28,8 @@ let fitAddon: any | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 const selectedExample = computed(
-  () => payload.examples.find((entry) => entry.id === selectedExampleId.value) ?? payload.examples[0],
+  () =>
+    payload.examples.find((entry) => entry.id === selectedExampleId.value) ?? payload.examples[0],
 );
 const selectedFixture = computed(() => {
   const example = selectedExample.value;

@@ -77,12 +77,16 @@ test("Transition unmounts children after leave when configured", async (t) => {
   function App() {
     const [show, setShow] = useState(true);
     setTimeout(() => setShow(false), 5);
-    return h(Transition, {
-      show,
-      preset: "fade",
-      duration: 30,
-      unmount: true,
-    } as Record<string, unknown>, h("text", {}, "hello world"));
+    return h(
+      Transition,
+      {
+        show,
+        preset: "fade",
+        duration: 30,
+        unmount: true,
+      } as Record<string, unknown>,
+      h("text", {}, "hello world"),
+    );
   }
   const harness = renderWithFakeTty(h(App, {}), { width: 16, height: 2 });
   t.after(() => harness.handle.stop());

@@ -72,7 +72,9 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
 function printHelp(): void {
   process.stdout.write("gg-logs <file...> [--regex pattern] [--level info] [--theme tarnished]\n");
   process.stdout.write("\n");
-  process.stdout.write("Streams one or more log files. Tail mode by default; --no-follow disables.\n");
+  process.stdout.write(
+    "Streams one or more log files. Tail mode by default; --no-follow disables.\n",
+  );
 }
 
 const LEVEL_PATTERN = /\b(DEBUG|INFO|WARN|ERROR|FATAL|TRACE)\b/i;
@@ -224,17 +226,28 @@ function GgLogsApp(props: AppProps) {
         <Column gap={1} grow={1}>
           <Row gap={1}>
             <Text>filter:</Text>
-            <TextInput value={filter} onChange={setFilter} grow={1} placeholder="substring or regex" />
+            <TextInput
+              value={filter}
+              onChange={setFilter}
+              grow={1}
+              placeholder="substring or regex"
+            />
             <Button onClick={() => setPaused((v) => !v)}>{paused ? "Resume" : "Pause"}</Button>
             {paused ? <Badge variant="warning">paused</Badge> : null}
           </Row>
           <Panel title="Stream" grow={1} padding={0}>
-            <LogStream entries={visible} filter={toFilter(filter)} paused={paused} showTimestamp height={20} />
+            <LogStream
+              entries={visible}
+              filter={toFilter(filter)}
+              paused={paused}
+              showTimestamp
+              height={20}
+            />
           </Panel>
           <Box>
             <Text style={{ dim: true }}>
-              {entries.length} entries · {props.follow ? "follow" : "static"} ·{" "}
-              {props.files.length} file{props.files.length === 1 ? "" : "s"}
+              {entries.length} entries · {props.follow ? "follow" : "static"} · {props.files.length}{" "}
+              file{props.files.length === 1 ? "" : "s"}
             </Text>
           </Box>
         </Column>

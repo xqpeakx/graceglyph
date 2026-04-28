@@ -44,10 +44,10 @@ import { renderWithFakeTty, screenText, settleRuntime, waitFor } from "./support
 
 test("IconButton invokes onClick on Enter while focused", async (t) => {
   let clicks = 0;
-  const harness = renderWithFakeTty(
-    h(IconButton, { icon: "★", onClick: () => (clicks += 1) }),
-    { width: 6, height: 1 },
-  );
+  const harness = renderWithFakeTty(h(IconButton, { icon: "★", onClick: () => (clicks += 1) }), {
+    width: 6,
+    height: 1,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   harness.input.emitData("\r");
@@ -55,10 +55,10 @@ test("IconButton invokes onClick on Enter while focused", async (t) => {
 });
 
 test("Avatar renders centered initials when no glyph is given", async (t) => {
-  const harness = renderWithFakeTty(
-    h(Avatar, { name: "Quentin Cooley", size: 4 }),
-    { width: 6, height: 1 },
-  );
+  const harness = renderWithFakeTty(h(Avatar, { name: "Quentin Cooley", size: 4 }), {
+    width: 6,
+    height: 1,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   // "QC" centered in 4 cells: " QC "
@@ -66,10 +66,10 @@ test("Avatar renders centered initials when no glyph is given", async (t) => {
 });
 
 test("Pill wraps content in parentheses with optional icon", async (t) => {
-  const harness = renderWithFakeTty(
-    h(Pill, { variant: "info", icon: "i", children: "tip" }),
-    { width: 14, height: 1 },
-  );
+  const harness = renderWithFakeTty(h(Pill, { variant: "info", icon: "i", children: "tip" }), {
+    width: 14,
+    height: 1,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   assert.match(screenText(harness.handle), /\( i tip \)/);
@@ -77,10 +77,10 @@ test("Pill wraps content in parentheses with optional icon", async (t) => {
 
 test("Chip fires onRemove on backspace", async (t) => {
   let removed = 0;
-  const harness = renderWithFakeTty(
-    h(Chip, { children: "tag", onRemove: () => (removed += 1) }),
-    { width: 12, height: 1 },
-  );
+  const harness = renderWithFakeTty(h(Chip, { children: "tag", onRemove: () => (removed += 1) }), {
+    width: 12,
+    height: 1,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   harness.input.emitData("\x7f");
@@ -105,10 +105,10 @@ test("Card renders title and footer rows", async (t) => {
 });
 
 test("ProgressRing shows quarter glyph for determinate values", async (t) => {
-  const harness = renderWithFakeTty(
-    h(ProgressRing, { value: 1, label: "done" }),
-    { width: 12, height: 1 },
-  );
+  const harness = renderWithFakeTty(h(ProgressRing, { value: 1, label: "done" }), {
+    width: 12,
+    height: 1,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   assert.match(screenText(harness.handle), /● done/);
@@ -182,7 +182,9 @@ test("Combobox filters options by typed query", async (t) => {
   await settleRuntime();
   // Type "ru" — Rust + Ruby remain.
   harness.input.emitData("ru");
-  await waitFor(() => /Rust/.test(screenText(harness.handle)) && /Ruby/.test(screenText(harness.handle)));
+  await waitFor(
+    () => /Rust/.test(screenText(harness.handle)) && /Ruby/.test(screenText(harness.handle)),
+  );
   assert.doesNotMatch(screenText(harness.handle), /Python/);
 });
 
@@ -194,8 +196,7 @@ test("Autocomplete picks suggestion on enter", async (t) => {
     return h(Autocomplete, {
       value: v,
       onChange: setV,
-      suggestions: (q: string) =>
-        ["alpha", "alphabet", "bravo"].filter((s) => s.startsWith(q)),
+      suggestions: (q: string) => ["alpha", "alphabet", "bravo"].filter((s) => s.startsWith(q)),
     });
   }
   const harness = renderWithFakeTty(h(App, {}), { width: 24, height: 8 });
@@ -396,10 +397,10 @@ test("BarChart renders one bar per datum with labels", async (t) => {
 
 test("Histogram bins values into approximate counts", async (t) => {
   const values = [1, 1, 2, 2, 3, 3, 4, 5, 5, 5];
-  const harness = renderWithFakeTty(
-    h(Histogram, { values, bins: 5, width: 30 }),
-    { width: 32, height: 6 },
-  );
+  const harness = renderWithFakeTty(h(Histogram, { values, bins: 5, width: 30 }), {
+    width: 32,
+    height: 6,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   // At least some bins are non-empty.
@@ -450,10 +451,10 @@ test("Markdown renders headings, lists, and code fences", async (t) => {
     "const x = 1;",
     "```",
   ].join("\n");
-  const harness = renderWithFakeTty(
-    h(Markdown, { children: source, width: 40 }),
-    { width: 42, height: 12 },
-  );
+  const harness = renderWithFakeTty(h(Markdown, { children: source, width: 40 }), {
+    width: 42,
+    height: 12,
+  });
   t.after(() => harness.handle.stop());
   await settleRuntime();
   const text = screenText(harness.handle);
@@ -513,7 +514,11 @@ test("FilePicker expands directories and selects files", async (t) => {
 });
 
 test("DataGrid edits a cell on Enter and commits on Submit", async (t) => {
-  interface Row { [k: string]: unknown; name: string; age: number }
+  interface Row {
+    [k: string]: unknown;
+    name: string;
+    age: number;
+  }
   const ref = { rows: [{ name: "alice", age: 30 } as Row] };
   function App() {
     const [rows, setRows] = useState<readonly Row[]>(ref.rows);

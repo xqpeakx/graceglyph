@@ -2,11 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { parseArgs as parseLogsArgs, parseLine } from "../apps/gg-logs/index.js";
-import {
-  deltaUtil,
-  parseArgs as parseMonitorArgs,
-  snapshot,
-} from "../apps/gg-monitor/index.js";
+import { deltaUtil, parseArgs as parseMonitorArgs, snapshot } from "../apps/gg-monitor/index.js";
 
 // -- gg-logs ----------------------------------------------------------------
 

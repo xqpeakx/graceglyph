@@ -97,7 +97,7 @@ export function TarnishedSplashApp() {
                 <Column gap={0}>
                   {FEATURES.map((f) => (
                     <Text key={f.label}>
-                      {f.glyph}  {f.label}
+                      {f.glyph} {f.label}
                     </Text>
                   ))}
                 </Column>
@@ -111,7 +111,9 @@ export function TarnishedSplashApp() {
                 <Text>STATUS: GRACE</Text>
                 <Text>BUILD: 1.0.0</Text>
                 <Text>PROFILE: TARNISHED</Text>
-                <Text>MODE: <Text style={{ bold: true }}>INSERT</Text></Text>
+                <Text>
+                  MODE: <Text style={{ bold: true }}>INSERT</Text>
+                </Text>
               </Column>
             </Box>
 

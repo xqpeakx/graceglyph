@@ -53,7 +53,10 @@ export interface TestUser {
   type(target: TestLocator, text: string, options?: KeyboardFlowOptions): Promise<void>;
   keyboard(sequence: string, options?: UserKeyboardOptions): Promise<void>;
   hover(target: TestLocator, options?: KeyboardFlowOptions): Promise<void>;
-  drag(source: TestLocator, options?: KeyboardFlowOptions): {
+  drag(
+    source: TestLocator,
+    options?: KeyboardFlowOptions,
+  ): {
     drop(target: TestLocator, dropOptions?: KeyboardFlowOptions): Promise<void>;
   };
 }
@@ -143,7 +146,11 @@ class FakeClock {
   }
 
   install(): void {
-    globalThis.setTimeout = ((callback: (...args: unknown[]) => void, delay?: number, ...args: unknown[]) => {
+    globalThis.setTimeout = ((
+      callback: (...args: unknown[]) => void,
+      delay?: number,
+      ...args: unknown[]
+    ) => {
       return this.schedule("timeout", callback, delay ?? 0, args) as unknown as ReturnType<
         typeof setTimeout
       >;
@@ -151,7 +158,11 @@ class FakeClock {
     globalThis.clearTimeout = ((handle: ReturnType<typeof setTimeout>) => {
       this.clear(Number(handle));
     }) as typeof clearTimeout;
-    globalThis.setInterval = ((callback: (...args: unknown[]) => void, delay?: number, ...args: unknown[]) => {
+    globalThis.setInterval = ((
+      callback: (...args: unknown[]) => void,
+      delay?: number,
+      ...args: unknown[]
+    ) => {
       return this.schedule("interval", callback, delay ?? 0, args) as unknown as ReturnType<
         typeof setInterval
       >;
@@ -443,7 +454,8 @@ export async function waitFor<T>(assertion: () => T, options: WaitForOptions = {
     }
   }
 
-  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? "unknown assertion error");
+  const reason =
+    lastError instanceof Error ? lastError.message : String(lastError ?? "unknown assertion error");
   throw new Error(`waitFor timed out after ${timeoutMs}ms: ${reason}`);
 }
 

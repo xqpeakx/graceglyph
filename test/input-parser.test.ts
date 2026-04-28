@@ -100,9 +100,9 @@ test("parser degrades incomplete CSI to escape plus remaining characters on flus
 
 test("parser property: chunked input matches monolithic input", () => {
   const ansiByte = fc.integer({ min: 0, max: 0x7f });
-  const textArb = fc.array(ansiByte, { maxLength: 96 }).map((codes) =>
-    codes.map((code) => String.fromCharCode(code)).join(""),
-  );
+  const textArb = fc
+    .array(ansiByte, { maxLength: 96 })
+    .map((codes) => codes.map((code) => String.fromCharCode(code)).join(""));
   const chunkSizesArb = fc.array(fc.integer({ min: 1, max: 12 }), { maxLength: 24 });
 
   fc.assert(
@@ -120,9 +120,9 @@ test("parser property: chunked input matches monolithic input", () => {
 
 test("parser property: flushPending drains parser buffer completely", () => {
   const ansiByte = fc.integer({ min: 0, max: 0x7f });
-  const textArb = fc.array(ansiByte, { maxLength: 128 }).map((codes) =>
-    codes.map((code) => String.fromCharCode(code)).join(""),
-  );
+  const textArb = fc
+    .array(ansiByte, { maxLength: 128 })
+    .map((codes) => codes.map((code) => String.fromCharCode(code)).join(""));
 
   fc.assert(
     fc.property(textArb, (input) => {
@@ -135,7 +135,11 @@ test("parser property: flushPending drains parser buffer completely", () => {
   );
 });
 
-function feedChunked(parser: InputParser, input: string, sizes: readonly number[]): ReturnType<InputParser["feed"]> {
+function feedChunked(
+  parser: InputParser,
+  input: string,
+  sizes: readonly number[],
+): ReturnType<InputParser["feed"]> {
   const events: ReturnType<InputParser["feed"]> = [];
   let index = 0;
   let sizeIndex = 0;

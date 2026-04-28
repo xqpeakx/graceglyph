@@ -232,12 +232,7 @@ test("renderTestApp findBy* and waitFor handle async updates without manual act"
       }, 80);
       return () => clearTimeout(timer);
     }, []);
-    return h(
-      Row,
-      { gap: 1 },
-      h(Text, {}, status),
-      showButton ? h(Button, {}, "Done") : null,
-    );
+    return h(Row, { gap: 1 }, h(Text, {}, status), showButton ? h(Button, {}, "Done") : null);
   }
 
   const app = renderTestApp(h(AsyncHarness, {}), {
@@ -269,9 +264,12 @@ test("top-level waitFor retries assertions until they pass", async () => {
   setTimeout(() => {
     ready = true;
   }, 15);
-  await waitFor(() => {
-    assert.equal(ready, true);
-  }, { timeoutMs: 200, intervalMs: 5, settleTurns: 1 });
+  await waitFor(
+    () => {
+      assert.equal(ready, true);
+    },
+    { timeoutMs: 200, intervalMs: 5, settleTurns: 1 },
+  );
 });
 
 test("renderTestApp supports explicit capability simulation profiles", async () => {
@@ -284,7 +282,7 @@ test("renderTestApp supports explicit capability simulation profiles", async () 
 
   try {
     await app.settle();
-    const caps = (app.handle.runtime.terminal.capabilities as Capabilities);
+    const caps = app.handle.runtime.terminal.capabilities as Capabilities;
     assert.equal(caps.color, "monochrome");
     assert.equal(caps.isTTY, false);
   } finally {

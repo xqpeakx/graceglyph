@@ -142,8 +142,7 @@ export function createPluginRegistry(): PluginRegistry {
     return out;
   };
 
-  const resolveComponent: PluginRegistry["resolveComponent"] = (name) =>
-    components()[name];
+  const resolveComponent: PluginRegistry["resolveComponent"] = (name) => components()[name];
   const resolveTheme: PluginRegistry["resolveTheme"] = (name) => themes()[name];
 
   const runMiddleware: PluginRegistry["runMiddleware"] = (node, info) => {
@@ -157,7 +156,7 @@ export function createPluginRegistry(): PluginRegistry {
         });
       } catch (err) {
         // Don't let one plugin bring down the whole render path.
-         
+
         console.error(`graceglyph plugin "${plugin.id}" middleware error:`, err);
       }
     }
@@ -203,7 +202,6 @@ export function createPluginRegistry(): PluginRegistry {
           const cleanup = plugin.setup(ctx);
           if (typeof cleanup === "function") setupHandles.push(cleanup);
         } catch (err) {
-           
           console.error(`graceglyph plugin "${plugin.id}" setup error:`, err);
         }
       }
@@ -217,7 +215,6 @@ export function createPluginRegistry(): PluginRegistry {
           try {
             state.cleanups[i]!();
           } catch (err) {
-             
             console.error("graceglyph plugin cleanup error:", err);
           }
         }
@@ -279,12 +276,16 @@ export async function loadPlugin(
   const candidate = pickPluginExport(mod, exportName);
   if (!candidate) {
     const keys = Object.keys(mod).join(", ");
-    throw new Error(`graceglyph plugin: no plugin export found in "${spec.module}" (exports: ${keys})`);
+    throw new Error(
+      `graceglyph plugin: no plugin export found in "${spec.module}" (exports: ${keys})`,
+    );
   }
   if (typeof candidate === "function") {
     const produced = await candidate(spec.options);
     if (!isPluginObject(produced)) {
-      throw new Error(`graceglyph plugin: factory export from "${spec.module}" did not return a plugin`);
+      throw new Error(
+        `graceglyph plugin: factory export from "${spec.module}" did not return a plugin`,
+      );
     }
     return definePlugin(produced);
   }
@@ -360,7 +361,8 @@ function normalizeExportCandidate(
   value: unknown,
 ): GraceglyphPlugin | ((options?: unknown) => unknown | Promise<unknown>) | null {
   if (isPluginObject(value)) return value;
-  if (typeof value === "function") return value as (options?: unknown) => unknown | Promise<unknown>;
+  if (typeof value === "function")
+    return value as (options?: unknown) => unknown | Promise<unknown>;
   return null;
 }
 

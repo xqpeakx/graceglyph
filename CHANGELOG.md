@@ -116,7 +116,7 @@ ships with a migration note in this file.
   - `loadPluginsFromConfig(config, argv)` merges app-config plugins and CLI
     plugins with last-write-wins by plugin id
   - `createPluginRegistryFromConfig(config, argv)` returns a preloaded registry
-  with plugin-loader coverage in `test/plugin.test.ts`.
+    with plugin-loader coverage in `test/plugin.test.ts`.
 - Added async app bootstrap helper `renderWithPlugins(...)` that composes
   plugin loading + activation with runtime startup and lifecycle-safe teardown
   (`disposePlugins` + stop integration), covered by
@@ -177,7 +177,7 @@ ships with a migration note in this file.
     shows dotfiles. `PathBreadcrumbs` lets the user jump back to any
     parent in one click.
   - `gg-git` — shells out to `git status --porcelain`, `branch
-    --show-current`, `rev-list --left-right --count`, `diff`, and
+--show-current`, `rev-list --left-right --count`, `diff`, and
     `log` via `execFile`. Tabs route between Status / Diff / Log;
     `parseUnifiedDiff` powers the diff pane.
   - `gg-chat` — pluggable streaming chat client. `echoModel` reflects
@@ -232,7 +232,7 @@ ships with a migration note in this file.
   tail), and `input-storm` (1000 mixed key + mouse events). Every case
   reports `p50` / `p95` / `p99` / `max` / RSS along with mean and median.
   `npm run bench` prints a comparison-friendly table; `npm run bench --
-  --json` emits a structured payload for CI consumption (with Node
+--json` emits a structured payload for CI consumption (with Node
   version, platform, arch). 3 new node:test cases assert registration,
   per-workload smoke runs, and finite-percentile output.
 - §8 animation & async batch:

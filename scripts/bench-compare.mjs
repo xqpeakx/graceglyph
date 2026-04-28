@@ -10,7 +10,9 @@ const DEFAULT_COMPETITOR_FILES = [
 
 function parseJson(pathOrStdin) {
   const raw =
-    pathOrStdin === STDIN_SENTINEL ? readFileSync(0, "utf8") : readFileSync(resolve(pathOrStdin), "utf8");
+    pathOrStdin === STDIN_SENTINEL
+      ? readFileSync(0, "utf8")
+      : readFileSync(resolve(pathOrStdin), "utf8");
   return JSON.parse(raw);
 }
 

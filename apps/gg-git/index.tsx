@@ -70,7 +70,9 @@ export async function readGitSummary(cwd: string): Promise<GitSummary> {
   }
   try {
     upstream = (await git(cwd, ["rev-parse", "--abbrev-ref", "@{u}"])).trim();
-    const counts = (await git(cwd, ["rev-list", "--left-right", "--count", `${branch}...${upstream}`])).trim();
+    const counts = (
+      await git(cwd, ["rev-list", "--left-right", "--count", `${branch}...${upstream}`])
+    ).trim();
     const [a, b] = counts.split(/\s+/).map((n) => Number(n));
     ahead = a ?? 0;
     behind = b ?? 0;
@@ -90,11 +92,7 @@ export async function readDiff(cwd: string, target: string): Promise<string> {
 
 export async function readLog(cwd: string, limit = 20): Promise<string[]> {
   try {
-    const stdout = await git(cwd, [
-      "log",
-      `-n${limit}`,
-      "--pretty=format:%h %s (%an, %ar)",
-    ]);
+    const stdout = await git(cwd, ["log", `-n${limit}`, "--pretty=format:%h %s (%an, %ar)"]);
     return stdout.split("\n").filter((line) => line.length > 0);
   } catch {
     return [];
@@ -183,7 +181,9 @@ function GgGitApp(props: AppProps) {
           <Row gap={1}>
             <Badge variant="info">{summary?.branch ?? "…"}</Badge>
             {summary?.upstream ? (
-              <Text style={{ dim: true }}>↑{summary.ahead} ↓{summary.behind} · {summary.upstream}</Text>
+              <Text style={{ dim: true }}>
+                ↑{summary.ahead} ↓{summary.behind} · {summary.upstream}
+              </Text>
             ) : null}
             {error ? <Badge variant="danger">{error}</Badge> : null}
           </Row>

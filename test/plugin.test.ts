@@ -213,10 +213,7 @@ test("loadPluginsFromConfig merges config plugins and argv plugin flags", async 
   const fixturePath = resolve("test/fixtures/plugin-loader-fixture.ts");
   const plugins = await loadPluginsFromConfig(
     {
-      plugins: [
-        { module: fixturePath, exportName: "fixturePlugin" },
-        { id: "inline.plugin" },
-      ],
+      plugins: [{ module: fixturePath, exportName: "fixturePlugin" }, { id: "inline.plugin" }],
     },
     ["node", "app.js", "--plugin", `${fixturePath}#createFixturePlugin`],
   );

@@ -260,19 +260,9 @@ export { Markdown, parseMarkdown } from "./components-markdown.js";
 export type { MarkdownProps } from "./components-markdown.js";
 
 export { FilePicker, PathBreadcrumbs } from "./components-files.js";
-export type {
-  FileEntry,
-  FilePickerProps,
-  PathBreadcrumbsProps,
-} from "./components-files.js";
+export type { FileEntry, FilePickerProps, PathBreadcrumbsProps } from "./components-files.js";
 
-export {
-  AsciiArt,
-  Banner,
-  BigText,
-  SplashScreen,
-  figletBlock,
-} from "./components-ascii.js";
+export { AsciiArt, Banner, BigText, SplashScreen, figletBlock } from "./components-ascii.js";
 export type {
   AsciiArtProps,
   BannerProps,
@@ -281,17 +271,8 @@ export type {
 } from "./components-ascii.js";
 
 export { Stream, Transition } from "./components-motion.js";
-export type {
-  StreamProps,
-  TransitionPreset,
-  TransitionProps,
-} from "./components-motion.js";
-export {
-  createMotion,
-  easings,
-  motion,
-  spring,
-} from "./runtime/motion.js";
+export type { StreamProps, TransitionPreset, TransitionProps } from "./components-motion.js";
+export { createMotion, easings, motion, spring } from "./runtime/motion.js";
 export type {
   Easing,
   EasingName,
@@ -299,11 +280,7 @@ export type {
   MotionOptions,
   SpringOptions,
 } from "./runtime/motion.js";
-export {
-  frameSchedulerActive,
-  frameSubscriberCount,
-  subscribeFrame,
-} from "./runtime/frame.js";
+export { frameSchedulerActive, frameSubscriberCount, subscribeFrame } from "./runtime/frame.js";
 export type { FrameCallback } from "./runtime/frame.js";
 
 export {

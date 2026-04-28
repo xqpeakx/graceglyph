@@ -106,11 +106,7 @@ interface RouteMatch {
   leaveGuards: Array<boolean | (() => boolean)>;
 }
 
-function matchRoute(
-  route: ZenElement,
-  path: string,
-  basePath: string,
-): RouteMatch | null {
+function matchRoute(route: ZenElement, path: string, basePath: string): RouteMatch | null {
   if (route.type !== Route) return null;
 
   const props = route.props as unknown as RouteProps;
@@ -918,9 +914,7 @@ function optionalProcessEnv(): Record<string, string | undefined> | undefined {
   return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 }
 
-function optionalLocalStorage():
-  | KeyValueStorage
-  | undefined {
+function optionalLocalStorage(): KeyValueStorage | undefined {
   return (
     globalThis as {
       localStorage?: {

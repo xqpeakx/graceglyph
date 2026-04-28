@@ -976,7 +976,9 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
         ? href
         : undefined;
     const ansiPrefix =
-      typeof ansiPrefixValue === "string" && ansiPrefixValue.length > 0 ? ansiPrefixValue : undefined;
+      typeof ansiPrefixValue === "string" && ansiPrefixValue.length > 0
+        ? ansiPrefixValue
+        : undefined;
     buffer.writeText(layout.x, layout.y, truncated, fillStyle, layout, { hyperlink, ansiPrefix });
     return;
   }
