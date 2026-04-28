@@ -16,8 +16,10 @@ import { Fiber, createFiber, type FiberEnvironment } from "./fiber.js";
 import { FocusManager } from "./focus.js";
 import { HostNode, layoutTree, paintTree } from "./host.js";
 import { paintInspector } from "./devtools.js";
-import { buildHostTree, flushAllEffects, reconcile, unmount } from "./reconciler.js";
+import { reconcile, unmount } from "./reconciler.js";
 import { fiberForError, formatComponentStack } from "./diagnostics.js";
+import { flushAllFiberEffects } from "./hooks.js";
+import { buildHostTree } from "./host.js";
 
 export interface RuntimeOptions extends TerminalOptions {
   devtools?: boolean;
@@ -180,7 +182,7 @@ export class Runtime {
       this.layoutDirty = true;
     }
     this.rebuildAndPaint();
-    if (needsReconcile) flushAllEffects(this.rootFiber);
+    if (needsReconcile) flushAllFiberEffects(this.rootFiber);
   }
 
   private rebuildAndPaint(): void {

@@ -3,7 +3,14 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 
-type TemplateId = "dashboard" | "cli-tool" | "log-viewer" | "crud-app" | "chat" | "editor";
+type TemplateId =
+  | "dashboard"
+  | "cli-tool"
+  | "log-viewer"
+  | "crud-app"
+  | "chat"
+  | "editor"
+  | "plugin";
 
 type ThemeId =
   | "dark"
@@ -74,6 +81,11 @@ const templates: Record<TemplateId, TemplateDefinition> = {
     id: "editor",
     description: "two-pane file browser + textarea editor",
     files: editorTemplate,
+  },
+  plugin: {
+    id: "plugin",
+    description: "ecosystem starter for publishing a graceglyph plugin package",
+    files: pluginTemplate,
   },
 };
 
@@ -349,6 +361,101 @@ function editorTemplate(ctx: TemplateContext): TemplateFile[] {
     `import {\n  AppShell,\n  Column,\n  List,\n  Panel,\n  Row,\n  Text,\n  TextArea,\n  ansi,\n  render,\n  useState,\n} from "graceglyph";\n\ninterface FileEntry { id: string; name: string; content: string; }\n\nconst INITIAL: FileEntry[] = [\n  { id: "readme", name: "README.md", content: "# ${projectName}\\n\\nWelcome — edit any file from the sidebar.\\n" },\n  { id: "todo", name: "TODO.md", content: "- [ ] wire backend\\n- [ ] add auth\\n- [ ] ship docs\\n" },\n  { id: "notes", name: "notes.txt", content: "scratchpad for ideas...\\n" },\n];\n\nexport function AppRoot() {\n  const [path, setPath] = useState("/");\n  const [files, setFiles] = useState<FileEntry[]>(INITIAL);\n  const [selected, setSelected] = useState(0);\n  const current = files[selected]!;\n\n  function updateContent(content: string): void {\n    setFiles((items) => items.map((f, i) => (i === selected ? { ...f, content } : f)));\n  }\n\n  return (\n    <AppShell\n      title="${projectName}"\n      path={path}\n      onNavigate={setPath}\n      breadcrumbs={[{ label: "${projectName}", path: "/" }, { label: current.name, path: \`/\${current.id}\` }]}\n      windowBorderStyle={{ fg: ansi(4) }}\n    >\n      <Row gap={1} grow={1}>\n        <Panel title="Files" padding={0} width={24}>\n          <List\n            items={files}\n            selected={selected}\n            onChange={setSelected}\n            height={12}\n            render={(file: FileEntry) => file.name}\n          />\n        </Panel>\n        <Panel title={current.name} grow={1}>\n          <Column gap={0} grow={1}>\n            <TextArea value={current.content} onChange={updateContent} grow={1} />\n            <Text style={{ dim: true }}>\n              {current.content.length} chars · {current.content.split(\\"\\\\n\\").length} lines\n            </Text>\n          </Column>\n        </Panel>\n      </Row>\n    </AppShell>\n  );\n}\n\nrender(<AppRoot />);\n`,
     "A two-pane file browser + textarea editor starter",
   );
+}
+
+function pluginTemplate(ctx: TemplateContext): TemplateFile[] {
+  const projectName = ctx.projectName;
+  const pkgName = packageName(projectName);
+  return [
+    {
+      path: "package.json",
+      content: `${JSON.stringify(
+        {
+          name: pkgName.startsWith("@") ? pkgName : `@graceglyph/${pkgName}`,
+          version: "0.1.0",
+          private: true,
+          type: "module",
+          description: "A graceglyph plugin starter package",
+          main: "dist/index.js",
+          types: "dist/index.d.ts",
+          scripts: {
+            build: "tsc -p tsconfig.json",
+            test: "node --test --loader ts-node/esm test/*.test.ts",
+          },
+          dependencies: {
+            graceglyph: "^0.0.1",
+          },
+          devDependencies: {
+            "@types/node": "^20.11.0",
+            "ts-node": "^10.9.2",
+            typescript: "^5.4.0",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    },
+    {
+      path: "tsconfig.json",
+      content: `${JSON.stringify(
+        {
+          compilerOptions: {
+            target: "ES2022",
+            module: "ES2022",
+            moduleResolution: "Bundler",
+            lib: ["ES2022"],
+            strict: true,
+            esModuleInterop: true,
+            forceConsistentCasingInFileNames: true,
+            skipLibCheck: true,
+            declaration: true,
+            declarationMap: true,
+            outDir: "dist",
+            noUncheckedIndexedAccess: true,
+          },
+          include: ["src/**/*.ts", "test/**/*.ts"],
+        },
+        null,
+        2,
+      )}\n`,
+    },
+    {
+      path: "src/index.ts",
+      content:
+        'import { definePlugin, type GraceglyphPlugin } from "graceglyph";\n\n' +
+        'export interface PluginOptions {\n  readonly greeting?: string;\n}\n\n' +
+        'export function createPlugin(options: PluginOptions = {}): GraceglyphPlugin {\n' +
+        "  return definePlugin({\n" +
+        '    id: "example.plugin",\n' +
+        "    setup() {\n" +
+        '      const greeting = options.greeting ?? "hello from plugin";\n' +
+        "      // register resources, commands, components, or middleware here.\n" +
+        '      return () => void greeting;\n' +
+        "    },\n" +
+        "  });\n" +
+        "}\n",
+    },
+    {
+      path: "test/plugin.test.ts",
+      content:
+        'import test from "node:test";\n' +
+        'import assert from "node:assert/strict";\n\n' +
+        'import { createPlugin } from "../src/index.js";\n\n' +
+        'test("plugin starter exposes a stable id", () => {\n' +
+        "  const plugin = createPlugin();\n" +
+        '  assert.equal(plugin.id, "example.plugin");\n' +
+        "});\n",
+    },
+    {
+      path: "README.md",
+      content:
+        `# ${projectName}\n\n` +
+        "Starter package for authoring a graceglyph plugin.\n\n" +
+        "## Development\n\n```bash\nnpm install\nnpm run build\nnpm test\n```\n\n" +
+        "Export one or more plugin factories from `src/index.ts` and publish when\n" +
+        "you are ready to integrate with graceglyph applications.\n",
+    },
+  ];
 }
 
 function packageName(name: string): string {

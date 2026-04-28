@@ -107,3 +107,15 @@ Harder:
 6. Remove the shim in v0.3.
 
 Each step is one PR with one ADR update and full test coverage.
+
+### Progress (2026-04-27)
+
+- Step 1 is complete via `src/reactive/*` + `test/reactive.test.ts`.
+- Step 5 is underway:
+  - compatibility hooks are signal-backed where possible (`useState`)
+  - compatibility hooks are explicitly `@deprecated`
+  - runtime emits one-time migration warnings for compatibility hooks.
+- Runtime responsibilities have started moving out of the reconciler:
+  - effect traversal now lives in `runtime/hooks` (`flushAllFiberEffects`)
+  - host-tree assembly now lives in `runtime/host` (`buildHostTree`),
+    with deprecated reconciler shims preserved during migration.

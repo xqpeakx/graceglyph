@@ -5,7 +5,8 @@ import { Rect } from "../src/layout/rect.js";
 import { h } from "../src/runtime/element.js";
 import { createFiber } from "../src/runtime/fiber.js";
 import { layoutTree } from "../src/runtime/host.js";
-import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
+import { buildHostTree } from "../src/runtime/host.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 import { inspectTree } from "../src/runtime/devtools.js";
 
 test("inspector includes focused node and layout details", () => {

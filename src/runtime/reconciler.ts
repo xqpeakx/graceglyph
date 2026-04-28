@@ -1,14 +1,9 @@
-import { ComponentFn, Fragment, HostType, ZenElement, normalizeChildren } from "./element.js";
+import { ComponentFn, Fragment, ZenElement, normalizeChildren } from "./element.js";
+import { nowMs } from "./clock.js";
 import { validateHostFiberProps } from "./diagnostics.js";
 import { Fiber, createFiber } from "./fiber.js";
-import { cleanupEffects, cleanupPendingEffects, flushEffects, withFiber } from "./hooks.js";
-import { HostNode, createHostNode } from "./host.js";
-
-const HOST_TYPES = new Set<string>(["box", "text", "input", "textarea"] satisfies HostType[]);
-
-function isHostType(t: unknown): t is HostType {
-  return typeof t === "string" && HOST_TYPES.has(t);
-}
+import { cleanupEffects, flushAllFiberEffects, withFiber } from "./hooks.js";
+import { buildHostTree as buildHostTreeFromFiber, isRenderableHostType } from "./host.js";
 
 /**
  * Walk the fiber tree, calling function components and reconciling their
@@ -19,10 +14,10 @@ function isHostType(t: unknown): t is HostType {
  * starting from them; we re-run from the root for simplicity and correctness).
  */
 export function reconcile(fiber: Fiber): void {
-  const started = now();
+  const started = nowMs();
   fiber.dirty = false;
 
-  if (isHostType(fiber.type)) {
+  if (isRenderableHostType(fiber.type)) {
     validateHostFiberProps(fiber);
   }
 
@@ -38,7 +33,7 @@ export function reconcile(fiber: Fiber): void {
     reconcileChildren(fiber, kids);
   } else if (fiber.type === "text" || fiber.type === "input" || fiber.type === "textarea") {
     clearChildren(fiber);
-  } else if (isHostType(fiber.type)) {
+  } else if (isRenderableHostType(fiber.type)) {
     clearChildren(fiber);
   } else {
     throw new Error(`unknown element type: ${String(fiber.type)}`);
@@ -46,7 +41,7 @@ export function reconcile(fiber: Fiber): void {
 
   fiber.mounted = true;
   fiber.renderCount += 1;
-  fiber.lastRenderMs = Math.max(0, now() - started);
+  fiber.lastRenderMs = Math.max(0, nowMs() - started);
 }
 
 function reconcileChildren(parent: Fiber, newKids: Array<ZenElement | string>): void {
@@ -124,61 +119,22 @@ function clearChildren(fiber: Fiber): void {
   fiber.children = [];
 }
 
-function now(): number {
-  return typeof performance !== "undefined" ? performance.now() : Date.now();
-}
-
-// -- Host tree construction ---------------------------------------------------
-
 /**
- * Build a HostNode tree by walking the fiber tree. Function-component and
- * Fragment fibers are transparent — their children get attached to the
- * nearest host ancestor.
+ * @deprecated Host tree assembly now lives in `runtime/host`.
+ * Prefer `buildHostTree(...)` from `runtime/host`.
  */
-export function buildHostTree(rootFiber: Fiber): HostNode | null {
-  const rootSlot: { node: HostNode | null } = { node: null };
-  attachHosts(rootFiber, null, rootSlot);
-  return rootSlot.node;
-}
-
-function attachHosts(
-  fiber: Fiber,
-  parentHost: HostNode | null,
-  rootSlot: { node: HostNode | null },
-): void {
-  if (isHostType(fiber.type)) {
-    let node = fiber.hostNode;
-    if (!node) {
-      node = createHostNode(fiber);
-      fiber.hostNode = node;
-    } else {
-      node.props = fiber.props;
-      node.fiber = fiber;
-    }
-    node.children = [];
-    node.parent = parentHost;
-    if (parentHost) parentHost.children.push(node);
-    else if (!rootSlot.node) rootSlot.node = node;
-    for (const c of fiber.children) attachHosts(c, node, rootSlot);
-  } else {
-    // function or fragment — pass through
-    for (const c of fiber.children) attachHosts(c, parentHost, rootSlot);
-  }
+export function buildHostTree(rootFiber: Fiber) {
+  return buildHostTreeFromFiber(rootFiber);
 }
 
 // -- Effect flush -------------------------------------------------------------
 
+/**
+ * @deprecated Effect traversal now lives in `runtime/hooks`.
+ * Prefer `flushAllFiberEffects(...)`.
+ */
 export function flushAllEffects(fiber: Fiber): void {
-  cleanupPendingEffectsDeep(fiber);
-  flushEffectsDeep(fiber);
-}
-
-function cleanupPendingEffectsDeep(fiber: Fiber): void {
-  for (const c of fiber.children) cleanupPendingEffectsDeep(c);
-  cleanupPendingEffects(fiber);
-}
-
-function flushEffectsDeep(fiber: Fiber): void {
-  for (const c of fiber.children) flushEffectsDeep(c);
-  flushEffects(fiber);
+  // Deprecated compatibility export; use `flushAllFiberEffects` from
+  // `runtime/hooks` in new runtime code.
+  flushAllFiberEffects(fiber);
 }

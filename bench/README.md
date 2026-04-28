@@ -7,6 +7,10 @@ in milliseconds.
 ```bash
 npm run bench                  # all scenarios
 npm run bench -- table         # filter by substring
+npm run bench:prof             # collect V8 profile for scenario investigation
+npm run bench:check            # enforce hard roadmap thresholds
+npm run bench:drift            # compare against bench/baseline.json drift policy
+npm run bench:compare          # markdown comparison vs competitor artifacts
 ```
 
 ## Scenarios
@@ -27,7 +31,52 @@ Targets (see `ROADMAP.md` §10):
 These are floors, not ceilings. We expect to beat them on modern hardware.
 CI runs the benchmark suite as a smoke check and emits JSON output for
 downstream comparison tooling. The bench CI job enforces the four thresholds
-above and fails if any exceeded metric regresses past its target.
+above and fails if any exceeded metric regresses past its target. CI also
+compares current benchmark medians/tails against `bench/baseline.json` using
+`scripts/check-bench-drift.mjs`.
+
+## Baseline and drift policy
+
+- Baseline source: `bench/baseline.json`
+- Drift gate: `scripts/check-bench-drift.mjs`
+- Default policy:
+  - `p50Ms` may regress by at most 35%
+  - `p99Ms` may regress by at most 45%
+
+Hard thresholds remain the primary gate; drift is the "early warning" signal
+for trends that may still be below absolute ceilings.
+
+## Framework comparisons
+
+- Comparison harness: `scripts/bench-compare.mjs`
+- Competitor artifact placeholders:
+  - `bench/competitors/ink.json`
+  - `bench/competitors/blessed.json`
+  - `bench/competitors/terminal-kit.json`
+
+`npm run bench:compare` renders a markdown table for current graceglyph
+results against competitor artifacts and a quick "p50 win count" summary.
+Populate competitor files with same-machine benchmark captures as we collect
+real data.
+
+## Profiling
+
+Use V8 profiling to inspect hotspots when drift/check gates move in the wrong
+direction:
+
+```bash
+npm run bench:prof -- table
+```
+
+This generates a `isolate-*.log` profile file in the project root. Process it
+with Node tooling:
+
+```bash
+node --prof-process isolate-*.log > bench-profile.txt
+```
+
+For focused runs, pass the same filter substring used by `npm run bench -- ...`
+so profile output maps directly to one scenario family.
 
 ## Adding a scenario
 

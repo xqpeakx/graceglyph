@@ -1,0 +1,13 @@
+{
+  "framework": "ink",
+  "capturedAt": "pending",
+  "notes": "Placeholder benchmark artifact. Populate with real numbers from the same machine/profile used for graceglyph baseline.",
+  "results": [
+    { "nameContains": "static-frame: 200x60 paint", "p50Ms": null, "p99Ms": null },
+    { "nameContains": "static-frame: 200x60 diff", "p50Ms": null, "p99Ms": null },
+    { "nameContains": "table-scroll:", "p50Ms": null, "p99Ms": null },
+    { "nameContains": "resize-storm:", "p50Ms": null, "p99Ms": null },
+    { "nameContains": "log-stream:", "p50Ms": null, "p99Ms": null },
+    { "nameContains": "input-storm:", "p50Ms": null, "p99Ms": null }
+  ]
+}

@@ -53,12 +53,58 @@ ships with a migration note in this file.
 - Runtime hook compatibility pass: `useState` in `src/runtime/hooks.ts`
   stores values in a signal-backed cell internally while preserving existing
   hook semantics and fiber scheduler behavior.
+  - Effect flushing ownership moved from `src/runtime/reconciler.ts` into
+    `src/runtime/hooks.ts` via `flushAllFiberEffects(...)`, shrinking
+    reconciler responsibilities while keeping a deprecated compatibility
+    shim export (`flushAllEffects`) for existing tests/integrations.
+  - Host-tree assembly ownership moved from `src/runtime/reconciler.ts`
+    into `src/runtime/host.ts` (`buildHostTree(...)`), with a deprecated
+    reconciler compatibility shim retained for migration safety.
+  - Fiber compatibility hooks now carry deprecation annotations (`useState`,
+    `useEffect`, `useRef`, `useMemo`, `useCallback`) to steer new code
+    toward signal primitives (`createSignal`, `createEffect`, `createMemo`).
+  - Compatibility hooks now emit one-time runtime deprecation warnings
+    outside test runs, clarifying migration targets and planned removal.
+  - Runtime timing now uses shared `runtime/clock.nowMs()` across
+    reconciler, frame scheduler, and perf timeline to keep monotonic clock
+    behavior consistent while reducing duplicated timing helpers.
+  - Host-type classification now lives in `runtime/host`
+    (`isRenderableHostType`) and reconciler consumes that source of truth.
+  - Reconciler tests now flush effects through `flushAllFiberEffects(...)`
+    by default; deprecated `flushAllEffects(...)` is covered by an explicit
+    compatibility test.
+- Added initial `Image` component primitive in `src/components.tsx` with
+  capability-aware protocol selection (`auto` -> kitty/sixel/iTerm2/ascii),
+  ASCII fallback rendering, and test coverage in `test/components.test.ts`.
 - CI/dx alignment:
   - Added `c8` coverage tooling and `npm run test:coverage`.
   - CI now runs dedicated coverage and bench jobs.
   - Bench CI now enforces roadmap thresholds via
     `scripts/check-bench-thresholds.mjs` and `npm run bench:check`
     (static-frame paint/diff, table-scroll, resize-storm).
+  - Added benchmark drift gating via `bench/baseline.json` and
+    `scripts/check-bench-drift.mjs` (`npm run bench:drift`), now wired into
+    the CI bench job as an early-regression signal alongside hard thresholds.
+  - Added benchmark comparison harness `scripts/bench-compare.mjs` and
+    `npm run bench:compare`, plus placeholder competitor result artifacts for
+    Ink, blessed, and terminal-kit under `bench/competitors/*.json`.
+  - Added `npm run bench:prof` and `bench/README.md` profiling guidance for
+    `node --prof` / `node --prof-process` workflows on scenario-filtered runs.
+  - Bootstrapped docs site infrastructure with VitePress under `docs/site`,
+    including initial pages for Getting Started, Concepts, Component Index,
+    and Migration Notes. Added `docs:dev`, `docs:build`, `docs:preview` and a
+    dedicated CI docs job (`npm run docs:build`).
+- Added docs expansion pages for migration from Ink/blessed, capabilities
+  matrix, performance workflow, and troubleshooting guidance.
+- Added `docs/site/why-graceglyph.md` and linked it in docs navigation to
+  document positioning and trade-offs vs Ink/Textual.
+- Extended `create-graceglyph` with a `plugin` template that scaffolds a
+  plugin-author package (`src/index.ts`, `test/plugin.test.ts`, build/test
+  scripts) for ecosystem package development.
+- Added plugin versioning policy documentation (`docs/site/plugin-versioning.md`)
+  and linked it in docs navigation for ecosystem package maintainers.
+  - Added `.github/workflows/codeql.yml` to run CodeQL on pushes, pull
+    requests, and a weekly schedule for JavaScript/TypeScript analysis.
   - Bench docs updated to match actual CI behavior.
 - Bug-report typing/runtime fix in `src/runtime/bug-report.ts` restored
   clean `npm run typecheck` by aligning inspector tree types and call shape.

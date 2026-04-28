@@ -174,6 +174,65 @@ export function Link(props: LinkProps): ZenElement {
   );
 }
 
+export type ImageProtocol = "auto" | "kitty" | "sixel" | "iterm2" | "ascii";
+
+export interface ImageProps extends AccessibilityProps {
+  src: string;
+  alt?: string;
+  protocol?: ImageProtocol;
+  width?: number;
+  height?: number;
+  border?: boolean;
+  style?: StyleLike;
+  titleStyle?: StyleLike;
+}
+
+/**
+ * Image primitive with capability-aware protocol selection. For now, non-ASCII
+ * protocols render a descriptive placeholder while the protocol metadata is
+ * threaded through props for renderer integration work.
+ */
+export function Image(props: ImageProps): ZenElement {
+  const theme = useTheme();
+  const caps = useCapabilities();
+  const selected = resolveImageProtocol(caps, props.protocol ?? "auto");
+  const alt = props.alt ?? "image";
+  const title = selected === "ascii" ? alt : `image (${selected})`;
+  const body = selected === "ascii" ? `[ascii] ${alt}` : `[${selected}] ${props.src}`;
+
+  return h(
+    "box",
+    {
+      border: props.border ?? true,
+      padding: 1,
+      width: props.width,
+      height: props.height,
+      style: mergeBoxStyle(theme.window.body, props.style),
+      titleStyle: props.titleStyle,
+      accessibilityLabel: props.accessibilityLabel ?? alt,
+      accessibilityDescription:
+        props.accessibilityDescription ??
+        `image source ${props.src}, protocol ${selected === "iterm2" ? "iTerm2" : selected}`,
+      "data-image-src": props.src,
+      "data-image-protocol": selected,
+    } as BoxProps,
+    h("text", { wrap: "truncate" } as TextProps, body),
+    h("text", { style: { dim: true }, wrap: "truncate" } as TextProps, `protocol: ${selected}`),
+    h("text", { style: { dim: true }, wrap: "truncate" } as TextProps, title),
+  );
+}
+
+function resolveImageProtocol(
+  caps: ReturnType<typeof useCapabilities>,
+  requested: ImageProtocol,
+): Exclude<ImageProtocol, "auto"> {
+  if (requested !== "auto") return requested;
+  if (caps.kittyGraphics) return "kitty";
+  if (caps.sixel) return "sixel";
+  if (caps.iterm2Images) return "iterm2";
+  return "ascii";
+}
+
 // -- <Button> -----------------------------------------------------------------
 export interface ButtonProps extends AccessibilityProps {
   onClick?: () => void;

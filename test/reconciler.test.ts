@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { h } from "../src/runtime/element.js";
 import { createFiber, type Fiber } from "../src/runtime/fiber.js";
+import { flushAllFiberEffects } from "../src/runtime/hooks.js";
 import { useEffect, useState } from "../src/runtime/hooks.js";
 import { flushAllEffects, reconcile, unmount } from "../src/runtime/reconciler.js";
 
@@ -135,9 +136,28 @@ test("state updates scheduled during effects settle on the next commit", () => {
 
 function commit(root: Fiber): void {
   reconcile(root);
-  flushAllEffects(root);
+  flushAllFiberEffects(root);
 }
 
 function readState(fiber: Fiber): unknown {
   return fiber.hooks[0] && fiber.hooks[0].kind === "state" ? fiber.hooks[0].value : undefined;
 }
+
+test("deprecated reconciler.flushAllEffects remains behavior-compatible", () => {
+  const log: string[] = [];
+  function Probe() {
+    useEffect(() => {
+      log.push("mount");
+      return () => log.push("cleanup");
+    }, []);
+    return h("text", {}, "probe");
+  }
+
+  const root = createFiber(Probe, {}, null, null);
+  reconcile(root);
+  flushAllEffects(root);
+  assert.deepEqual(log, ["mount"]);
+
+  unmount(root);
+  assert.deepEqual(log, ["mount", "cleanup"]);
+});

@@ -7,7 +7,8 @@ import { DefaultStyle } from "../src/render/style.js";
 import { h } from "../src/runtime/element.js";
 import { createFiber } from "../src/runtime/fiber.js";
 import { layoutTree, paintTree } from "../src/runtime/host.js";
-import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
+import { buildHostTree } from "../src/runtime/host.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 
 test("row layout distributes remaining space to growing children inside border and padding", () => {
   const tree = h(

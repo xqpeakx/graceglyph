@@ -1,3 +1,5 @@
+import { nowMs } from "./clock.js";
+
 /**
  * Perf timeline: a ring buffer of frame samples for §9 devtools v2. The
  * runtime drives it via `record(phase, durationMs)` from any instrumented
@@ -50,13 +52,6 @@ export interface PerfTimeline {
 
 const DEFAULT_CAPACITY = 240;
 
-function clock(): number {
-  if (typeof performance !== "undefined" && typeof performance.now === "function") {
-    return performance.now();
-  }
-  return Date.now();
-}
-
 export function createPerfTimeline(options: PerfTimelineOptions = {}): PerfTimeline {
   const capacity = Math.max(8, options.capacity ?? DEFAULT_CAPACITY);
   const buffer: (PerfSample | null)[] = new Array(capacity).fill(null);
@@ -64,7 +59,7 @@ export function createPerfTimeline(options: PerfTimelineOptions = {}): PerfTimel
   let size = 0; // populated count
   let frame = 0;
   let enabled = true;
-  const start = clock();
+  const start = nowMs();
 
   function record(phase: PerfPhase, durationMs: number, label?: string): void {
     if (!enabled) return;
@@ -74,7 +69,7 @@ export function createPerfTimeline(options: PerfTimelineOptions = {}): PerfTimel
       phase,
       durationMs,
       ...(label !== undefined ? { label } : {}),
-      at: clock() - start,
+      at: nowMs() - start,
     };
     buffer[head] = sample;
     head = (head + 1) % capacity;
@@ -83,11 +78,11 @@ export function createPerfTimeline(options: PerfTimelineOptions = {}): PerfTimel
 
   function measure<T>(phase: PerfPhase, fn: () => T, label?: string): T {
     if (!enabled) return fn();
-    const t0 = clock();
+    const t0 = nowMs();
     try {
       return fn();
     } finally {
-      record(phase, clock() - t0, label);
+      record(phase, nowMs() - t0, label);
     }
   }
 

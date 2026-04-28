@@ -1,3 +1,5 @@
+import { nowMs } from "./clock.js";
+
 /**
  * Shared 60Hz frame scheduler. App code subscribes via `subscribeFrame` (or
  * the `useFrame` hook); the scheduler wakes a single `setInterval` once at
@@ -21,15 +23,8 @@ let lastTickAt = 0;
 let originAt = 0;
 let tickCount = 0;
 
-function clock(): number {
-  if (typeof performance !== "undefined" && typeof performance.now === "function") {
-    return performance.now();
-  }
-  return Date.now();
-}
-
 function tick(): void {
-  const now = clock();
+  const now = nowMs();
   const delta = lastTickAt === 0 ? 0 : now - lastTickAt;
   lastTickAt = now;
   tickCount += 1;
@@ -46,7 +41,7 @@ function tick(): void {
 
 function start(): void {
   if (timer) return;
-  originAt = clock();
+  originAt = nowMs();
   lastTickAt = 0;
   tickCount = 0;
   timer = setInterval(tick, FRAME_INTERVAL_MS);
@@ -85,7 +80,7 @@ export function frameSubscriberCount(): number {
 
 /** Advance the scheduler manually. Tests use this to make timing deterministic. */
 export function __testTick(deltaOverride?: number): void {
-  const now = clock();
+  const now = nowMs();
   const delta = deltaOverride ?? (lastTickAt === 0 ? FRAME_INTERVAL_MS : now - lastTickAt);
   lastTickAt = now;
   tickCount += 1;

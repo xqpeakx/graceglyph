@@ -6,7 +6,8 @@ import { h } from "../src/runtime/element.js";
 import { createFiber } from "../src/runtime/fiber.js";
 import { Runtime } from "../src/runtime/runtime.js";
 import { layoutTree } from "../src/runtime/host.js";
-import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
+import { buildHostTree } from "../src/runtime/host.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 import { Rect } from "../src/layout/rect.js";
 
 test("invalid host props fail with a clear diagnostic", () => {

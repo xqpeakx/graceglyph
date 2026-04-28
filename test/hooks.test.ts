@@ -4,12 +4,16 @@ import assert from "node:assert/strict";
 import { createFiber } from "../src/runtime/fiber.js";
 import {
   cleanupEffects,
+  flushAllFiberEffects,
   flushEffects,
+  useEffect,
   useState,
   useTerminalSize,
   useTheme,
   withFiber,
 } from "../src/runtime/hooks.js";
+import { h } from "../src/runtime/element.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 import { defaultTheme } from "../src/theme/theme.js";
 import { DUMB_CAPABILITIES } from "../src/render/capabilities.js";
 
@@ -128,4 +132,35 @@ test("useTerminalSize subscribes to resize events and releases the listener on c
 
   cleanupEffects(fiber);
   assert.equal(listeners.size, 0);
+});
+
+test("flushAllFiberEffects preserves child-before-parent effect ordering", () => {
+  const log: string[] = [];
+
+  function Child(props: { step: number }) {
+    useEffect(() => {
+      log.push(`mount child ${props.step}`);
+      return () => log.push(`cleanup child ${props.step}`);
+    }, [props.step]);
+    return h("text", {}, `child ${props.step}`);
+  }
+
+  function Parent(props: { step: number }) {
+    useEffect(() => {
+      log.push(`mount parent ${props.step}`);
+      return () => log.push(`cleanup parent ${props.step}`);
+    }, [props.step]);
+    return h("box", {}, h(Child, { step: props.step }));
+  }
+
+  const root = createFiber(Parent, { step: 1 }, null, null);
+  reconcile(root);
+  flushAllFiberEffects(root);
+  assert.deepEqual(log, ["mount child 1", "mount parent 1"]);
+
+  log.length = 0;
+  root.props = { step: 2 };
+  reconcile(root);
+  flushAllFiberEffects(root);
+  assert.deepEqual(log, ["cleanup child 1", "cleanup parent 1", "mount child 2", "mount parent 2"]);
 });

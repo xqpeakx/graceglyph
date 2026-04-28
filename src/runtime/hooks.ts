@@ -9,6 +9,7 @@ import { createMotion, type MotionHandle, type MotionOptions } from "./motion.js
 
 let currentFiber: Fiber | null = null;
 let hookIndex = 0;
+const warnedDeprecatedHooks = new Set<string>();
 
 export function withFiber<T>(fiber: Fiber, fn: () => T): T {
   const prevFiber = currentFiber;
@@ -46,7 +47,12 @@ function getEnvironment(): FiberEnvironment {
   return currentFiber.environment;
 }
 
+/**
+ * @deprecated Compatibility hook for the fiber runtime. Prefer
+ * `createSignal` from `graceglyph/reactive` for new code.
+ */
 export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void] {
+  warnDeprecatedHook("useState", "createSignal");
   const fiber = currentFiber!;
   type StateSignal = {
     read: Accessor<T>;
@@ -71,7 +77,12 @@ export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) =
   return [hook.value as T, setState];
 }
 
+/**
+ * @deprecated Compatibility hook for the fiber runtime. Prefer
+ * `createSignal` from `graceglyph/reactive` for new code.
+ */
 export function useRef<T>(initial: T): { current: T } {
+  warnDeprecatedHook("useRef", "createSignal");
   const hook = getHook<Extract<Hook, { kind: "ref" }>>(() => ({
     kind: "ref",
     value: { current: initial },
@@ -79,7 +90,12 @@ export function useRef<T>(initial: T): { current: T } {
   return hook.value as { current: T };
 }
 
+/**
+ * @deprecated Compatibility hook for the fiber runtime. Prefer `createMemo`
+ * from `graceglyph/reactive` for new code.
+ */
 export function useMemo<T>(compute: () => T, deps: unknown[]): T {
+  warnDeprecatedHook("useMemo", "createMemo");
   const hook = getHook<Extract<Hook, { kind: "memo" }>>(() => ({
     kind: "memo",
     value: undefined,
@@ -92,7 +108,12 @@ export function useMemo<T>(compute: () => T, deps: unknown[]): T {
   return hook.value as T;
 }
 
+/**
+ * @deprecated Compatibility hook for the fiber runtime. Prefer
+ * signal-driven closures and `createMemo`/`createEffect` in new code.
+ */
 export function useCallback<T extends (...args: any[]) => any>(fn: T, deps: unknown[]): T {
+  warnDeprecatedHook("useCallback", "createMemo");
   return useMemo(() => fn, deps);
 }
 
@@ -165,7 +186,12 @@ export function useMotion<T extends number | readonly number[] | string>(
   return value;
 }
 
+/**
+ * @deprecated Compatibility hook for the fiber runtime. Prefer
+ * `createEffect` + `onCleanup` from `graceglyph/reactive` for new code.
+ */
 export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void {
+  warnDeprecatedHook("useEffect", "createEffect");
   const hook = getHook<Extract<Hook, { kind: "effect" }>>(() => ({
     kind: "effect",
     deps: null,
@@ -227,6 +253,21 @@ export function cleanupEffects(fiber: Fiber): void {
   }
 }
 
+export function cleanupPendingEffectsTree(fiber: Fiber): void {
+  for (const child of fiber.children) cleanupPendingEffectsTree(child);
+  cleanupPendingEffects(fiber);
+}
+
+export function flushEffectsTree(fiber: Fiber): void {
+  for (const child of fiber.children) flushEffectsTree(child);
+  flushEffects(fiber);
+}
+
+export function flushAllFiberEffects(fiber: Fiber): void {
+  cleanupPendingEffectsTree(fiber);
+  flushEffectsTree(fiber);
+}
+
 function arraysEqual(a: unknown[], b: unknown[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -243,5 +284,15 @@ function reportEffectError(err: unknown, fiber: Fiber): void {
     stack.length > 0
       ? `graceglyph: effect error: ${details}\n${stack}`
       : `graceglyph: effect error: ${details}`,
+  );
+}
+
+function warnDeprecatedHook(hook: string, replacement: string): void {
+  if (process.env.NODE_ENV === "test") return;
+  if (warnedDeprecatedHooks.has(hook)) return;
+  warnedDeprecatedHooks.add(hook);
+  // eslint-disable-next-line no-console
+  console.warn(
+    `graceglyph: ${hook}() is a compatibility hook slated for removal in a future 0.x minor. Prefer ${replacement}() from graceglyph/reactive.`,
   );
 }

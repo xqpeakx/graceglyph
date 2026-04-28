@@ -6,8 +6,8 @@ import { ScreenBuffer } from "../src/render/buffer.js";
 import { DefaultStyle } from "../src/render/style.js";
 import { h } from "../src/runtime/element.js";
 import { createFiber } from "../src/runtime/fiber.js";
-import { layoutTree, paintTree } from "../src/runtime/host.js";
-import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
+import { buildHostTree, layoutTree, paintTree } from "../src/runtime/host.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 
 test("paintTree clips combining and wide graphemes without splitting cells", () => {
   const tree = h("text", { wrap: "clip" }, "e\u0301界z");

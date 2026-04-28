@@ -59,6 +59,51 @@ export function createHostNode(fiber: Fiber): HostNode {
   };
 }
 
+const RENDERABLE_HOST_TYPES = new Set<HostType>(["box", "text", "input", "textarea"]);
+
+export function isRenderableHostType(type: unknown): type is HostType {
+  return typeof type === "string" && RENDERABLE_HOST_TYPES.has(type as HostType);
+}
+
+function isHostFiber(fiber: Fiber): boolean {
+  return isRenderableHostType(fiber.type);
+}
+
+/**
+ * Build a HostNode tree by walking the fiber tree. Function-component and
+ * Fragment fibers are transparent — their children get attached to the
+ * nearest host ancestor.
+ */
+export function buildHostTree(rootFiber: Fiber): HostNode | null {
+  const rootSlot: { node: HostNode | null } = { node: null };
+  attachHosts(rootFiber, null, rootSlot);
+  return rootSlot.node;
+}
+
+function attachHosts(
+  fiber: Fiber,
+  parentHost: HostNode | null,
+  rootSlot: { node: HostNode | null },
+): void {
+  if (isHostFiber(fiber)) {
+    let node = fiber.hostNode;
+    if (!node) {
+      node = createHostNode(fiber);
+      fiber.hostNode = node;
+    } else {
+      node.props = fiber.props;
+      node.fiber = fiber;
+    }
+    node.children = [];
+    node.parent = parentHost;
+    if (parentHost) parentHost.children.push(node);
+    else if (!rootSlot.node) rootSlot.node = node;
+    for (const child of fiber.children) attachHosts(child, node, rootSlot);
+  } else {
+    for (const child of fiber.children) attachHosts(child, parentHost, rootSlot);
+  }
+}
+
 // -- Flex layout --------------------------------------------------------------
 
 interface Edge {

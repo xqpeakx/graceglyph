@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "capturedAt": "2026-04-27",
+  "notes": "Reference medians/tails on maintainer-class Apple Silicon hardware. Drift policy intentionally permissive to avoid CI noise; hard thresholds remain authoritative.",
+  "cases": [
+    {
+      "nameContains": "static-frame: 200x60 paint",
+      "metrics": {
+        "p50Ms": 0.089667,
+        "p99Ms": 0.603125
+      }
+    },
+    {
+      "nameContains": "static-frame: 200x60 diff",
+      "metrics": {
+        "p50Ms": 0.269791,
+        "p99Ms": 0.633375
+      }
+    },
+    {
+      "nameContains": "table-scroll:",
+      "metrics": {
+        "p50Ms": 0.368458,
+        "p99Ms": 1.147042
+      }
+    },
+    {
+      "nameContains": "resize-storm:",
+      "metrics": {
+        "p50Ms": 0.011917,
+        "p99Ms": 0.196666
+      }
+    },
+    {
+      "nameContains": "log-stream:",
+      "metrics": {
+        "p50Ms": 0.291917,
+        "p99Ms": 1.2595
+      }
+    },
+    {
+      "nameContains": "input-storm:",
+      "metrics": {
+        "p50Ms": 0.030541,
+        "p99Ms": 0.574792
+      }
+    }
+  ],
+  "policy": {
+    "maxRegressionPct": {
+      "p50Ms": 0.35,
+      "p99Ms": 0.45
+    }
+  }
+}

@@ -14,7 +14,20 @@ Status: draft. Owner: @cooley. Target horizon: 6–9 months to v1.0.
 - [x] §9 user-event API via `app.user.click/type/keyboard/hover/drag(...).drop(...)`.
 - [x] §9 capability simulation in `renderTestApp(..., { cap })` for deterministic terminal-profile testing.
 - [x] §9 property-based parser testing via `fast-check` (`test/input-parser.test.ts` invariants).
+- [x] §8 security automation alignment: CodeQL workflow in CI plus parser property tests with `fast-check`.
+- [x] §2 runtime migration slice: effect traversal moved out of `reconciler` into hook/runtime APIs (`flushAllFiberEffects`) with compatibility deprecations on hook exports.
+- [x] §2 runtime migration slice: host-tree assembly moved from `reconciler` into `runtime/host` with a deprecated `reconciler.buildHostTree(...)` shim.
+- [x] §2 runtime migration slice: runtime timing + host-type ownership centralized (`runtime/clock.nowMs`, `runtime/host.isRenderableHostType`) and reconciler tests migrated off deprecated effect shims.
 - [x] §10 bench threshold gate in CI for static-frame, diff, table-scroll, and resize-storm targets.
+- [x] §10 baseline + drift policy: `bench/baseline.json` and CI drift gate (`bench:drift`, `scripts/check-bench-drift.mjs`).
+- [x] §10 comparison harness placeholders for Ink/blessed/terminal-kit (`bench:compare`, `bench/competitors/*.json`).
+- [x] §10 profiling workflow documented and scriptable (`bench:prof`, `node --prof-process` guidance in `bench/README.md`).
+- [x] §3 initial `Image` primitive (`protocol="auto"` chooser with kitty/sixel/iTerm2/ascii selection and ASCII fallback rendering).
+- [x] §12 docs site bootstrap: VitePress scaffold in `docs/site` with initial Getting Started, Concepts, Component Index, and Migration Notes pages, plus CI `docs:build`.
+- [x] §12 docs expansion: migration guides (Ink/blessed), capabilities matrix, performance guide, and troubleshooting pages.
+- [x] §12 docs expansion: added "Why graceglyph" positioning page with explicit trade-off framing.
+- [x] §14 ecosystem foundation: `create-graceglyph --template plugin` scaffolds a plugin-author package starter.
+- [x] §14 ecosystem foundation: plugin versioning policy documented (`docs/site/plugin-versioning.md`).
 
 This document is the plan to take graceglyph from "another Node TUI" to the
 default choice for terminal apps in TypeScript. It is opinionated on purpose.

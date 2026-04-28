@@ -12,8 +12,8 @@ import {
 import { inspectTree } from "../src/runtime/devtools.js";
 import { h } from "../src/runtime/element.js";
 import { createFiber } from "../src/runtime/fiber.js";
-import { layoutTree } from "../src/runtime/host.js";
-import { buildHostTree, reconcile } from "../src/runtime/reconciler.js";
+import { buildHostTree, layoutTree } from "../src/runtime/host.js";
+import { reconcile } from "../src/runtime/reconciler.js";
 
 test("textarea enter inserts a newline and advances the cursor", () => {
   const state = createEditableState("alpha");

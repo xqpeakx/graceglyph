@@ -6,6 +6,9 @@ import {
   Checkbox,
   Column,
   Divider,
+  DUMB_CAPABILITIES,
+  FULL_CAPABILITIES,
+  Image,
   Kbd,
   ProgressBar,
   RadioGroup,
@@ -206,4 +209,32 @@ test("divider expands to fill available width by default", async (t) => {
   const row = screenText(harness.handle).split("\n")[0]!;
   // Expect a contiguous run of horizontal-line glyphs that spans the row.
   assert.match(row, /─{12}/);
+});
+
+test("image auto protocol prefers kitty when available", async (t) => {
+  const harness = renderWithFakeTty(h(Image, { src: "/tmp/cat.png", alt: "Cat" }), {
+    width: 40,
+    height: 6,
+    runtime: {
+      capabilities: { ...FULL_CAPABILITIES, kittyGraphics: true, sixel: false, iterm2Images: false },
+    },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const text = screenText(harness.handle);
+  assert.match(text, /protocol: kitty/);
+  assert.match(text, /\[kitty\] \/tmp\/cat\.png/);
+});
+
+test("image auto protocol falls back to ascii on dumb terminals", async (t) => {
+  const harness = renderWithFakeTty(h(Image, { src: "/tmp/cat.png", alt: "Cat art" }), {
+    width: 40,
+    height: 6,
+    runtime: { capabilities: DUMB_CAPABILITIES },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const text = screenText(harness.handle);
+  assert.match(text, /protocol: ascii/);
+  assert.match(text, /\[ascii\] Cat art/);
 });

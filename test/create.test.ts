@@ -31,12 +31,28 @@ async function scaffold(
     ],
     { cwd: repoRoot },
   );
-  const main = await fs.readFile(path.join(target, "src/main.tsx"), "utf8");
+  const main = await readIfExists(path.join(target, "src/main.tsx"));
   const pkg = JSON.parse(await fs.readFile(path.join(target, "package.json"), "utf8")) as {
     name: string;
     scripts: Record<string, string>;
   };
   return { target, main, pkg };
+}
+
+async function readIfExists(file: string): Promise<string> {
+  try {
+    return await fs.readFile(file, "utf8");
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "ENOENT"
+    ) {
+      return "";
+    }
+    throw error;
+  }
 }
 
 test("create-graceglyph scaffolds the log-viewer template with smoke test", async () => {
@@ -61,6 +77,14 @@ test("create-graceglyph scaffolds the editor template with file list", async () 
   assert.match(main, /TextArea/);
   assert.match(main, /FileEntry/);
   assert.match(main, /README\.md/);
+});
+
+test("create-graceglyph scaffolds the plugin template", async () => {
+  const { target, pkg } = await scaffold("plugin");
+  const index = await fs.readFile(path.join(target, "src/index.ts"), "utf8");
+  assert.match(pkg.name, /^@graceglyph\//);
+  assert.match(index, /definePlugin/);
+  assert.match(index, /createPlugin/);
 });
 
 test("create-graceglyph wires the --theme flag into bootstrap", async () => {

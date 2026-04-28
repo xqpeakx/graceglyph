@@ -79,7 +79,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "bench": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts",
-    "bench:check": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/check-bench-thresholds.mjs -"
+    "bench:prof": "node --prof --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts",
+    "bench:check": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/check-bench-thresholds.mjs -",
+    "bench:drift": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/check-bench-drift.mjs - bench/baseline.json",
+    "bench:compare": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/bench-compare.mjs -",
+    "docs:dev": "vitepress dev docs/site",
+    "docs:build": "vitepress build docs/site",
+    "docs:preview": "vitepress preview docs/site"
   },
   "engines": {
     "node": ">=18"
@@ -101,6 +107,7 @@
     "prettier": "^3.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0",
-    "typescript-eslint": "^8.6.0"
+    "typescript-eslint": "^8.6.0",
+    "vitepress": "^1.6.4"
   }
 }
