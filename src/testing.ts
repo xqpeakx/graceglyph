@@ -88,6 +88,7 @@ export interface TestApp {
   settle(turns?: number): Promise<void>;
   frame(): string;
   snapshot(): string;
+  snapshotAnsi(): string;
   warnings(): string[];
   assertNoLayoutWarnings(): void;
   press(key: string, options?: KeyboardFlowOptions): Promise<void>;
@@ -117,6 +118,7 @@ export function renderTestApp(element: ZenElement, options: RenderTestAppOptions
     settle,
     frame: () => snapshotTerminalFrame(handle),
     snapshot: () => snapshotTerminalFrame(handle),
+    snapshotAnsi: () => snapshotTerminalAnsi(app),
     warnings: () => collectLayoutWarnings(handle),
     assertNoLayoutWarnings: () => assertNoLayoutWarnings(handle),
     press: async (key, flowOptions) => {
@@ -179,6 +181,10 @@ export function snapshotTerminalFrame(handle: RenderHandle | TestApp): string {
   }
 
   return rows.join("\n");
+}
+
+export function snapshotTerminalAnsi(app: TestApp): string {
+  return app.output.output();
 }
 
 export function collectLayoutWarnings(handle: RenderHandle | TestApp): string[] {

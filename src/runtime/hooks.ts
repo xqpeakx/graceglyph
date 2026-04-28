@@ -3,6 +3,7 @@ import { attachFiberToError, formatComponentStack } from "./diagnostics.js";
 import type { Theme } from "../theme/theme.js";
 import type { Size } from "../layout/rect.js";
 import type { Capabilities } from "../render/capabilities.js";
+import { createSignal, type Accessor, type Setter } from "../reactive/core.js";
 import { subscribeFrame, type FrameCallback } from "./frame.js";
 import { createMotion, type MotionHandle, type MotionOptions } from "./motion.js";
 
@@ -47,13 +48,22 @@ function getEnvironment(): FiberEnvironment {
 
 export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void] {
   const fiber = currentFiber!;
-  const hook = getHook<Extract<Hook, { kind: "state" }>>(() => ({
+  type StateSignal = {
+    read: Accessor<T>;
+    write: Setter<T>;
+  };
+  const hook = getHook<Extract<Hook, { kind: "state" }> & { __signal?: StateSignal }>(() => ({
     kind: "state",
     value: typeof initial === "function" ? (initial as () => T)() : initial,
   }));
+  if (!hook.__signal) {
+    const [read, write] = createSignal<T>(hook.value as T);
+    hook.__signal = { read, write };
+  }
+  const signal = hook.__signal;
   const setState = (next: T | ((prev: T) => T)) => {
-    const prev = hook.value as T;
-    const nextValue = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
+    const prev = signal.read();
+    const nextValue = signal.write(next);
     if (Object.is(prev, nextValue)) return;
     hook.value = nextValue;
     fiber.scheduler(fiber);

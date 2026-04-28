@@ -5,7 +5,7 @@ import type { Runtime } from "./runtime.js";
 import type { HostNode } from "./host.js";
 import type { ScreenBuffer } from "../render/buffer.js";
 import { collectInspectorWarnings } from "./diagnostics.js";
-import { inspectTree, type InspectorTreeNode } from "./devtools.js";
+import { inspectTree } from "./devtools.js";
 import type { PerfTimeline, PerfSample } from "./perf.js";
 import type { Capabilities } from "../render/capabilities.js";
 
@@ -28,7 +28,7 @@ export interface BugReportBundle {
   };
   inspector: {
     warnings: readonly string[];
-    tree: InspectorTreeNode | null;
+    tree: readonly string[] | null;
   };
   frame: {
     /** Stripped snapshot of the front buffer (no ANSI, just glyphs). */
@@ -70,7 +70,7 @@ export function collectBugReport(
     },
     inspector: {
       warnings: root ? collectInspectorWarnings(root) : [],
-      tree: root ? inspectTree(root) : null,
+      tree: root ? inspectTree(root, null) : null,
     },
     frame: front ? snapshotBuffer(front) : null,
     perf: options.perf

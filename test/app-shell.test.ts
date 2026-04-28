@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   AppShell,
+  canNavigateRoute,
   CommandPalette,
   Route,
+  resolveDeepLinkPath,
+  resolveDeepLinkPathFromArgv,
   Router,
   h,
   registerCommand,
@@ -71,6 +74,44 @@ test("router composes nested routes with parent shells", async () => {
   } finally {
     harness.handle.stop();
   }
+});
+
+test("router matches pathnames with query/hash suffixes", async () => {
+  const harness = renderWithFakeTty(
+    h(
+      Router,
+      { path: "/logs?tab=errors#tail", fallback: h("text", {}, "missing") },
+      h(Route, { path: "/logs", title: "Logs" }, h("text", {}, "logs")),
+    ),
+    {
+      width: 40,
+      height: 6,
+      runtime: { devtools: false },
+    },
+  );
+
+  try {
+    await waitFor(() => screenText(harness.handle).includes("logs"));
+    assert.doesNotMatch(screenText(harness.handle), /missing/);
+    assert.deepEqual(runtimeWarnings(harness.handle), []);
+  } finally {
+    harness.handle.stop();
+  }
+});
+
+test("canNavigateRoute blocks leaving route when canLeave is false", () => {
+  const routes = h(
+    Route,
+    { path: "/settings", canLeave: false },
+    h(Route, { path: "profile" }, h("text", {}, "profile")),
+  );
+  assert.equal(canNavigateRoute("/settings/profile", "/", routes), false);
+});
+
+test("deep-link helpers normalize argv and query/hash paths", () => {
+  assert.equal(resolveDeepLinkPath("/apps/logs?pane=tail#row-4"), "/apps/logs");
+  assert.equal(resolveDeepLinkPathFromArgv(["node", "app", "--theme", "dark", "/logs?x=1"]), "/logs");
+  assert.equal(resolveDeepLinkPathFromArgv(["node", "app"], "/"), "/");
 });
 
 test("command palette exposes registered commands and runs them by keyboard", async () => {
@@ -186,6 +227,42 @@ test("app shell handles command hotkeys and escape breadcrumb navigation", async
 
     harness.input.emitData("\x1b");
     await waitFor(() => screenText(harness.handle).includes("/ saved"));
+    assert.deepEqual(runtimeWarnings(harness.handle), []);
+  } finally {
+    harness.handle.stop();
+  }
+});
+
+test("app shell respects navigation guards before breadcrumb back", async () => {
+  function ShellHarness() {
+    const [path, setPath] = useState("/details");
+    return h(
+      AppShell,
+      {
+        title: "Shell",
+        path,
+        onNavigate: setPath,
+        canNavigate: () => false,
+        breadcrumbs: [
+          { label: "Home", path: "/" },
+          { label: "Details", path: "/details" },
+        ],
+      },
+      h("text", {}, path),
+    );
+  }
+
+  const harness = renderWithFakeTty(h(ShellHarness, {}), {
+    width: 80,
+    height: 24,
+    runtime: { devtools: false },
+  });
+
+  try {
+    await waitFor(() => screenText(harness.handle).includes("/details"));
+    harness.input.emitData("\x1b");
+    await settleRuntime();
+    assert.match(screenText(harness.handle), /\/details/);
     assert.deepEqual(runtimeWarnings(harness.handle), []);
   } finally {
     harness.handle.stop();

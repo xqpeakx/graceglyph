@@ -1,5 +1,9 @@
 /** @jsx h */
 
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+
 import {
   App,
   Box,
@@ -29,6 +33,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "./runtime/hoo
 export interface RouteProps {
   path: string;
   title?: string;
+  canLeave?: boolean | (() => boolean);
   children?: unknown;
 }
 
@@ -43,25 +48,76 @@ export interface RouterProps {
 }
 
 export function Router(props: RouterProps): ZenElement {
-  const routes = normalizeChildren(props.children).filter(isElement);
-  const path = normalizePath(props.path);
+  const routes = normalizeChildren(props.children).filter(isElement) as ZenElement[];
+  const path = routePathname(props.path);
   for (const route of routes) {
     const match = matchRoute(route, path, "");
-    if (match !== null) return h("box", { direction: "column" } as BoxProps, match);
+    if (match !== null) return h("box", { direction: "column" } as BoxProps, match.nodes);
   }
   return h(Fragment, {}, props.fallback ?? null);
+}
+
+export function canNavigateRoute(
+  currentPath: string,
+  nextPath: string,
+  children: unknown,
+): boolean {
+  const fromPath = routePathname(currentPath);
+  const toPath = routePathname(nextPath);
+  if (fromPath === toPath) return true;
+  const match = findRouteMatch(children, fromPath);
+  if (!match) return true;
+  for (const guard of match.leaveGuards) {
+    if (typeof guard === "function") {
+      if (!guard()) return false;
+      continue;
+    }
+    if (guard === false) return false;
+  }
+  return true;
+}
+
+export function resolveDeepLinkPath(path: string | undefined, fallback = "/"): string {
+  const candidate = path?.trim();
+  if (!candidate) return routePathname(fallback);
+  return routePathname(candidate);
+}
+
+export function resolveDeepLinkPathFromArgv(argv: readonly string[], fallback = "/"): string {
+  let skipValue = false;
+  for (let index = 2; index < argv.length; index++) {
+    const value = argv[index];
+    if (skipValue) {
+      skipValue = false;
+      continue;
+    }
+    if (!value) continue;
+    if (value.startsWith("-")) {
+      skipValue = !value.includes("=");
+      continue;
+    }
+    return resolveDeepLinkPath(value, fallback);
+  }
+  return resolveDeepLinkPath(undefined, fallback);
+}
+
+interface RouteMatch {
+  nodes: Array<ZenElement | string>;
+  leaveGuards: Array<boolean | (() => boolean)>;
 }
 
 function matchRoute(
   route: ZenElement,
   path: string,
   basePath: string,
-): Array<ZenElement | string> | null {
+): RouteMatch | null {
   if (route.type !== Route) return null;
 
   const props = route.props as unknown as RouteProps;
   const routePath = joinRoutePath(basePath, props.path);
   if (!isPathMatchOrPrefix(path, routePath)) return null;
+  const guard = props.canLeave;
+  const guardChain = guard === undefined ? [] : [guard];
 
   const children = normalizeChildren(props.children);
   const nestedRoutes = children.filter((child) => isElement(child) && child.type === Route);
@@ -69,11 +125,19 @@ function matchRoute(
 
   for (const child of nestedRoutes) {
     const nested = matchRoute(child as ZenElement, path, routePath);
-    if (nested !== null) return [...shellChildren, ...nested];
+    if (nested !== null) {
+      return {
+        nodes: [...shellChildren, ...nested.nodes],
+        leaveGuards: [...guardChain, ...nested.leaveGuards],
+      };
+    }
   }
 
   if (path === routePath) {
-    return shellChildren.length > 0 ? shellChildren : normalizeChildren(props.children);
+    return {
+      nodes: shellChildren.length > 0 ? shellChildren : normalizeChildren(props.children),
+      leaveGuards: guardChain,
+    };
   }
 
   return null;
@@ -86,9 +150,23 @@ function joinRoutePath(basePath: string, routePath: string): string {
 }
 
 function normalizePath(path: string): string {
-  const withSlash = path.startsWith("/") ? path : `/${path}`;
+  const pathname = path.split(/[?#]/, 1)[0] ?? "/";
+  const withSlash = pathname.startsWith("/") ? pathname : `/${pathname}`;
   const collapsed = withSlash.replace(/\/+/g, "/");
   return collapsed.length > 1 ? collapsed.replace(/\/$/, "") : collapsed;
+}
+
+function routePathname(path: string): string {
+  return normalizePath(path);
+}
+
+function findRouteMatch(children: unknown, path: string): RouteMatch | null {
+  const routes = normalizeChildren(children).filter(isElement) as ZenElement[];
+  for (const route of routes) {
+    const match = matchRoute(route, path, "");
+    if (match) return match;
+  }
+  return null;
 }
 
 function isPathMatchOrPrefix(path: string, prefix: string): boolean {
@@ -360,6 +438,7 @@ export interface AppShellProps {
   title: string;
   path: string;
   onNavigate: (path: string) => void;
+  canNavigate?: (currentPath: string, nextPath: string) => boolean;
   breadcrumbs?: readonly BreadcrumbItem[];
   commands?: readonly Command[];
   commandScope?: string | readonly string[];
@@ -378,6 +457,16 @@ export function AppShell(props: AppShellProps): ZenElement {
   const [helpOpen, setHelpOpen] = useState(false);
   const registered = useCommands(props.commandScope);
   const commands = mergeCommands(registered, props.commands ?? []);
+  const currentPath = routePathname(props.path);
+  const navigate = useCallback(
+    (nextPath: string) => {
+      const targetPath = routePathname(nextPath);
+      if (targetPath === currentPath) return;
+      if (props.canNavigate && !props.canNavigate(currentPath, targetPath)) return;
+      props.onNavigate(targetPath);
+    },
+    [currentPath, props.canNavigate, props.onNavigate],
+  );
 
   const shellCommands = useMemo<Command[]>(
     () => [
@@ -411,7 +500,7 @@ export function AppShell(props: AppShellProps): ZenElement {
   function goBack(): void {
     const crumbs = props.breadcrumbs ?? [];
     const previous = crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs[0];
-    if (previous) props.onNavigate(previous.path);
+    if (previous) navigate(previous.path);
   }
 
   return (
@@ -448,7 +537,7 @@ export function AppShell(props: AppShellProps): ZenElement {
             titleStyle={props.windowTitleStyle}
           >
             <Column gap={1} grow={1}>
-              <Breadcrumbs items={props.breadcrumbs ?? []} onNavigate={props.onNavigate} />
+              <Breadcrumbs items={props.breadcrumbs ?? []} onNavigate={navigate} />
               {props.children}
             </Column>
           </Window>
@@ -736,7 +825,7 @@ export function usePersistentState<T>(
 ): [T, (next: T | ((current: T) => T)) => void] {
   const [value, setValue] = useState<T>(() => {
     const fallback = typeof initial === "function" ? (initial as () => T)() : initial;
-    const storage = optionalLocalStorage();
+    const storage = optionalPersistentStorage();
     try {
       const stored = storage?.getItem(key);
       return stored ? (JSON.parse(stored) as T) : fallback;
@@ -748,7 +837,7 @@ export function usePersistentState<T>(
   const setPersistentValue = (next: T | ((current: T) => T)) => {
     setValue((current) => {
       const value = typeof next === "function" ? (next as (current: T) => T)(current) : next;
-      const storage = optionalLocalStorage();
+      const storage = optionalPersistentStorage();
       try {
         storage?.setItem(key, JSON.stringify(value));
       } catch {
@@ -761,8 +850,76 @@ export function usePersistentState<T>(
   return [value, setPersistentValue];
 }
 
+interface KeyValueStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+let fileStorageCache:
+  | {
+      path: string;
+      values: Record<string, string>;
+    }
+  | undefined;
+
+function optionalPersistentStorage(): KeyValueStorage | undefined {
+  return optionalFileStorage() ?? optionalLocalStorage();
+}
+
+function optionalFileStorage(): KeyValueStorage | undefined {
+  const statePath = resolveStateFilePath();
+  if (!statePath) return undefined;
+  return {
+    getItem(key: string): string | null {
+      const values = loadFileStorage(statePath);
+      return Object.prototype.hasOwnProperty.call(values, key) ? values[key]! : null;
+    },
+    setItem(key: string, value: string): void {
+      const values = loadFileStorage(statePath);
+      values[key] = value;
+      persistFileStorage(statePath, values);
+    },
+  };
+}
+
+function loadFileStorage(path: string): Record<string, string> {
+  if (fileStorageCache && fileStorageCache.path === path) return fileStorageCache.values;
+  let values: Record<string, string> = {};
+  try {
+    const raw = readFileSync(path, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      values = parsed as Record<string, string>;
+    }
+  } catch {
+    values = {};
+  }
+  fileStorageCache = { path, values };
+  return values;
+}
+
+function persistFileStorage(path: string, values: Record<string, string>): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(values, null, 2), "utf8");
+  fileStorageCache = { path, values };
+}
+
+function resolveStateFilePath(): string | null {
+  const env = optionalProcessEnv();
+  if (!env) return null;
+  const explicit = env.GRACEGLYPH_STATE_FILE?.trim();
+  if (explicit) return explicit;
+  const appId = env.GRACEGLYPH_APP_ID?.trim() || "graceglyph";
+  const configHome = env.XDG_CONFIG_HOME?.trim() || join(homedir(), ".config");
+  return join(configHome, appId, "state.json");
+}
+
+function optionalProcessEnv(): Record<string, string | undefined> | undefined {
+  return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+}
+
 function optionalLocalStorage():
-  | { getItem(key: string): string | null; setItem(key: string, value: string): void }
+  | KeyValueStorage
   | undefined {
   return (
     globalThis as {

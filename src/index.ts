@@ -321,6 +321,7 @@ export type {
 export {
   AppShell,
   Breadcrumbs,
+  canNavigateRoute,
   CommandPalette,
   Dock,
   DockSlot,
@@ -334,6 +335,8 @@ export {
   Tabs,
   ToastViewport,
   registerCommand,
+  resolveDeepLinkPath,
+  resolveDeepLinkPathFromArgv,
   useAsync,
   useClipboard,
   useCommand,
@@ -410,6 +413,7 @@ export {
   mouseSequence,
   renderTestApp,
   settle,
+  snapshotTerminalAnsi,
   snapshotTerminalFrame,
 } from "./testing.js";
 export type {

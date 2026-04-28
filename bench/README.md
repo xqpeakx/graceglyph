@@ -25,8 +25,8 @@ Targets (see `ROADMAP.md` §10):
 | resize-storm p50       | <2 ms  |
 
 These are floors, not ceilings. We expect to beat them on modern hardware.
-The CI bench runs on a fixed runner so absolute numbers are comparable
-across PRs; deviations beyond ±10% from `main` block merge.
+CI runs the benchmark suite as a smoke check and emits JSON output for
+downstream comparison tooling.
 
 ## Adding a scenario
 

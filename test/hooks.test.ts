@@ -36,6 +36,22 @@ test("state updates schedule through the owning fiber scheduler", () => {
   assert.deepEqual(calls, ["first", "second"]);
 });
 
+test("state updates skip scheduler when value is unchanged", () => {
+  const calls: string[] = [];
+  const fiber = createFiber(() => null, {}, null, null);
+  fiber.scheduler = () => calls.push("commit");
+  let setValue!: (next: number) => void;
+
+  withFiber(fiber, () => {
+    [, setValue] = useState(1);
+  });
+
+  setValue(1);
+  setValue(2);
+
+  assert.deepEqual(calls, ["commit"]);
+});
+
 test("child fibers inherit their parent scheduler", () => {
   const calls: string[] = [];
   const parent = createFiber(() => null, {}, null, null);

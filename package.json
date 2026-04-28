@@ -72,6 +72,7 @@
     "example:components": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx components",
     "example:tarnished": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/tarnished-splash.tsx",
     "test": "node --test --loader ts-node/esm test/*.test.ts",
+    "test:coverage": "c8 --reporter=text --reporter=lcov --check-coverage --lines 80 --branches 75 node --test --loader ts-node/esm test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -93,6 +94,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "c8": "^11.0.0",
     "eslint": "^9.10.0",
     "prettier": "^3.3.0",
     "ts-node": "^10.9.2",

@@ -37,6 +37,7 @@ test("renderTestApp snapshots frames and simulates keyboard/mouse flows", async 
     await app.settle();
     assert.match(app.snapshot(), /Disabled/);
     assert.match(app.frame(), /Run/);
+    assert.match(app.snapshotAnsi(), /\x1b\[/);
     app.assertNoLayoutWarnings();
 
     await app.press("enter");
