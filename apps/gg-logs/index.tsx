@@ -16,6 +16,7 @@ import {
   TextInput,
   Window,
   builtInThemes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   h,
   render,
   useEffect,
@@ -69,9 +70,9 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
 }
 
 function printHelp(): void {
-  console.log("gg-logs <file...> [--regex pattern] [--level info] [--theme tarnished]");
-  console.log("");
-  console.log("Streams one or more log files. Tail mode by default; --no-follow disables.");
+  process.stdout.write("gg-logs <file...> [--regex pattern] [--level info] [--theme tarnished]\n");
+  process.stdout.write("\n");
+  process.stdout.write("Streams one or more log files. Tail mode by default; --no-follow disables.\n");
 }
 
 const LEVEL_PATTERN = /\b(DEBUG|INFO|WARN|ERROR|FATAL|TRACE)\b/i;

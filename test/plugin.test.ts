@@ -1,10 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
 
 import {
   createPluginRegistry,
+  createPluginRegistryFromConfig,
   definePlugin,
   builtInThemes,
+  loadPlugin,
+  loadPluginsFromConfig,
+  parsePluginArgsFromArgv,
   type GraceglyphPlugin,
 } from "../src/index.js";
 
@@ -176,4 +181,56 @@ test("setup context exposes resolveComponent / resolveTheme / commands", () => {
     components: ["Widget"],
     commands: ["host.cmd"],
   });
+});
+
+test("parsePluginArgsFromArgv supports repeated --plugin and -p flags", () => {
+  const specs = parsePluginArgsFromArgv([
+    "node",
+    "app.js",
+    "--plugin",
+    "one",
+    "--plugin=two#factory",
+    "-p",
+    "three",
+  ]);
+  assert.deepEqual(specs, [
+    { module: "one" },
+    { module: "two", exportName: "factory" },
+    { module: "three" },
+  ]);
+});
+
+test("loadPlugin resolves default export factory and explicit named export", async () => {
+  const fixturePath = resolve("test/fixtures/plugin-loader-fixture.ts");
+  const defaultLoaded = await loadPlugin(fixturePath);
+  assert.equal(defaultLoaded.id, "fixture.factory");
+
+  const namedLoaded = await loadPlugin({ module: fixturePath, exportName: "fixturePlugin" });
+  assert.equal(namedLoaded.id, "fixture.object");
+});
+
+test("loadPluginsFromConfig merges config plugins and argv plugin flags", async () => {
+  const fixturePath = resolve("test/fixtures/plugin-loader-fixture.ts");
+  const plugins = await loadPluginsFromConfig(
+    {
+      plugins: [
+        { module: fixturePath, exportName: "fixturePlugin" },
+        { id: "inline.plugin" },
+      ],
+    },
+    ["node", "app.js", "--plugin", `${fixturePath}#createFixturePlugin`],
+  );
+  const ids = plugins.map((plugin) => plugin.id);
+  assert.deepEqual(ids, ["fixture.object", "inline.plugin", "fixture.factory"]);
+});
+
+test("createPluginRegistryFromConfig preloads plugins into registry", async () => {
+  const fixturePath = resolve("test/fixtures/plugin-loader-fixture.ts");
+  const registry = await createPluginRegistryFromConfig(
+    {
+      plugins: [{ module: fixturePath, exportName: "fixturePlugin" }],
+    },
+    ["node", "app.js"],
+  );
+  assert.ok(registry.list().some((plugin) => plugin.id === "fixture.object"));
 });

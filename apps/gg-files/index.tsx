@@ -15,6 +15,7 @@ import {
   Text,
   Window,
   builtInThemes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   h,
   render,
   useEffect,
@@ -94,7 +95,7 @@ export function parseArgs(argv: readonly string[]): ParsedFilesArgs {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      console.log("gg-files [path] [--all] [--theme name]");
+      process.stdout.write("gg-files [path] [--all] [--theme name]\n");
       process.exit(0);
     }
     if (arg.startsWith("--")) throw new Error(`unknown flag: ${arg}`);

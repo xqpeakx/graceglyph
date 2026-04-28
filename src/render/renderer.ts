@@ -1,5 +1,5 @@
 import { Terminal } from "../core/terminal.js";
-import { AnsiSeq, cursorTo, styleSgr } from "./ansi.js";
+import { AnsiSeq, cursorTo, hyperlinkClose, hyperlinkOpen, styleSgr } from "./ansi.js";
 import { ScreenBuffer } from "./buffer.js";
 import { DefaultStyle, Style, stylesEqual } from "./style.js";
 
@@ -40,6 +40,14 @@ export class Renderer {
     let lastStyle: Style = DefaultStyle;
     let styleSet = false;
     let lastPos: { x: number; y: number } | null = null;
+    let activeHyperlink: string | null = null;
+    let textRun = "";
+
+    const flushTextRun = (): void => {
+      if (textRun.length === 0) return;
+      out.push(textRun);
+      textRun = "";
+    };
 
     const sync = this.terminal.capabilities?.synchronizedOutput ?? false;
     if (sync) out.push(AnsiSeq.beginSynchronized);
@@ -55,17 +63,35 @@ export class Renderer {
 
     for (const { x, y, cell } of this.back.diff(this.front)) {
       if (cell.width === 0) continue; // trailing half of wide cell
-      if (!lastPos || lastPos.x !== x || lastPos.y !== y) {
+      const needsCursorMove = !lastPos || lastPos.x !== x || lastPos.y !== y;
+      const needsStyleUpdate = !styleSet || !stylesEqual(cell.style, lastStyle);
+      if (needsCursorMove) {
+        flushTextRun();
         out.push(cursorTo(x, y));
       }
-      if (!styleSet || !stylesEqual(cell.style, lastStyle)) {
+      if (needsStyleUpdate) {
+        flushTextRun();
         out.push(styleSgr(cell.style));
         lastStyle = cell.style;
         styleSet = true;
       }
-      out.push(cell.char || " ");
+      const nextHyperlink = cell.hyperlink ?? null;
+      if (nextHyperlink !== activeHyperlink) {
+        flushTextRun();
+        if (activeHyperlink) out.push(hyperlinkClose());
+        if (nextHyperlink) out.push(hyperlinkOpen(nextHyperlink));
+        activeHyperlink = nextHyperlink;
+      }
+      if (cell.ansiPrefix) {
+        flushTextRun();
+        out.push(cell.ansiPrefix);
+      }
+      textRun += cell.char || " ";
       lastPos = { x: x + cell.width, y };
     }
+
+    flushTextRun();
+    if (activeHyperlink) out.push(hyperlinkClose());
 
     // Swap buffers.
     this.front.copyFrom(this.back);

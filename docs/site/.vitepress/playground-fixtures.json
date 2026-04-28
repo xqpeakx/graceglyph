@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-04-28T04:38:01.005Z",
+  "profiles": [
+    {
+      "id": "full",
+      "label": "Full"
+    },
+    {
+      "id": "dumb",
+      "label": "Dumb"
+    },
+    {
+      "id": "graphics",
+      "label": "Graphics"
+    }
+  ],
+  "examples": [
+    {
+      "id": "layout-basics",
+      "title": "Layout + Components",
+      "description": "Composable primitives with spacing, badges, and progress.",
+      "code": "h(App, {},\n  h(Window, { title: \"Deploy\", width: 56, height: 10 },\n    h(Column, { gap: 1 },\n      h(Row, { gap: 1 },\n        h(Badge, { variant: \"info\", children: \"v1.2.4\" }),\n        h(Text, {}, \"Streaming logs\")\n      ),\n      h(ProgressBar, { value: 0.64, width: 36, showPercent: true, label: \"upload\" })\n    )\n  )\n)",
+      "fixtures": {
+        "full": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;37;49m┌─\u001b[0;1;39;49m Deploy \u001b[0;37;49m─────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;60H│\u001b[3;1H│\u001b[3;3H\u001b[0;1;97;44m v1.2.4 \u001b[3;12H\u001b[0;39;49mStreaming\u001b[3;22Hlogs\u001b[3;60H\u001b[0;37;49m│\u001b[4;1H│\u001b[4;60H│\u001b[5;1H│\u001b[5;3H\u001b[0;32;49m███████████████████████░░░░░░░░░░░░░\u001b[0;2;39;49m upload 64%\u001b[0;90;49m         \u001b[5;60H\u001b[0;37;49m│\u001b[6;1H│\u001b[6;60H│\u001b[7;1H│\u001b[7;60H│\u001b[8;1H│\u001b[8;60H│\u001b[9;1H│\u001b[9;60H│\u001b[10;1H│\u001b[10;60H│\u001b[11;1H│\u001b[11;60H│\u001b[12;1H│\u001b[12;60H│\u001b[13;1H│\u001b[13;60H│\u001b[14;1H└──────────────────────────────────────────────────────────┘\u001b[?2026l"
+        },
+        "dumb": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[2J\u001b[?25l\u001b[1;1H\u001b[0;37;49m┌─\u001b[0;1;39;49m Deploy \u001b[0;37;49m─────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;60H│\u001b[3;1H│\u001b[3;3H\u001b[0;1;97;44m v1.2.4 \u001b[3;12H\u001b[0;39;49mStreaming\u001b[3;22Hlogs\u001b[3;60H\u001b[0;37;49m│\u001b[4;1H│\u001b[4;60H│\u001b[5;1H│\u001b[5;3H\u001b[0;32;49m███████████████████████░░░░░░░░░░░░░\u001b[0;2;39;49m upload 64%\u001b[0;90;49m         \u001b[5;60H\u001b[0;37;49m│\u001b[6;1H│\u001b[6;60H│\u001b[7;1H│\u001b[7;60H│\u001b[8;1H│\u001b[8;60H│\u001b[9;1H│\u001b[9;60H│\u001b[10;1H│\u001b[10;60H│\u001b[11;1H│\u001b[11;60H│\u001b[12;1H│\u001b[12;60H│\u001b[13;1H│\u001b[13;60H│\u001b[14;1H└──────────────────────────────────────────────────────────┘"
+        },
+        "graphics": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;37;49m┌─\u001b[0;1;39;49m Deploy \u001b[0;37;49m─────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;60H│\u001b[3;1H│\u001b[3;3H\u001b[0;1;97;44m v1.2.4 \u001b[3;12H\u001b[0;39;49mStreaming\u001b[3;22Hlogs\u001b[3;60H\u001b[0;37;49m│\u001b[4;1H│\u001b[4;60H│\u001b[5;1H│\u001b[5;3H\u001b[0;32;49m███████████████████████░░░░░░░░░░░░░\u001b[0;2;39;49m upload 64%\u001b[0;90;49m         \u001b[5;60H\u001b[0;37;49m│\u001b[6;1H│\u001b[6;60H│\u001b[7;1H│\u001b[7;60H│\u001b[8;1H│\u001b[8;60H│\u001b[9;1H│\u001b[9;60H│\u001b[10;1H│\u001b[10;60H│\u001b[11;1H│\u001b[11;60H│\u001b[12;1H│\u001b[12;60H│\u001b[13;1H│\u001b[13;60H│\u001b[14;1H└──────────────────────────────────────────────────────────┘\u001b[?2026l"
+        }
+      }
+    },
+    {
+      "id": "links",
+      "title": "Capability-Aware Links",
+      "description": "OSC 8 hyperlinks on capable terminals, visible fallback otherwise.",
+      "code": "h(App, {},\n  h(Column, { gap: 1 },\n    h(Text, {}, \"Read the docs:\"),\n    h(Link, { href: \"https://graceglyph.dev\", children: \"graceglyph.dev/docs\" })\n  )\n)",
+      "fixtures": {
+        "full": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;39;49mRead\u001b[1;6Hthe\u001b[1;10Hdocs:\u001b[3;1H\u001b[0;4;34;49m\u001b]8;;https://graceglyph.dev\u001b\\graceglyph.dev/docs\u001b]8;;\u001b\\\u001b[?2026l"
+        },
+        "dumb": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[2J\u001b[?25l\u001b[1;1H\u001b[0;39;49mRead\u001b[1;6Hthe\u001b[1;10Hdocs:\u001b[3;1H\u001b[0;4;34;49mgraceglyph.dev/docs (https://graceglyph.dev)"
+        },
+        "graphics": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;39;49mRead\u001b[1;6Hthe\u001b[1;10Hdocs:\u001b[3;1H\u001b[0;4;34;49m\u001b]8;;https://graceglyph.dev\u001b\\graceglyph.dev/docs\u001b]8;;\u001b\\\u001b[?2026l"
+        }
+      }
+    },
+    {
+      "id": "image-protocols",
+      "title": "Inline Image Protocols",
+      "description": "Auto protocol routing across Kitty/Sixel/iTerm2 with fallback behavior.",
+      "code": "h(App, {},\n  h(Image, { src: \"/tmp/cat.png\", alt: \"Cat\", protocol: \"auto\", width: 50, height: 8 })\n)",
+      "fixtures": {
+        "full": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;39;49m┌────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;50H│\u001b[3;1H│\u001b[3;3H\u001b_Ga=T,t=f,f=100,c=50,r=8;L3RtcC9jYXQucG5n\u001b\\Cat\u001b[3;50H│\u001b[4;1H│\u001b[4;3H\u001b[0;2;39;49mprotocol: kitty (native)\u001b[4;50H\u001b[0;39;49m│\u001b[5;1H│\u001b[5;3H\u001b[0;2;39;49mCat (kitty)\u001b[5;50H\u001b[0;39;49m│\u001b[6;1H│\u001b[6;50H│\u001b[7;1H│\u001b[7;50H│\u001b[8;1H└────────────────────────────────────────────────┘\u001b[?2026l"
+        },
+        "dumb": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[2J\u001b[?25l\u001b[1;1H\u001b[0;39;49m┌────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;50H│\u001b[3;1H│\u001b[3;3H[ascii]\u001b[3;11HCat\u001b[3;50H│\u001b[4;1H│\u001b[4;3H\u001b[0;2;39;49mprotocol: ascii\u001b[4;50H\u001b[0;39;49m│\u001b[5;1H│\u001b[5;3H\u001b[0;2;39;49mCat\u001b[5;50H\u001b[0;39;49m│\u001b[6;1H│\u001b[6;50H│\u001b[7;1H│\u001b[7;50H│\u001b[8;1H└────────────────────────────────────────────────┘"
+        },
+        "graphics": {
+          "width": 72,
+          "height": 14,
+          "ansi": "\u001b[?1049h\u001b[?25l\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?2004h\u001b[?1004h\u001b[2J\u001b[?2026h\u001b[?25l\u001b[1;1H\u001b[0;39;49m┌────────────────────────────────────────────────┐\u001b[2;1H│\u001b[2;50H│\u001b[3;1H│\u001b[3;3H\u001b_Ga=T,t=f,f=100,c=50,r=8;L3RtcC9jYXQucG5n\u001b\\Cat\u001b[3;50H│\u001b[4;1H│\u001b[4;3H\u001b[0;2;39;49mprotocol: kitty (native)\u001b[4;50H\u001b[0;39;49m│\u001b[5;1H│\u001b[5;3H\u001b[0;2;39;49mCat (kitty)\u001b[5;50H\u001b[0;39;49m│\u001b[6;1H│\u001b[6;50H│\u001b[7;1H│\u001b[7;50H│\u001b[8;1H└────────────────────────────────────────────────┘\u001b[?2026l"
+        }
+      }
+    }
+  ]
+}

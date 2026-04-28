@@ -13,9 +13,9 @@ import {
   TextInput,
   Window,
   builtInThemes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   h,
   render,
-  useEffect,
   useState,
 } from "../../src/index.js";
 
@@ -73,15 +73,19 @@ export function parseArgs(argv: readonly string[]): ParsedChatArgs {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      console.log("gg-chat [--delay ms] [--theme name]");
-      console.log("");
-      console.log("Streaming chat client demo. Swap apps/gg-chat/index.tsx#echoModel");
-      console.log("for a real provider — the renderer is provider-agnostic.");
+      printHelp();
       process.exit(0);
     }
     throw new Error(`unknown flag: ${arg}`);
   }
   return { intervalMs, theme };
+}
+
+function printHelp(): void {
+  process.stdout.write("gg-chat [--delay ms] [--theme name]\n");
+  process.stdout.write("\n");
+  process.stdout.write("Streaming chat client demo. Swap apps/gg-chat/index.tsx#echoModel\n");
+  process.stdout.write("for a real provider — the renderer is provider-agnostic.\n");
 }
 
 interface AppProps {

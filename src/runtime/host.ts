@@ -968,7 +968,16 @@ function paintNode(node: HostNode, ctx: PaintContext): void {
     if (fillStyle.bg.kind !== "default") buffer.fill(layout, " ", fillStyle);
     const text = textOf(props.children);
     const truncated = truncate(text, layout.width, props.wrap ?? "truncate");
-    buffer.writeText(layout.x, layout.y, truncated, fillStyle, layout);
+    const dataAttrs = props as unknown as Record<string, unknown>;
+    const href = dataAttrs["data-href"];
+    const ansiPrefixValue = dataAttrs["data-ansi-prefix"];
+    const hyperlink =
+      typeof href === "string" && href.length > 0 && node.fiber.environment?.capabilities.hyperlinks
+        ? href
+        : undefined;
+    const ansiPrefix =
+      typeof ansiPrefixValue === "string" && ansiPrefixValue.length > 0 ? ansiPrefixValue : undefined;
+    buffer.writeText(layout.x, layout.y, truncated, fillStyle, layout, { hyperlink, ansiPrefix });
     return;
   }
 

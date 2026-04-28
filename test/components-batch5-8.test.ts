@@ -513,7 +513,7 @@ test("FilePicker expands directories and selects files", async (t) => {
 });
 
 test("DataGrid edits a cell on Enter and commits on Submit", async (t) => {
-  type Row = { [k: string]: unknown; name: string; age: number };
+  interface Row { [k: string]: unknown; name: string; age: number }
   const ref = { rows: [{ name: "alice", age: 30 } as Row] };
   function App() {
     const [rows, setRows] = useState<readonly Row[]>(ref.rows);

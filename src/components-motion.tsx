@@ -160,7 +160,7 @@ export function Stream<T>(props: StreamProps<T>): ZenElement {
             return next.length > limit ? next.slice(-limit) : next;
           });
         } catch (err) {
-          // eslint-disable-next-line no-console
+           
           console.error("graceglyph Stream: iterator error:", err);
           return;
         }

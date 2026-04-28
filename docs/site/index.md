@@ -14,6 +14,10 @@ high-performance rendering, and production-grade test tooling.
 - [Migration from blessed](/migration-from-blessed)
 - [Capabilities Matrix](/capabilities-matrix)
 - [Performance](/performance)
+- [Interactive Playground](/playground)
+- [API Reference](/api-reference)
+- [Component Authoring Template](/component-authoring)
+- [@graceglyph/markdown](/plugins-markdown)
 - [Troubleshooting](/troubleshooting)
 
 ## What makes graceglyph different

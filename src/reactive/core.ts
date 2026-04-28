@@ -279,6 +279,6 @@ function disposeComputation(c: Computation): void {
 
 function reportCleanupError(err: unknown): void {
   const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
-  // eslint-disable-next-line no-console
+   
   console.error(`graceglyph: cleanup error: ${message}`);
 }

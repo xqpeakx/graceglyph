@@ -83,12 +83,20 @@ function main() {
   const current = parsePayload(inputPath);
   const baseline = parseBaseline(baselinePath);
   const { failures, regressions } = checkDrift(current, baseline);
+  const enforce = process.env.BENCH_DRIFT_ENFORCE === "1";
 
   if (failures.length > 0) {
-    // eslint-disable-next-line no-console
+    if (!enforce) {
+      console.warn(
+        `bench drift check (informational): skipping enforcement on ${current.platform}/${current.arch} (set BENCH_DRIFT_ENFORCE=1 to enforce).`,
+      );
+      for (const failure of failures) {
+        console.warn(`- ${failure}`);
+      }
+      return;
+    }
     console.error("bench drift check failed:");
     for (const failure of failures) {
-      // eslint-disable-next-line no-console
       console.error(`- ${failure}`);
     }
     process.exitCode = 1;

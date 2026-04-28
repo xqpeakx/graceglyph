@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { Rect } from "../src/layout/rect.js";
-import { AnsiSeq, cursorTo } from "../src/render/ansi.js";
+import { AnsiSeq, cursorTo, hyperlinkClose, hyperlinkOpen } from "../src/render/ansi.js";
 import { ScreenBuffer } from "../src/render/buffer.js";
 import { Renderer } from "../src/render/renderer.js";
 import { DefaultStyle } from "../src/render/style.js";
@@ -64,6 +64,35 @@ test("renderer can update cursor position without repainting unchanged cells", (
   assert.doesNotMatch(output, /a|b|c/);
 });
 
+test("renderer keeps OSC 8 hyperlinks open across contiguous cells", () => {
+  const terminal = new FakeTerminal(6, 1);
+  const renderer = new Renderer(terminal as never);
+
+  const frameA = renderer.beginFrame();
+  frameA.set(0, 0, { char: "H", style: DefaultStyle, width: 1, hyperlink: "https://example.com" });
+  frameA.set(1, 0, { char: "i", style: DefaultStyle, width: 1, hyperlink: "https://example.com" });
+  renderer.flush();
+
+  const output = terminal.output();
+  assert.equal(countOccurrences(output, hyperlinkOpen("https://example.com")), 1);
+  assert.equal(countOccurrences(output, hyperlinkClose()), 1);
+  assert.match(output, /Hi/);
+});
+
+test("renderer emits ansiPrefix before text once per prefixed cell", () => {
+  const terminal = new FakeTerminal(6, 1);
+  const renderer = new Renderer(terminal as never);
+
+  const frame = renderer.beginFrame();
+  frame.set(0, 0, { char: "A", style: DefaultStyle, width: 1, ansiPrefix: "\x1b]1337;File=foo\x07" });
+  frame.set(1, 0, { char: "B", style: DefaultStyle, width: 1 });
+  renderer.flush();
+
+  const output = terminal.output();
+  assert.match(output, /\x1b\]1337;File=foo\x07AB/);
+  assert.equal(countOccurrences(output, "\x1b]1337;File=foo\x07"), 1);
+});
+
 class FakeTerminal {
   private chunks: string[] = [];
 
@@ -100,4 +129,17 @@ function draw(buffer: ScreenBuffer, text: string, width: number, height: number)
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function countOccurrences(haystack: string, needle: string): number {
+  if (needle.length === 0) return 0;
+  let count = 0;
+  let index = 0;
+  while (true) {
+    const next = haystack.indexOf(needle, index);
+    if (next < 0) break;
+    count += 1;
+    index = next + needle.length;
+  }
+  return count;
 }

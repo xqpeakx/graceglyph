@@ -34,6 +34,8 @@ export type {
 export { render } from "./runtime/render.js";
 export type { RenderHandle } from "./runtime/render.js";
 export type { RuntimeOptions } from "./runtime/runtime.js";
+export { renderWithPlugins } from "./bootstrap.js";
+export type { RenderWithPluginsHandle, RenderWithPluginsOptions } from "./bootstrap.js";
 
 export {
   useState,
@@ -304,9 +306,18 @@ export {
 } from "./runtime/frame.js";
 export type { FrameCallback } from "./runtime/frame.js";
 
-export { createPluginRegistry, definePlugin } from "./plugin.js";
+export {
+  createPluginRegistry,
+  createPluginRegistryFromConfig,
+  definePlugin,
+  loadPlugin,
+  loadPluginsFromConfig,
+  parsePluginArgsFromArgv,
+} from "./plugin.js";
 export type {
   GraceglyphPlugin,
+  PluginLoadConfig,
+  PluginLoadSpec,
   PluginContext,
   PluginMiddleware,
   PluginRegistry,

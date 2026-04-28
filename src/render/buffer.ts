@@ -42,18 +42,39 @@ export class ScreenBuffer {
   }
 
   /** Write a string starting at (x, y), clipped to the given rect. */
-  writeText(x: number, y: number, text: string, style: Style, clip: Rect): void {
+  writeText(
+    x: number,
+    y: number,
+    text: string,
+    style: Style,
+    clip: Rect,
+    options?: { hyperlink?: string; ansiPrefix?: string },
+  ): void {
     if (y < clip.y || y >= clip.bottom) return;
     let cx = x;
+    let wrotePrefix = false;
     for (const grapheme of splitGraphemes(text)) {
       if (cx >= clip.right) break;
       const w = grapheme.width;
       if (w === 0) continue;
       if (cx + w > clip.right) break;
       if (cx >= clip.x) {
-        this.set(cx, y, { char: grapheme.text, style, width: w as 1 | 2 });
+        const leadingPrefix: string | undefined = !wrotePrefix ? options?.ansiPrefix : undefined;
+        wrotePrefix = wrotePrefix || leadingPrefix !== undefined;
+        this.set(cx, y, {
+          char: grapheme.text,
+          style,
+          width: w as 1 | 2,
+          ...(options?.hyperlink ? { hyperlink: options.hyperlink } : {}),
+          ...(leadingPrefix ? { ansiPrefix: leadingPrefix } : {}),
+        });
         if (w === 2 && cx + 1 < clip.right) {
-          this.set(cx + 1, y, { char: "", style, width: 0 });
+          this.set(cx + 1, y, {
+            char: "",
+            style,
+            width: 0,
+            ...(options?.hyperlink ? { hyperlink: options.hyperlink } : {}),
+          });
         }
       }
       cx += w;
@@ -75,7 +96,13 @@ export class ScreenBuffer {
     }
     for (let i = 0; i < this.cells.length; i++) {
       const c = other.cells[i]!;
-      this.cells[i] = { char: c.char, style: c.style, width: c.width };
+      this.cells[i] = {
+        char: c.char,
+        style: c.style,
+        width: c.width,
+        ...(c.hyperlink ? { hyperlink: c.hyperlink } : {}),
+        ...(c.ansiPrefix ? { ansiPrefix: c.ansiPrefix } : {}),
+      };
     }
   }
 

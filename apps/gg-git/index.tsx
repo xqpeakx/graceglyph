@@ -16,6 +16,7 @@ import {
   Text,
   Window,
   builtInThemes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   h,
   parseUnifiedDiff,
   render,
@@ -115,7 +116,7 @@ export function parseArgs(argv: readonly string[]): ParsedGitArgs {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      console.log("gg-git [path] [--theme name]");
+      process.stdout.write("gg-git [path] [--theme name]\n");
       process.exit(0);
     }
     if (arg.startsWith("--")) throw new Error(`unknown flag: ${arg}`);

@@ -12,6 +12,7 @@ import type { KeyEvent } from "./input/keys.js";
 import { useCapabilities, useEffect, useState, useTheme } from "./runtime/hooks.js";
 import { style as styleRule } from "./style/index.js";
 import { stringWidth } from "./render/unicode.js";
+import { buildInlineImageSequence } from "./render/image-protocols.js";
 
 /**
  * Built-in components. Deliberately thin — each one is a handful of lines
@@ -187,18 +188,28 @@ export interface ImageProps extends AccessibilityProps {
   titleStyle?: StyleLike;
 }
 
-/**
- * Image primitive with capability-aware protocol selection. For now, non-ASCII
- * protocols render a descriptive placeholder while the protocol metadata is
- * threaded through props for renderer integration work.
- */
 export function Image(props: ImageProps): ZenElement {
   const theme = useTheme();
   const caps = useCapabilities();
   const selected = resolveImageProtocol(caps, props.protocol ?? "auto");
   const alt = props.alt ?? "image";
-  const title = selected === "ascii" ? alt : `image (${selected})`;
-  const body = selected === "ascii" ? `[ascii] ${alt}` : `[${selected}] ${props.src}`;
+  const inlineSequence =
+    selected === "ascii"
+      ? undefined
+      : buildInlineImageSequence({
+          protocol: selected,
+          src: props.src,
+          width: props.width,
+          height: props.height,
+        });
+  const renderedInline = inlineSequence !== undefined;
+  const title = selected === "ascii" ? alt : `${alt} (${selected})`;
+  const body =
+    selected === "ascii"
+      ? `[ascii] ${alt}`
+      : renderedInline
+        ? `${alt}`
+        : `[${selected}] ${props.src}`;
 
   return h(
     "box",
@@ -216,8 +227,16 @@ export function Image(props: ImageProps): ZenElement {
       "data-image-src": props.src,
       "data-image-protocol": selected,
     } as BoxProps,
-    h("text", { wrap: "truncate" } as TextProps, body),
-    h("text", { style: { dim: true }, wrap: "truncate" } as TextProps, `protocol: ${selected}`),
+    h(
+      "text",
+      { wrap: "truncate", "data-ansi-prefix": inlineSequence } as unknown as TextProps,
+      body.length > 0 ? body : " ",
+    ),
+    h(
+      "text",
+      { style: { dim: true }, wrap: "truncate" } as TextProps,
+      `protocol: ${selected}${renderedInline ? " (native)" : selected === "ascii" ? "" : " (fallback)"}`,
+    ),
     h("text", { style: { dim: true }, wrap: "truncate" } as TextProps, title),
   );
 }

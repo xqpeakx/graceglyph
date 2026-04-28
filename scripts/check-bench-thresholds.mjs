@@ -58,10 +58,10 @@ function main() {
   const results = parseResults(inputPath);
   const failures = checkThresholds(results);
   if (failures.length > 0) {
-    // eslint-disable-next-line no-console
+     
     console.error("bench threshold check failed:");
     for (const failure of failures) {
-      // eslint-disable-next-line no-console
+       
       console.error(`- ${failure}`);
     }
     process.exitCode = 1;

@@ -13,7 +13,11 @@ export default defineConfig({
       { text: "Migration", link: "/migration-notes" },
       { text: "Performance", link: "/performance" },
       { text: "Capabilities", link: "/capabilities-matrix" },
+      { text: "Playground", link: "/playground" },
+      { text: "API", link: "/api-reference" },
       { text: "Plugin Policy", link: "/plugin-versioning" },
+      { text: "Component Template", link: "/component-authoring" },
+      { text: "Markdown Plugin", link: "/plugins-markdown" },
     ],
     sidebar: [
       {
@@ -25,8 +29,11 @@ export default defineConfig({
           { text: "Migration Notes", link: "/migration-notes" },
           { text: "Migration from Ink", link: "/migration-from-ink" },
           { text: "Migration from blessed", link: "/migration-from-blessed" },
+          { text: "Interactive Playground", link: "/playground" },
           { text: "Troubleshooting", link: "/troubleshooting" },
           { text: "Plugin Versioning", link: "/plugin-versioning" },
+          { text: "Component Authoring", link: "/component-authoring" },
+          { text: "@graceglyph/markdown", link: "/plugins-markdown" },
         ],
       },
       {
@@ -35,6 +42,7 @@ export default defineConfig({
           { text: "Component Index", link: "/components/" },
           { text: "Capabilities Matrix", link: "/capabilities-matrix" },
           { text: "Performance", link: "/performance" },
+          { text: "API Reference", link: "/api-reference" },
         ],
       },
     ],

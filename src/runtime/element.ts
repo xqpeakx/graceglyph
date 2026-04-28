@@ -9,6 +9,7 @@ export type ComponentFn<P = Record<string, unknown>> = (
   props: P & { children?: unknown },
 ) => ZenNode;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ElementType = HostType | FragmentType | ComponentFn<any>;
 
 export type HostType = "box" | "text" | "input" | "textarea";
@@ -44,9 +45,11 @@ export function isElement(value: unknown): value is ZenElement {
  */
 export function h(
   type: ElementType,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props?: Record<string, any> | null,
   ...children: unknown[]
 ): ZenElement {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { key, ...rest } = (props ?? {}) as Record<string, any>;
   const merged: Record<string, unknown> = rest;
   if (children.length === 1) merged.children = children[0];

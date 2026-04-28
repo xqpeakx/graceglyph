@@ -76,6 +76,51 @@ ships with a migration note in this file.
 - Added initial `Image` component primitive in `src/components.tsx` with
   capability-aware protocol selection (`auto` -> kitty/sixel/iTerm2/ascii),
   ASCII fallback rendering, and test coverage in `test/components.test.ts`.
+- `Image` now emits real inline image payloads for native terminals:
+  Kitty (`ESC_G` file/direct payloads), iTerm2 (`OSC 1337;File=...`),
+  and Sixel pass-through/raw payloads, while retaining ASCII fallback when
+  capability support or payload parsing is unavailable.
+- `Link` now emits real OSC 8 hyperlinks in the renderer when terminal
+  capabilities advertise hyperlink support (with existing visible href fallback
+  retained for non-supporting terminals), covered by raw ANSI assertions in
+  `test/components.test.ts`.
+- Renderer flush now performs contiguous text-run batching during diff emit,
+  reducing ANSI output churn while preserving style transitions, OSC 8 link
+  boundaries, and inline-image ANSI prefix ordering (covered in
+  `test/renderer.test.ts`).
+- Added docs API generation pipeline: `scripts/generate-api-reference.mjs`
+  produces `docs/site/api-reference.md` from `src/index.ts` public exports and
+  module-level TSDoc summaries. `docs:build` now regenerates API docs before
+  building VitePress, and docs nav/sidebar/home include an API Reference entry.
+- Added an interactive docs playground page (`docs/site/playground.md`) with
+  an embedded xterm.js surface and capability-profile switching. Fixtures are
+  generated from real runtime renders via
+  `scripts/generate-playground-fixtures.ts` (`npm run docs:fixtures`) and
+  automatically refreshed during `docs:build`.
+- Added first external plugin package `@graceglyph/markdown` under
+  `packages/graceglyph-markdown`, including:
+  - `createMarkdownPlugin(options?)` plugin factory
+  - contributed `MarkdownDocument` and `MarkdownCard` components
+  - plugin package docs (`docs/site/plugins-markdown.md`) and docs-nav links
+  - repository coverage test (`test/external-plugin-package.test.ts`) that
+    validates package metadata and stable plugin id wiring.
+- Extended `create-graceglyph` with a component-author scaffold via
+  `--template component`, generating a publishable component package layout
+  (`src/index.tsx`, `test/component.test.ts`, peer dependency wiring, and
+  build/test scripts). Added template coverage in `test/create.test.ts`, plus
+  a dedicated `create-graceglyph-component` binary that defaults to the
+  component template, and docs in `docs/site/component-authoring.md`.
+- Added plugin-loading runtime helpers for config/CLI activation:
+  - `parsePluginArgsFromArgv(argv)` parses `--plugin` / `-p` flags
+  - `loadPlugin(...)` dynamically imports plugin modules or factories
+  - `loadPluginsFromConfig(config, argv)` merges app-config plugins and CLI
+    plugins with last-write-wins by plugin id
+  - `createPluginRegistryFromConfig(config, argv)` returns a preloaded registry
+  with plugin-loader coverage in `test/plugin.test.ts`.
+- Added async app bootstrap helper `renderWithPlugins(...)` that composes
+  plugin loading + activation with runtime startup and lifecycle-safe teardown
+  (`disposePlugins` + stop integration), covered by
+  `test/plugin-bootstrap.test.ts`.
 - CI/dx alignment:
   - Added `c8` coverage tooling and `npm run test:coverage`.
   - CI now runs dedicated coverage and bench jobs.

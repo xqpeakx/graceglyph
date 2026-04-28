@@ -2,6 +2,8 @@ import type { ComponentFn, ZenElement, ZenNode } from "./runtime/element.js";
 import type { Theme } from "./theme/theme.js";
 import type { Command } from "./app-shell.js";
 import { registerCommand } from "./app-shell.js";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 
 /**
  * Plugin protocol (§14). A plugin is a plain object that contributes
@@ -21,7 +23,7 @@ export interface GraceglyphPlugin {
   /** Human-readable description. */
   description?: string;
   /** Components contributed by this plugin, keyed by export name. */
-  components?: Record<string, ComponentFn<any>>;
+  components?: Record<string, ComponentFn<unknown>>;
   /** Themes contributed by this plugin, keyed by theme name. */
   themes?: Record<string, Theme>;
   /** Commands registered when the plugin activates. */
@@ -47,7 +49,7 @@ export interface PluginRenderInfo {
 
 export interface PluginContext {
   /** Resolve a registered component by name. */
-  getComponent: (name: string) => ComponentFn<any> | undefined;
+  getComponent: (name: string) => ComponentFn<unknown> | undefined;
   /** Resolve a registered theme by name. */
   getTheme: (name: string) => Theme | undefined;
   /** All commands aggregated from active plugins. */
@@ -66,19 +68,33 @@ export interface PluginRegistry {
    */
   activate: () => () => void;
   /** Resolve a component by name, latest-registration-wins on collisions. */
-  resolveComponent: (name: string) => ComponentFn<any> | undefined;
+  resolveComponent: (name: string) => ComponentFn<unknown> | undefined;
   /** Resolve a theme by name. */
   resolveTheme: (name: string) => Theme | undefined;
   /** Aggregated theme map (last-write-wins). */
   themes: () => Record<string, Theme>;
   /** Aggregated component map (last-write-wins). */
-  components: () => Record<string, ComponentFn<any>>;
+  components: () => Record<string, ComponentFn<unknown>>;
   /** Aggregated commands across plugins, in registration order. */
   commands: () => readonly Command[];
   /** Apply registered middleware to a node. */
   runMiddleware: (node: ZenNode, info?: Partial<PluginRenderInfo>) => ZenNode;
   /** Plugins in activation order. */
   list: () => readonly GraceglyphPlugin[];
+}
+
+export interface PluginLoadSpec {
+  /** Module path or package id to import. Supports "module#exportName". */
+  module: string;
+  /** Optional explicit export name. Overrides "#exportName" when provided. */
+  exportName?: string;
+  /** Optional options passed when the resolved export is a factory function. */
+  options?: unknown;
+}
+
+export interface PluginLoadConfig {
+  /** Plugin module specs provided by app config. */
+  plugins?: readonly (string | PluginLoadSpec | GraceglyphPlugin)[];
 }
 
 interface RegistryState {
@@ -101,8 +117,8 @@ export function createPluginRegistry(): PluginRegistry {
     return out;
   };
 
-  const components = (): Record<string, ComponentFn<any>> => {
-    const out: Record<string, ComponentFn<any>> = {};
+  const components = (): Record<string, ComponentFn<unknown>> => {
+    const out: Record<string, ComponentFn<unknown>> = {};
     for (const plugin of state.plugins) {
       if (!plugin.components) continue;
       for (const [name, component] of Object.entries(plugin.components)) {
@@ -141,7 +157,7 @@ export function createPluginRegistry(): PluginRegistry {
         });
       } catch (err) {
         // Don't let one plugin bring down the whole render path.
-        // eslint-disable-next-line no-console
+         
         console.error(`graceglyph plugin "${plugin.id}" middleware error:`, err);
       }
     }
@@ -187,7 +203,7 @@ export function createPluginRegistry(): PluginRegistry {
           const cleanup = plugin.setup(ctx);
           if (typeof cleanup === "function") setupHandles.push(cleanup);
         } catch (err) {
-          // eslint-disable-next-line no-console
+           
           console.error(`graceglyph plugin "${plugin.id}" setup error:`, err);
         }
       }
@@ -201,7 +217,7 @@ export function createPluginRegistry(): PluginRegistry {
           try {
             state.cleanups[i]!();
           } catch (err) {
-            // eslint-disable-next-line no-console
+             
             console.error("graceglyph plugin cleanup error:", err);
           }
         }
@@ -231,5 +247,128 @@ export function definePlugin(plugin: GraceglyphPlugin): GraceglyphPlugin {
   return plugin;
 }
 
+export function parsePluginArgsFromArgv(argv: readonly string[]): PluginLoadSpec[] {
+  const specs: PluginLoadSpec[] = [];
+  for (let i = 2; i < argv.length; i++) {
+    const token = argv[i];
+    if (!token) continue;
+    if (token === "--plugin" || token === "-p") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("-")) continue;
+      specs.push(parsePluginSpecifier(value));
+      i += 1;
+      continue;
+    }
+    if (token.startsWith("--plugin=")) {
+      const value = token.slice("--plugin=".length);
+      if (value.length === 0) continue;
+      specs.push(parsePluginSpecifier(value));
+    }
+  }
+  return specs;
+}
+
+export async function loadPlugin(
+  input: string | PluginLoadSpec | GraceglyphPlugin,
+): Promise<GraceglyphPlugin> {
+  if (isPluginObject(input)) return definePlugin(input);
+  const spec = typeof input === "string" ? parsePluginSpecifier(input) : input;
+  const resolved = normalizeImportId(spec.module);
+  const mod = await import(resolved);
+  const exportName = spec.exportName || parsePluginSpecifier(spec.module).exportName;
+  const candidate = pickPluginExport(mod, exportName);
+  if (!candidate) {
+    const keys = Object.keys(mod).join(", ");
+    throw new Error(`graceglyph plugin: no plugin export found in "${spec.module}" (exports: ${keys})`);
+  }
+  if (typeof candidate === "function") {
+    const produced = await candidate(spec.options);
+    if (!isPluginObject(produced)) {
+      throw new Error(`graceglyph plugin: factory export from "${spec.module}" did not return a plugin`);
+    }
+    return definePlugin(produced);
+  }
+  return definePlugin(candidate);
+}
+
+export async function loadPluginsFromConfig(
+  config: PluginLoadConfig = {},
+  argv: readonly string[] = process.argv,
+): Promise<GraceglyphPlugin[]> {
+  const requested: Array<string | PluginLoadSpec | GraceglyphPlugin> = [
+    ...(config.plugins ?? []),
+    ...parsePluginArgsFromArgv(argv),
+  ];
+  const loaded = new Map<string, GraceglyphPlugin>();
+  for (const request of requested) {
+    const plugin = await loadPlugin(request);
+    loaded.set(plugin.id, plugin);
+  }
+  return Array.from(loaded.values());
+}
+
+export async function createPluginRegistryFromConfig(
+  config: PluginLoadConfig = {},
+  argv: readonly string[] = process.argv,
+): Promise<PluginRegistry> {
+  const registry = createPluginRegistry();
+  const plugins = await loadPluginsFromConfig(config, argv);
+  for (const plugin of plugins) registry.use(plugin);
+  return registry;
+}
+
 /** Re-export so consumers can build their plugin types in one import. */
 export type { ZenElement, ZenNode };
+
+function parsePluginSpecifier(value: string): PluginLoadSpec {
+  const hash = value.lastIndexOf("#");
+  if (hash <= 0 || hash === value.length - 1) return { module: value };
+  return {
+    module: value.slice(0, hash),
+    exportName: value.slice(hash + 1),
+  };
+}
+
+function normalizeImportId(moduleId: string): string {
+  if (moduleId.startsWith("./") || moduleId.startsWith("../") || moduleId.startsWith("/")) {
+    return pathToFileURL(resolve(moduleId)).href;
+  }
+  return moduleId;
+}
+
+function pickPluginExport(
+  mod: Record<string, unknown>,
+  exportName?: string,
+): GraceglyphPlugin | ((options?: unknown) => unknown | Promise<unknown>) | null {
+  if (exportName) return normalizeExportCandidate(mod[exportName]);
+
+  const direct =
+    normalizeExportCandidate(mod.default) ??
+    normalizeExportCandidate(mod.createPlugin) ??
+    normalizeExportCandidate(mod.createMarkdownPlugin) ??
+    normalizeExportCandidate(mod.plugin);
+  if (direct) return direct;
+
+  for (const value of Object.values(mod)) {
+    const candidate = normalizeExportCandidate(value);
+    if (candidate) return candidate;
+  }
+  return null;
+}
+
+function normalizeExportCandidate(
+  value: unknown,
+): GraceglyphPlugin | ((options?: unknown) => unknown | Promise<unknown>) | null {
+  if (isPluginObject(value)) return value;
+  if (typeof value === "function") return value as (options?: unknown) => unknown | Promise<unknown>;
+  return null;
+}
+
+function isPluginObject(value: unknown): value is GraceglyphPlugin {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof (value as { id?: unknown }).id === "string"
+  );
+}

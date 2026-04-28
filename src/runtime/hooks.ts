@@ -54,10 +54,10 @@ function getEnvironment(): FiberEnvironment {
 export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void] {
   warnDeprecatedHook("useState", "createSignal");
   const fiber = currentFiber!;
-  type StateSignal = {
+  interface StateSignal {
     read: Accessor<T>;
     write: Setter<T>;
-  };
+  }
   const hook = getHook<Extract<Hook, { kind: "state" }> & { __signal?: StateSignal }>(() => ({
     kind: "state",
     value: typeof initial === "function" ? (initial as () => T)() : initial,
@@ -112,6 +112,7 @@ export function useMemo<T>(compute: () => T, deps: unknown[]): T {
  * @deprecated Compatibility hook for the fiber runtime. Prefer
  * signal-driven closures and `createMemo`/`createEffect` in new code.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useCallback<T extends (...args: any[]) => any>(fn: T, deps: unknown[]): T {
   warnDeprecatedHook("useCallback", "createMemo");
   return useMemo(() => fn, deps);
@@ -175,7 +176,6 @@ export function useMotion<T extends number | readonly number[] | string>(
       m.dispose();
       handle.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (handle.current && !Object.is(last.current, target)) {
@@ -279,7 +279,7 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
 function reportEffectError(err: unknown, fiber: Fiber): void {
   const details = err instanceof Error ? err.message : String(err);
   const stack = formatComponentStack(fiber);
-  // eslint-disable-next-line no-console
+   
   console.error(
     stack.length > 0
       ? `graceglyph: effect error: ${details}\n${stack}`
@@ -291,7 +291,7 @@ function warnDeprecatedHook(hook: string, replacement: string): void {
   if (process.env.NODE_ENV === "test") return;
   if (warnedDeprecatedHooks.has(hook)) return;
   warnedDeprecatedHooks.add(hook);
-  // eslint-disable-next-line no-console
+   
   console.warn(
     `graceglyph: ${hook}() is a compatibility hook slated for removal in a future 0.x minor. Prefer ${replacement}() from graceglyph/reactive.`,
   );

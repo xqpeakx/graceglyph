@@ -7,6 +7,7 @@
   "types": "dist/index.d.ts",
   "bin": {
     "create-graceglyph": "./dist/create.js",
+    "create-graceglyph-component": "./dist/create-component.js",
     "graceglyph-create": "./dist/create.js",
     "gg-logs": "./dist/apps/gg-logs/index.js",
     "gg-monitor": "./dist/apps/gg-monitor/index.js",
@@ -71,20 +72,22 @@
     "example:explorer": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx file-manager",
     "example:components": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/dashboard-shell.tsx components",
     "example:tarnished": "node --experimental-specifier-resolution=node --loader ts-node/esm examples/tarnished-splash.tsx",
-    "test": "node --test --loader ts-node/esm test/*.test.ts",
-    "test:coverage": "c8 --reporter=text --reporter=lcov --check-coverage --lines 80 --branches 75 node --test --loader ts-node/esm test/*.test.ts",
+    "test": "NODE_ENV=test npx tsx --test test/*.test.ts",
+    "test:coverage": "NODE_ENV=test c8 --reporter=text --reporter=lcov --check-coverage --lines 80 --branches 75 npx tsx --test test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "bench": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts",
-    "bench:prof": "node --prof --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts",
-    "bench:check": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/check-bench-thresholds.mjs -",
-    "bench:drift": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/check-bench-drift.mjs - bench/baseline.json",
-    "bench:compare": "node --experimental-specifier-resolution=node --loader ts-node/esm bench/run.ts --json | node scripts/bench-compare.mjs -",
+    "bench": "npx tsx bench/run.ts",
+    "bench:prof": "node --prof $(npm bin)/tsx bench/run.ts",
+    "bench:check": "npx tsx bench/run.ts --json | node scripts/check-bench-thresholds.mjs -",
+    "bench:drift": "npx tsx bench/run.ts --json | node scripts/check-bench-drift.mjs - bench/baseline.json",
+    "bench:compare": "npx tsx bench/run.ts --json | node scripts/bench-compare.mjs -",
     "docs:dev": "vitepress dev docs/site",
-    "docs:build": "vitepress build docs/site",
+    "docs:fixtures": "npx tsx scripts/generate-playground-fixtures.ts",
+    "docs:api": "node scripts/generate-api-reference.mjs",
+    "docs:build": "npm run docs:fixtures && npm run docs:api && vitepress build docs/site",
     "docs:preview": "vitepress preview docs/site"
   },
   "engines": {
@@ -101,13 +104,20 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "c8": "^11.0.0",
-    "eslint": "^9.10.0",
+    "eslint": "^9.39.4",
     "fast-check": "^4.7.0",
     "prettier": "^3.3.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.0",
-    "typescript-eslint": "^8.6.0",
+    "typescript-eslint": "^8.59.1",
     "vitepress": "^1.6.4"
+  },
+  "overrides": {
+    "vite": "6.4.2",
+    "eslint-visitor-keys": "4.2.1"
   }
 }

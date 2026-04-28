@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   Badge,
@@ -10,6 +13,7 @@ import {
   FULL_CAPABILITIES,
   Image,
   Kbd,
+  Link,
   ProgressBar,
   RadioGroup,
   Row,
@@ -222,8 +226,9 @@ test("image auto protocol prefers kitty when available", async (t) => {
   t.after(() => harness.handle.stop());
   await settleRuntime();
   const text = screenText(harness.handle);
-  assert.match(text, /protocol: kitty/);
-  assert.match(text, /\[kitty\] \/tmp\/cat\.png/);
+  const raw = harness.output.output();
+  assert.match(text, /protocol: kitty \(native\)/);
+  assert.match(raw, /\x1b_Ga=T,t=f,f=100.*;L3RtcC9jYXQucG5n\x1b\\/);
 });
 
 test("image auto protocol falls back to ascii on dumb terminals", async (t) => {
@@ -237,4 +242,59 @@ test("image auto protocol falls back to ascii on dumb terminals", async (t) => {
   const text = screenText(harness.handle);
   assert.match(text, /protocol: ascii/);
   assert.match(text, /\[ascii\] Cat art/);
+});
+
+test("image emits OSC 1337 payload for iTerm2 inline images", async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "graceglyph-image-"));
+  const src = join(dir, "pixel.bin");
+  writeFileSync(src, Buffer.from([0, 1, 2, 3, 4]));
+  const harness = renderWithFakeTty(h(Image, { src, alt: "Pixel", protocol: "iterm2" }), {
+    width: 40,
+    height: 6,
+    runtime: { capabilities: { ...FULL_CAPABILITIES, kittyGraphics: false, sixel: false } },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const raw = harness.output.output();
+  assert.match(raw, /\x1b\]1337;File=name=.*;size=5;inline=1:[A-Za-z0-9+/=]+\x07/);
+  assert.match(screenText(harness.handle), /protocol: iterm2 \(native\)/);
+});
+
+test("image emits sixel stream when source is sixel data", async (t) => {
+  const sixel = "\x1bPq#1;2;0;0;0~\x1b\\";
+  const harness = renderWithFakeTty(h(Image, { src: sixel, alt: "Sixel", protocol: "sixel" }), {
+    width: 40,
+    height: 6,
+    runtime: { capabilities: { ...FULL_CAPABILITIES, kittyGraphics: false, iterm2Images: false } },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const raw = harness.output.output();
+  assert.match(raw, /\x1bPq#1;2;0;0;0~\x1b\\/);
+  assert.match(screenText(harness.handle), /protocol: sixel \(native\)/);
+});
+
+test("link emits OSC 8 sequences when hyperlinks are supported", async (t) => {
+  const harness = renderWithFakeTty(h(Link, { href: "https://example.com", children: "docs" }), {
+    width: 20,
+    height: 2,
+    runtime: { capabilities: FULL_CAPABILITIES },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const raw = harness.output.output();
+  assert.match(raw, /\x1b\]8;;https:\/\/example\.com\x1b\\/);
+  assert.match(raw, /\x1b\]8;;\x1b\\/);
+});
+
+test("link falls back to visible href on non-hyperlink terminals", async (t) => {
+  const harness = renderWithFakeTty(h(Link, { href: "https://example.com", children: "docs" }), {
+    width: 40,
+    height: 2,
+    runtime: { capabilities: DUMB_CAPABILITIES },
+  });
+  t.after(() => harness.handle.stop());
+  await settleRuntime();
+  const text = screenText(harness.handle);
+  assert.match(text, /docs \(https:\/\/example.com\)/);
 });

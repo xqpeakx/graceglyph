@@ -10,7 +10,8 @@ type TemplateId =
   | "crud-app"
   | "chat"
   | "editor"
-  | "plugin";
+  | "plugin"
+  | "component";
 
 type ThemeId =
   | "dark"
@@ -87,6 +88,11 @@ const templates: Record<TemplateId, TemplateDefinition> = {
     description: "ecosystem starter for publishing a graceglyph plugin package",
     files: pluginTemplate,
   },
+  component: {
+    id: "component",
+    description: "component-author starter for publishing reusable UI packages",
+    files: componentTemplate,
+  },
 };
 
 async function main(argv: readonly string[]): Promise<void> {
@@ -111,10 +117,10 @@ async function main(argv: readonly string[]): Promise<void> {
     await fs.writeFile(destination, file.content, "utf8");
   }
 
-  console.log(`created ${projectName} with ${template.id} template (${args.theme} theme)`);
-  console.log(`cd ${path.relative(process.cwd(), target) || "."}`);
-  console.log("npm install");
-  console.log("npm run dev");
+  printLine(`created ${projectName} with ${template.id} template (${args.theme} theme)`);
+  printLine(`cd ${path.relative(process.cwd(), target) || "."}`);
+  printLine("npm install");
+  printLine("npm run dev");
 }
 
 function parseArgs(argv: readonly string[]): {
@@ -205,18 +211,18 @@ async function ensureEmptyTarget(target: string): Promise<void> {
 }
 
 function printHelp(): void {
-  console.log("create-graceglyph [name] --template <template> [--theme <theme>]");
-  console.log("");
+  printLine("create-graceglyph [name] --template <template> [--theme <theme>]");
+  printLine("");
   printTemplates();
-  console.log("");
-  console.log("themes:");
-  console.log(`  ${THEMES.join(", ")}`);
+  printLine("");
+  printLine("themes:");
+  printLine(`  ${THEMES.join(", ")}`);
 }
 
 function printTemplates(): void {
-  console.log("templates:");
+  printLine("templates:");
   for (const template of Object.values(templates)) {
-    console.log(`  ${template.id.padEnd(10)} ${template.description}`);
+    printLine(`  ${template.id.padEnd(10)} ${template.description}`);
   }
 }
 
@@ -458,6 +464,133 @@ function pluginTemplate(ctx: TemplateContext): TemplateFile[] {
   ];
 }
 
+function componentTemplate(ctx: TemplateContext): TemplateFile[] {
+  const projectName = ctx.projectName;
+  const pkgName = packageName(projectName);
+  return [
+    {
+      path: "package.json",
+      content: `${JSON.stringify(
+        {
+          name: pkgName.startsWith("@") ? pkgName : `@graceglyph/${pkgName}`,
+          version: "0.1.0",
+          private: true,
+          type: "module",
+          description: "A graceglyph component package starter",
+          main: "dist/index.js",
+          types: "dist/index.d.ts",
+          scripts: {
+            build: "tsc -p tsconfig.json",
+            test: "node --test --loader ts-node/esm test/*.test.ts",
+          },
+          peerDependencies: {
+            graceglyph: "^0.0.1",
+          },
+          devDependencies: {
+            "@types/node": "^20.11.0",
+            "ts-node": "^10.9.2",
+            typescript: "^5.4.0",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    },
+    {
+      path: "tsconfig.json",
+      content: `${JSON.stringify(
+        {
+          compilerOptions: {
+            target: "ES2022",
+            module: "ES2022",
+            moduleResolution: "Bundler",
+            lib: ["ES2022"],
+            strict: true,
+            esModuleInterop: true,
+            forceConsistentCasingInFileNames: true,
+            skipLibCheck: true,
+            declaration: true,
+            declarationMap: true,
+            outDir: "dist",
+            jsx: "react-jsx",
+            jsxImportSource: "graceglyph",
+            noUncheckedIndexedAccess: true,
+          },
+          include: ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        },
+        null,
+        2,
+      )}\n`,
+    },
+    {
+      path: "src/index.tsx",
+      content:
+        'import { Box, Text, h, type BoxProps, type StyleLike, type ZenElement } from "graceglyph";\n\n' +
+        "export interface StatTileProps extends Omit<BoxProps, \"children\"> {\n" +
+        "  title: string;\n" +
+        "  value: string;\n" +
+        "  detail?: string;\n" +
+        "  titleStyle?: StyleLike;\n" +
+        "  valueStyle?: StyleLike;\n" +
+        "  detailStyle?: StyleLike;\n" +
+        "}\n\n" +
+        "export function StatTile(props: StatTileProps): ZenElement {\n" +
+        "  const {\n" +
+        "    title,\n" +
+        "    value,\n" +
+        "    detail,\n" +
+        "    titleStyle,\n" +
+        "    valueStyle,\n" +
+        "    detailStyle,\n" +
+        "    ...box\n" +
+        "  } = props;\n" +
+        "  return h(\n" +
+        "    Box,\n" +
+        "    {\n" +
+        "      border: true,\n" +
+        "      padding: [0, 1],\n" +
+        "      direction: \"column\",\n" +
+        "      ...box,\n" +
+        "    } as BoxProps,\n" +
+        "    [\n" +
+        "      h(Text, { style: titleStyle ?? ({ dim: true } as StyleLike) }, title),\n" +
+        "      h(Text, { style: valueStyle ?? ({ bold: true } as StyleLike) }, value),\n" +
+        "      detail ? h(Text, { style: detailStyle ?? ({ dim: true } as StyleLike) }, detail) : null,\n" +
+        "    ],\n" +
+        "  );\n" +
+        "}\n",
+    },
+    {
+      path: "test/component.test.ts",
+      content:
+        'import test from "node:test";\n' +
+        'import assert from "node:assert/strict";\n\n' +
+        'import { renderComponent } from "graceglyph/testing";\n' +
+        'import { StatTile } from "../src/index.js";\n\n' +
+        'test("StatTile renders title/value/detail", async () => {\n' +
+        '  const app = renderComponent(<StatTile title="Latency" value="42ms" detail="p95" />);\n' +
+        "  try {\n" +
+        "    await app.settle();\n" +
+        "    const frame = app.snapshot();\n" +
+        '    assert.match(frame, /Latency/);\n' +
+        '    assert.match(frame, /42ms/);\n' +
+        '    assert.match(frame, /p95/);\n' +
+        "  } finally {\n" +
+        "    app.stop();\n" +
+        "  }\n" +
+        "});\n",
+    },
+    {
+      path: "README.md",
+      content:
+        `# ${projectName}\n\n` +
+        "Starter package for authoring reusable graceglyph components.\n\n" +
+        "## Development\n\n```bash\nnpm install\nnpm run build\nnpm test\n```\n\n" +
+        "Export UI primitives from `src/index.tsx` and publish under a scoped package name.\n",
+    },
+  ];
+}
+
 function packageName(name: string): string {
   return (
     name
@@ -470,6 +603,10 @@ function packageName(name: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function printLine(message: string): void {
+  process.stdout.write(`${message}\n`);
 }
 
 main(process.argv.slice(2)).catch((error) => {

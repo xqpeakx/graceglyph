@@ -23,11 +23,20 @@ Status: draft. Owner: @cooley. Target horizon: 6–9 months to v1.0.
 - [x] §10 comparison harness placeholders for Ink/blessed/terminal-kit (`bench:compare`, `bench/competitors/*.json`).
 - [x] §10 profiling workflow documented and scriptable (`bench:prof`, `node --prof-process` guidance in `bench/README.md`).
 - [x] §3 initial `Image` primitive (`protocol="auto"` chooser with kitty/sixel/iTerm2/ascii selection and ASCII fallback rendering).
+- [x] §3 hyperlink helper: `Link` now emits OSC 8 on supported terminals and visible footnote fallback when unsupported.
+- [x] §3 native image protocol emission: `Image` now emits Kitty (`ESC_G`), iTerm2 (`OSC 1337`), and raw/passthrough Sixel payloads when protocol support is available.
+- [x] §3 renderer run compression: diff flush now batches contiguous cell writes into text runs while preserving style/hyperlink/image-prefix boundaries.
 - [x] §12 docs site bootstrap: VitePress scaffold in `docs/site` with initial Getting Started, Concepts, Component Index, and Migration Notes pages, plus CI `docs:build`.
 - [x] §12 docs expansion: migration guides (Ink/blessed), capabilities matrix, performance guide, and troubleshooting pages.
 - [x] §12 docs expansion: added "Why graceglyph" positioning page with explicit trade-off framing.
+- [x] §12 docs API reference generation: `docs/site/api-reference.md` now auto-generated from root exports + module TSDoc via `npm run docs:api`.
+- [x] §12 interactive playground: VitePress page with xterm.js runtime fixture replay across capability profiles, generated via `docs:fixtures`.
 - [x] §14 ecosystem foundation: `create-graceglyph --template plugin` scaffolds a plugin-author package starter.
 - [x] §14 ecosystem foundation: plugin versioning policy documented (`docs/site/plugin-versioning.md`).
+- [x] §14 first external plugin package: `@graceglyph/markdown` added under `packages/graceglyph-markdown` with plugin factory + docs.
+- [x] §14 component author template: `create-graceglyph --template component` scaffolds reusable component package starter.
+- [x] §14 plugin loading ergonomics: runtime helpers now load plugins from app config and `--plugin`/`-p` CLI flags (`loadPluginsFromConfig`, `createPluginRegistryFromConfig`).
+- [x] §14 plugin bootstrap helper: `renderWithPlugins(...)` now wires plugin loading + activation into app startup lifecycle.
 
 This document is the plan to take graceglyph from "another Node TUI" to the
 default choice for terminal apps in TypeScript. It is opinionated on purpose.

@@ -6,7 +6,6 @@ import type {
   TextProps,
   ZenElement,
 } from "./runtime/element.js";
-import type { KeyEvent } from "./input/keys.js";
 import { useState, useTheme } from "./runtime/hooks.js";
 import { style as styleRule } from "./style/index.js";
 import { List } from "./components.js";

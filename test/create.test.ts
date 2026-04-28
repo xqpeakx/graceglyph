@@ -87,6 +87,16 @@ test("create-graceglyph scaffolds the plugin template", async () => {
   assert.match(index, /createPlugin/);
 });
 
+test("create-graceglyph scaffolds the component template", async () => {
+  const { target, pkg } = await scaffold("component");
+  const index = await fs.readFile(path.join(target, "src/index.tsx"), "utf8");
+  const componentTest = await fs.readFile(path.join(target, "test/component.test.ts"), "utf8");
+  assert.match(pkg.name, /^@graceglyph\//);
+  assert.equal(pkg.scripts.build, "tsc -p tsconfig.json");
+  assert.match(index, /export function StatTile/);
+  assert.match(componentTest, /renderComponent/);
+});
+
 test("create-graceglyph wires the --theme flag into bootstrap", async () => {
   const { main } = await scaffold("dashboard", ["--theme", "tarnished"]);
   assert.match(main, /builtInThemes\["tarnished"\]/);
@@ -110,4 +120,20 @@ test("create-graceglyph rejects unknown templates and themes", async () => {
     ),
     /unknown theme/,
   );
+});
+
+test("create-graceglyph-component defaults to component template", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "graceglyph-create-component-"));
+  const target = path.join(dir, "kit");
+  await execFileAsync(
+    process.execPath,
+    ["--loader", "ts-node/esm", "src/create-component.ts", "kit", "--dir", target],
+    { cwd: repoRoot },
+  );
+  const pkg = JSON.parse(await fs.readFile(path.join(target, "package.json"), "utf8")) as {
+    name: string;
+  };
+  const entry = await fs.readFile(path.join(target, "src/index.tsx"), "utf8");
+  assert.match(pkg.name, /^@graceglyph\//);
+  assert.match(entry, /StatTile/);
 });

@@ -15,6 +15,7 @@ import {
   Text,
   Window,
   builtInThemes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   h,
   render,
   useEffect,
@@ -223,9 +224,9 @@ export function parseArgs(argv: readonly string[]): ParsedMonitorArgs {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      console.log("gg-monitor [--interval ms] [--theme name]");
-      console.log("");
-      console.log("Live CPU / memory / load average via the os module.");
+      process.stdout.write("gg-monitor [--interval ms] [--theme name]\n");
+      process.stdout.write("\n");
+      process.stdout.write("Live CPU / memory / load average via the os module.\n");
       process.exit(0);
     }
     throw new Error(`unknown flag: ${arg}`);

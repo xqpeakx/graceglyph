@@ -31,6 +31,15 @@ export function hyperlink(url: string, text: string, id?: string): string {
   return `${OSC}8;${params};${url}${ST}${text}${OSC}8;;${ST}`;
 }
 
+export function hyperlinkOpen(url: string, id?: string): string {
+  const params = id ? `id=${id}` : "";
+  return `${OSC}8;${params};${url}${ST}`;
+}
+
+export function hyperlinkClose(): string {
+  return `${OSC}8;;${ST}`;
+}
+
 export function cursorTo(x: number, y: number): string {
   // ANSI uses 1-based coordinates; we convert from our 0-based model.
   return `${CSI}${y + 1};${x + 1}H`;

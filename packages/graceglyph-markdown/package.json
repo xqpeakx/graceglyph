@@ -1,0 +1,24 @@
+{
+  "name": "@graceglyph/markdown",
+  "version": "0.1.0",
+  "description": "Markdown plugin package for graceglyph",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test --loader ts-node/esm test/*.test.ts"
+  },
+  "peerDependencies": {
+    "graceglyph": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

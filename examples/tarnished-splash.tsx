@@ -3,12 +3,10 @@
 import {
   App,
   AsciiArt,
-  Banner,
   BigText,
   Box,
   Column,
   Kbd,
-  Panel,
   Row,
   Text,
   builtInThemes,

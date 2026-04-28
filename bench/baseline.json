@@ -1,6 +1,10 @@
 {
   "version": 1,
   "capturedAt": "2026-04-27",
+  "referenceRuntime": {
+    "platform": "darwin",
+    "arch": "arm64"
+  },
   "notes": "Reference medians/tails on maintainer-class Apple Silicon hardware. Drift policy intentionally permissive to avoid CI noise; hard thresholds remain authoritative.",
   "cases": [
     {
