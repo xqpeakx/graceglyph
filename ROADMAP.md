@@ -7,7 +7,14 @@ Status: draft. Owner: @cooley. Target horizon: 6–9 months to v1.0.
 - [x] §7 route leave guards via `Route.canLeave` and `canNavigateRoute(...)`.
 - [x] §7 deep-link normalization helpers (`resolveDeepLinkPath*`) for argv/path inputs.
 - [x] §9 testkit ANSI snapshot support via `app.snapshotAnsi()`.
+- [x] §9 component-level test helper via `renderComponent(<Component />)`.
 - [x] §9 testkit accessibility queries via `getByRole` and `getByLabel`.
+- [x] §9 fake-timer control (`useFakeTimers`, `advanceTimersByTime`, `runAllTimers`, `useRealTimers`) in `graceglyph/testing`.
+- [x] §9 async test helpers (`waitFor`, `findByText`, `findByRole`, `findByLabel`) with act-free polling semantics.
+- [x] §9 user-event API via `app.user.click/type/keyboard/hover/drag(...).drop(...)`.
+- [x] §9 capability simulation in `renderTestApp(..., { cap })` for deterministic terminal-profile testing.
+- [x] §9 property-based parser testing via `fast-check` (`test/input-parser.test.ts` invariants).
+- [x] §10 bench threshold gate in CI for static-frame, diff, table-scroll, and resize-storm targets.
 
 This document is the plan to take graceglyph from "another Node TUI" to the
 default choice for terminal apps in TypeScript. It is opinionated on purpose.

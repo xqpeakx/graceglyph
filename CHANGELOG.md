@@ -24,8 +24,24 @@ ships with a migration note in this file.
 - §9 testkit DX:
   - `renderTestApp` now exposes `snapshotAnsi()` for full ANSI regression
     snapshots alongside plain-frame `snapshot()`.
+  - `renderTestApp(..., { cap })` now supports deterministic capability
+    simulation (`"dumb"`, `"full"`, color-depth presets, or explicit
+    overrides) for terminal-profile-specific assertions.
+  - Added `renderComponent(<Component />)` convenience helper for component-
+    scoped fixtures that do not need an explicit app wrapper.
+  - Added user-event ergonomics on `TestApp.user`:
+    `click(locator)`, `type(locator, text)`, `keyboard("{Tab}{Enter}")`,
+    `hover(locator)`, and `drag(source).drop(target)`.
   - Accessibility query locators are now available:
     `getByRole`, `queryAllByRole`, and `getByLabel`.
+  - Fake-timer controls are now available directly on `TestApp`:
+    `useFakeTimers()`, `advanceTimersByTime(ms)`, `runAllTimers()`, and
+    `useRealTimers()`. Timers are scoped to one active test app at a time.
+  - Async helpers landed for act-free tests:
+    `waitFor(...)`, `queryByText`, `getByText`, `findByText(...)`,
+    `findByRole(...)`, and `findByLabel(...)`.
+  - Parser fuzz/property coverage now includes `fast-check` invariants for
+    chunked vs monolithic parsing parity and full pending-buffer drain.
   - New `TestLocator` / `TestRole` types exported from package root.
 - New test coverage in `test/app-shell.test.ts` and `test/testing.test.ts`
   for route guard behavior, query/hash route normalization, deep-link argv
@@ -40,6 +56,9 @@ ships with a migration note in this file.
 - CI/dx alignment:
   - Added `c8` coverage tooling and `npm run test:coverage`.
   - CI now runs dedicated coverage and bench jobs.
+  - Bench CI now enforces roadmap thresholds via
+    `scripts/check-bench-thresholds.mjs` and `npm run bench:check`
+    (static-frame paint/diff, table-scroll, resize-storm).
   - Bench docs updated to match actual CI behavior.
 - Bug-report typing/runtime fix in `src/runtime/bug-report.ts` restored
   clean `npm run typecheck` by aligning inspector tree types and call shape.

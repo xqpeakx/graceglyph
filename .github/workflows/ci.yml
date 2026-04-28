@@ -60,7 +60,7 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
-      - run: npm run bench -- --json
+      - run: npm run bench:check
 
   lint:
     name: Lint

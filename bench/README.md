@@ -26,7 +26,8 @@ Targets (see `ROADMAP.md` §10):
 
 These are floors, not ceilings. We expect to beat them on modern hardware.
 CI runs the benchmark suite as a smoke check and emits JSON output for
-downstream comparison tooling.
+downstream comparison tooling. The bench CI job enforces the four thresholds
+above and fails if any exceeded metric regresses past its target.
 
 ## Adding a scenario
 
